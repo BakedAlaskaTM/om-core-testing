@@ -48,6 +48,8 @@ class Launcher:
         state_bytes: int | None = None,
         max_undo_entries: int | None = None,
         scratch_bytes: int | None = None,
+        server_args: list[str] | None = None,
+        mode: str | None = None,
     ) -> None:
         self._endpoint = endpoint
         self._parsed = urlparse(endpoint)
@@ -56,6 +58,9 @@ class Launcher:
         self._state_bytes = state_bytes
         self._max_undo_entries = max_undo_entries
         self._scratch_bytes = scratch_bytes
+        self._server_args = list(server_args or [])
+        if mode is not None:
+            self._server_args.append(f"--mode={mode}")
         self._proc: subprocess.Popen | None = None
 
     def _is_local_endpoint(self) -> bool:
@@ -105,6 +110,13 @@ class Launcher:
             args.append(f"--max-undo-entries={self._max_undo_entries}")
         if self._scratch_bytes is not None:
             args.append(f"--scratch-bytes={self._scratch_bytes}")
+
+        args.extend(self._server_args)
+
+        # Allow extra CLI args via environment variable for testing.
+        extra = os.environ.get("OMENGINE_EXTRA_ARGS")
+        if extra:
+            args.extend(extra.split())
 
         _log.info("Starting server: %s", " ".join(args))
         self._proc = subprocess.Popen(

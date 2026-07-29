@@ -22,6 +22,8 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+import threading
+
 
 def _payload_value(payload: Any, key: str, default: Any = None) -> Any:
     """Read a value from a dict or dataclass payload."""
@@ -44,6 +46,11 @@ class GUIReadModelBinder:
         self.session = session
         self.gui_view_model = gui_view_model
         self._on_ui_refresh = on_ui_refresh
+        self._dim_refresh_pending: set[str] = set()
+        self._dim_refresh_timer: Any = None
+        self._dim_refresh_lock = threading.Lock()
+        self._rebootstrap_timer: Any = None
+        self._rebootstrap_lock = threading.Lock()
         self._register_subscribers()
 
     def _register_subscribers(self) -> None:
@@ -53,6 +60,8 @@ class GUIReadModelBinder:
         self.session.subscribe("event.view.updated", self._on_view_updated)
         self.session.subscribe("event.view.activated", self._on_view_activated)
         self.session.subscribe("event.view.deleted", self._on_view_deleted)
+        self.session.subscribe("event.view.layout_changed", self._on_view_updated)
+        self.session.subscribe("event.view.axes_changed", self._on_view_updated)
         self.session.subscribe("event.cube.created", self._on_cube_created)
         self.session.subscribe("event.cube.deleted", self._on_cube_deleted)
         self.session.subscribe("event.dimension.created", self._on_dimension_created)
@@ -179,20 +188,45 @@ class GUIReadModelBinder:
                 self.gui_view_model.update_dimension_snapshot(dim_id, result.data)
 
     def _on_dimension_item_created(self, event) -> None:
-        """Re-query dimension detail to refresh item list."""
+        """Debounce dimension detail refresh for item creation."""
         dim_id = event.payload.get("dim_id")
         if dim_id:
-            result = self.session.execute(
-                "query", type="dimension_detail", dim_id=dim_id
-            )
-            if result.success and result.data:
-                self.gui_view_model.update_dimension_snapshot(dim_id, result.data)
-        self._refresh_ui()
+            self._schedule_dim_refresh(dim_id)
 
     def _on_dimension_structure_changed(self, event) -> None:
-        """Re-query dimension detail when groups, outlines, or items change."""
+        """Debounce dimension detail refresh for structure changes."""
         dim_id = _payload_value(event.payload, "dim_id")
         if dim_id:
+            self._schedule_dim_refresh(dim_id)
+
+    def _schedule_dim_refresh(self, dim_id: str) -> None:
+        """Coalesce dimension detail refresh requests into a single batch query.
+
+        Multiple events for the same dimension (or different dimensions) within
+        a short window are merged into one query per dimension, avoiding
+        hundreds of synchronous RPC round-trips during script sourcing.
+        """
+        with self._dim_refresh_lock:
+            self._dim_refresh_pending.add(dim_id)
+            if self._dim_refresh_timer is not None:
+                return
+            try:
+                from PySide6 import QtCore
+            except ImportError:
+                self._flush_dim_refresh()
+                return
+            self._dim_refresh_timer = QtCore.QTimer()
+            self._dim_refresh_timer.setSingleShot(True)
+            self._dim_refresh_timer.timeout.connect(self._flush_dim_refresh)
+            self._dim_refresh_timer.start(100)
+
+    def _flush_dim_refresh(self) -> None:
+        """Execute pending dimension detail queries and update ViewModel."""
+        with self._dim_refresh_lock:
+            dim_ids = self._dim_refresh_pending.copy()
+            self._dim_refresh_pending.clear()
+            self._dim_refresh_timer = None
+        for dim_id in dim_ids:
             result = self.session.execute(
                 "query", type="dimension_detail", dim_id=dim_id
             )
@@ -208,7 +242,12 @@ class GUIReadModelBinder:
         """Notify GUI widgets to rebuild from updated ViewModel.
 
         Uses the on_ui_refresh callback (GUI-local) instead of bus.publish.
+        Skipped when the GUI window has suspended UI refreshes (e.g. during
+        a source command) to avoid queuing unnecessary cross-thread calls.
         """
+        gui_window = getattr(self._on_ui_refresh, "__self__", None)
+        if gui_window is not None and getattr(gui_window, "_ui_refresh_suspended", False):
+            return
         if self._on_ui_refresh is not None:
             self._on_ui_refresh()
 
@@ -217,7 +256,29 @@ class GUIReadModelBinder:
     # =========================================================================
 
     def _rebootstrap(self) -> None:
-        """Re-bootstrap full ViewModel from query.workspace_snapshot."""
+        """Re-bootstrap full ViewModel from query.workspace_snapshot.
+
+        Debounced: multiple rapid calls (e.g. during workspace load when many
+        events fire in succession) are collapsed into a single RPC via a short
+        QTimer delay.
+        """
+        with self._rebootstrap_lock:
+            if self._rebootstrap_timer is not None:
+                return
+            try:
+                from PySide6 import QtCore
+            except ImportError:
+                self._do_rebootstrap()
+                return
+            self._rebootstrap_timer = QtCore.QTimer()
+            self._rebootstrap_timer.setSingleShot(True)
+            self._rebootstrap_timer.timeout.connect(self._do_rebootstrap)
+            self._rebootstrap_timer.start(100)
+
+    def _do_rebootstrap(self) -> None:
+        """Execute the actual rebootstrap RPC and ViewModel replacement."""
+        with self._rebootstrap_lock:
+            self._rebootstrap_timer = None
         data = self.session.query("workspace_snapshot")
         if data:
             self.gui_view_model.replace_workspace_snapshot(data)

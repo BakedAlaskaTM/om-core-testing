@@ -187,13 +187,44 @@ class ViewWorkspaceController(QtCore.QObject):
         if not views:
             # Fallback: if every view is hidden, show them so the UI is never empty.
             views = self.workspace_read_model.list_views(include_system=True)
+
+        # Resolve the active view ID *before* creating tabs so we can defer
+        # table reload (and thus tile fetch queries) for non-active tabs.
+        active_view_id: str | None = None
+        # Session runtime state is the source of truth for the active view.
+        if self._session is not None:
+            try:
+                current = self._session.query("active_view_current")
+                session_view_id = current.get("view_id") if current else None
+            except Exception:
+                session_view_id = None
+            if session_view_id is not None and any(v["id"] == session_view_id for v in views):
+                active_view_id = session_view_id
+        # Preserve the local controller cache if the session query is unavailable.
+        if active_view_id is None and prev_active_view_id is not None and any(
+            v["id"] == prev_active_view_id for v in views
+        ):
+            active_view_id = prev_active_view_id
+        # Initial seed from workspace saved default only when no session state exists yet.
+        if active_view_id is None:
+            ws_saved_default = self.workspace_read_model.saved_default_view_id()
+            if ws_saved_default is not None and any(v["id"] == ws_saved_default for v in views):
+                active_view_id = ws_saved_default
+                logging.debug("[DEBUG rebuild_tabs] Seeded active view from workspace: %s", active_view_id[:8])
+        # Fall back to first view if no active view could be resolved.
+        if active_view_id is None and views:
+            active_view_id = views[0]["id"]
+
         host = self.parent()
         for view in views:
+            is_active = view["id"] == active_view_id
             vt = ViewTab(
                 view_id=view["id"],
                 session=self.cell_read_model.session,
                 parent=self._tabs,
+                workspace_read_model=self.workspace_read_model,
                 profiler=self._profiler,
+                defer_table_reload=not is_active,
             )
             vt.pivot_bar.selection_changed.connect(self.refresh_table)
             vt.page_axis_bar.selection_changed.connect(self.refresh_table)
@@ -271,31 +302,6 @@ class ViewWorkspaceController(QtCore.QObject):
                                 table._anchor_col = col
             except Exception:
                 pass
-
-        active_view_id: str | None = None
-        # Session runtime state is the source of truth for the active view.
-        if self._session is not None:
-            try:
-                current = self._session.query("active_view_current")
-                session_view_id = current.get("view_id") if current else None
-            except Exception:
-                session_view_id = None
-            if session_view_id is not None and any(v["id"] == session_view_id for v in views):
-                active_view_id = session_view_id
-        # Preserve the local controller cache if the session query is unavailable.
-        if active_view_id is None and prev_active_view_id is not None and any(
-            v["id"] == prev_active_view_id for v in views
-        ):
-            active_view_id = prev_active_view_id
-        # Initial seed from workspace saved default only when no session state exists yet.
-        if active_view_id is None:
-            ws_saved_default = self.workspace_read_model.saved_default_view_id()
-            if ws_saved_default is not None and any(v["id"] == ws_saved_default for v in views):
-                active_view_id = ws_saved_default
-                logging.debug("[DEBUG rebuild_tabs] Seeded active view from workspace: %s", active_view_id[:8])
-        # Fall back to first view if no active view could be resolved.
-        if active_view_id is None and views:
-            active_view_id = views[0]["id"]
 
         if active_view_id is not None:
             self._active_view_id = active_view_id
@@ -520,6 +526,7 @@ class ViewWorkspaceController(QtCore.QObject):
             view_id=view_id,
             session=self.cell_read_model.session,
             parent=self._tabs,
+            workspace_read_model=self.workspace_read_model,
             profiler=self._profiler,
         )
         vt.pivot_bar.selection_changed.connect(self.refresh_table)
@@ -866,6 +873,9 @@ class ViewWorkspaceController(QtCore.QObject):
                 views = self.workspace_read_model.list_views()
                 current_ids = {vt.view_id for vt in self._view_tabs}
                 new_ids = {v.get("id") for v in views if v.get("id")}
+                if not self._view_tabs and not views:
+                    DEBUG_GUI and print(f"DEBUG reload_active_view: no tabs and no views, skipping")
+                    return
                 if current_ids != new_ids or len(self._view_tabs) != len(views):
                     DEBUG_GUI and print(f"DEBUG reload_active_view: view list changed, calling rebuild_tabs")
                     self.rebuild_tabs()

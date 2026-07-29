@@ -56,6 +56,11 @@ def cmd_set_view_layout(
         cols=list(layout.get("cols", [])),
         page=list(layout.get("page", [])),
     )
+    used = set(vl.rows) | set(vl.cols) | set(vl.page)
+    for did in cube.dimension_ids:
+        if did not in used:
+            vl.page.append(did)
+            used.add(did)
     validate_view_layout_for_cube(cube, vl)
     ctx.engine.set_view_layout(view_id, vl)
     return {"affected": 1, "property": "view_layout", "view_id": view_id}
@@ -89,9 +94,7 @@ def cmd_move_view_dimension(
     if index is not None and index < 0:
         raise ValueError("index must be non-negative")
 
-    print(f"[CMD] move_view_dimension start view={view_id[:8]} dim={dim_id[:8]} dest={dest}", flush=True)
     ctx.engine.move_view_dimension(view_id, dim_id, dest=dest, index=index)
-    print(f"[CMD] move_view_dimension done view={view_id[:8]} dim={dim_id[:8]} dest={dest}", flush=True)
     return {"affected": 1, "property": "view_dimension", "view_id": view_id, "dim_id": dim_id, "dest": dest}
 
 

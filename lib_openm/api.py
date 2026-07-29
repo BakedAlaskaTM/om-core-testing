@@ -148,6 +148,9 @@ class Engine:
     def batch_set_cell_data(self, *args, **kwargs):
         return self._core.batch_set_cell_data(*args, **kwargs)
 
+    def batch_set_cell_hardvalues_by_addr(self, *args, **kwargs):
+        return self._core.batch_set_cell_hardvalues_by_addr(*args, **kwargs)
+
     def bootstrap_dependency_graph(self, *args, **kwargs):
         return self._core.bootstrap_dependency_graph(*args, **kwargs)
 
@@ -188,6 +191,9 @@ class Engine:
 
     def create_dimension_item(self, *args, **kwargs):
         return self._core.create_dimension_item(*args, **kwargs)
+
+    def batch_create_dimension_items(self, *args, **kwargs):
+        return self._core.batch_create_dimension_items(*args, **kwargs)
 
     def create_group(self, *args, **kwargs):
         return self._core.create_group(*args, **kwargs)

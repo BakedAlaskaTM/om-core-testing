@@ -428,14 +428,8 @@ def cmd_delete_dimension(
         raise ValueError("dim_id is required")
 
     removed = ctx.engine.delete_dimension(dim_id)
-    publish_domain_event(
-        get_message_bus(),
-        "event.dimension.deleted",
-        {"dim_id": dim_id},
-        correlation_id=getattr(ctx, "correlation_id", None),
-        session_id=getattr(ctx, "session_id", None),
-        causation_id=getattr(ctx, "command_message_id", None),
-    )
+    # Engine already publishes event.dimension.deleted with affected_view_ids.
+    # Do NOT republish here — the duplicate causes double processing in binder.
     return {"affected": 1 if removed else 0, "property": "dimension_deleted", "dim_id": dim_id}
 
 
@@ -458,3 +452,23 @@ def cmd_set_cell_hardvalue_by_addr(
     coerced = coerce_user_value(value)
     ctx.engine.set_cell_hardvalue_by_addr(cube_id, tuple(addr), coerced)
     return {"affected": 1, "property": "value", "cube_id": cube_id}
+
+
+def cmd_set_cell_hardvalues_batch_by_addr(
+    ctx: Any,
+    cube_id: str,
+    entries: list,
+) -> dict:
+    """Set many cell hardvalues in one call with a single undo group.
+
+    Each entry is ``{"addr": [...], "value": ...}``.
+    Delegates to ``engine.batch_set_cell_hardvalues_by_addr``.
+    """
+    if not cube_id:
+        raise ValueError("cube_id is required")
+    if not entries:
+        raise ValueError("entries is required")
+
+    parsed = [(tuple(e["addr"]), e["value"]) for e in entries]
+    count = ctx.engine.batch_set_cell_hardvalues_by_addr(cube_id, parsed)
+    return {"affected": count, "property": "value", "cube_id": cube_id}

@@ -7,7 +7,8 @@ with a topic-checklist / message-log split while active.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, TYPE_CHECKING
+import threading
+from typing import Any, TextIO, TYPE_CHECKING
 
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.layout import HSplit, VSplit, Window
@@ -77,11 +78,13 @@ class MonitorBuffer(Buffer):
 class BusMonitorOverlay:
     """Manages the monitor overlay layout, focus, and visibility."""
 
-    def __init__(self, app: "Application") -> None:
+    def __init__(self, app: "Application", log_file: TextIO | None = None) -> None:
         self.app = app
         self.visible = False
         self.state = MonitorState()
         self.state.set_change_callback(self._on_state_change)
+        self._log_file = log_file
+        self._log_lock = threading.Lock() if log_file is not None else None
 
         # Build scrollable BufferControl panes
         self.left_buffer = MonitorBuffer()
@@ -118,7 +121,7 @@ class BusMonitorOverlay:
         # Footer hints inside overlay
         self.overlay_footer = Window(
             content=FormattedTextControl(
-                " Esc/F2 close | Tab switch pane | Space toggle | ↑/↓ nav | PgUp/PgDn scroll | </> resize "
+                " Esc/F2 close | Tab switch pane | Space toggle | ↑/↓ nav | PgUp/PgDn scroll | </> resize " + (" | LOG on" if self._log_file is not None else "")
             ),
             height=1,
             style="class:monitor-footer",
@@ -175,6 +178,16 @@ class BusMonitorOverlay:
         ts = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         text = f"{topic} → {str(payload)}"
         self.state.add_message(ts, topic, text)
+
+        if self._log_file is not None and self._log_lock is not None:
+            full_ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            line = f"{full_ts}  {text}\n"
+            with self._log_lock:
+                try:
+                    self._log_file.write(line)
+                    self._log_file.flush()
+                except Exception:
+                    pass
 
         # Refresh the overlay from the event loop thread (safe from any thread)
         def _refresh():

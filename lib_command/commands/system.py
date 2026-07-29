@@ -134,6 +134,15 @@ def cmd_recalc(ctx, scope: str = "all") -> dict:
 
 def cmd_save(ctx, path: Optional[str] = None) -> dict:
     """Save the current workspace."""
+    # Refresh ctx.workspace from the engine before saving.  For the remote
+    # engine, mutations (create_dimension_item, set_cell_hardvalue, etc.)
+    # happen server-side and ctx.workspace becomes stale — it still points
+    # to the workspace object from load time, missing any items/cells added
+    # since.  Without this refresh, saved files lose dimension items and
+    # hardcoded values that were created via the remote engine.
+    engine = getattr(ctx, "engine", None)
+    if engine is not None:
+        ctx.workspace = engine.workspace
     ws = ctx.workspace
     if not ws:
         raise ValueError("No workspace available")

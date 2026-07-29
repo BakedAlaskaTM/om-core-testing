@@ -1698,7 +1698,7 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         if w <= 0 or h <= 0:
             return None
 
-        img = QtGui.QImage(w, h, QtGui.QImage.Format_ARGB32)
+        img = QtGui.QImage(w, h, QtGui.QImage.Format.Format_ARGB32)
         img.fill(QtGui.QColor("white"))
         p = QtGui.QPainter(img)
         p.setRenderHint(QtGui.QPainter.TextAntialiasing, True)
@@ -1929,6 +1929,7 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         if self._reloading:
             DEBUG_GUI and print(f"[RELOAD-IMPL] view={self._view_id[:8] if self._view_id else None} already reloading, returning")
             return
+        self._grid_read_model.invalidate_cache(self._view_id)
         if invalidate_tiles is True or invalidate_tiles == "all":
             # Structure/outline or width change: _do_reload() below rebuilds
             # rows/cols and decides whether _tile_cache (snapshot data) must

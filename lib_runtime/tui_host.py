@@ -44,8 +44,12 @@ def _wire_tui_deps() -> dict[str, Any]:
     }
 
 
-def start_tui(endpoint: Any | None = None) -> None:
-    """Start TUI as a pure client connecting to an existing runtime."""
+def start_tui(endpoint: Any | None = None, log_file: Any | None = None) -> None:
+    """Start TUI as a pure client connecting to an existing runtime.
+
+    If *log_file* is an open text file handle, every bus message captured by
+    the F2 monitor overlay is also written there.
+    """
     from lib_command.core.transport_socket_client import SocketTransportClient
     from lib_command.core.remote_session import RemoteCommandSession
     from lib_tui import PromptToolkitTUI
@@ -71,6 +75,9 @@ def start_tui(endpoint: Any | None = None) -> None:
             conn_info = f"{endpoint.host}:{endpoint.port}"
         print(f"Connected to {conn_info}. Type 'help' for commands.")
 
+        if log_file is not None:
+            print(f"Monitor logging to: {getattr(log_file, 'name', '?')}")
+
         repl = OpenMREPL(
             session=session,
             registry=deps["registry"],
@@ -80,7 +87,7 @@ def start_tui(endpoint: Any | None = None) -> None:
             script_parser_module=deps["script_parser_module"],
         )
 
-        tui = PromptToolkitTUI(repl=repl)
+        tui = PromptToolkitTUI(repl=repl, monitor_log_file=log_file)
         tui.run()
     except Exception as exc:
         print(f"Error: Cannot connect to OM runtime at {endpoint}.")
@@ -89,6 +96,11 @@ def start_tui(endpoint: Any | None = None) -> None:
         sys.exit(1)
     finally:
         client.close()
+        if log_file is not None:
+            try:
+                log_file.close()
+            except Exception:
+                pass
         if sys.platform != "win32":
             try:
                 import os

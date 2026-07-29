@@ -106,17 +106,50 @@ def _normalise_unbracketed_wildcard_chains(expr: str) -> str:
     multiplication operator, so `Cube::Dim.Item:Dim.*` is rewritten to
     `Cube::[Dim.Item, Dim.*]` before tokenization. References without a `.*`
     wildcard are left unchanged.
+
+    Colons separating dimension segments are converted to commas so the
+    resulting bracketed form is a valid multi-ref (e.g.
+    `Day.*:Hour.*` → `[Day.*, Hour.*]`).
     """
 
     def repl(match: re.Match[str]) -> str:
         cube, chain = match.group(1), match.group(2)
         if ".*" not in chain:
             return match.group(0)
+        chain = chain.replace(":", ",")
         if cube:
             return f"{cube}::[{chain}]"
         return f"[{chain}]"
 
-    return _UNBRACKETED_WILDCARD_CHAIN_RE.sub(repl, expr)
+    # Only apply the regex outside of brackets — patterns inside [...]
+    # are already bracketed refs and must not be re-wrapped.
+    result: list[str] = []
+    i = 0
+    n = len(expr)
+    while i < n:
+        ch = expr[i]
+        if ch == "[":
+            # Find the matching close bracket and copy the whole span verbatim.
+            depth = 1
+            j = i + 1
+            while j < n and depth > 0:
+                if expr[j] == "[":
+                    depth += 1
+                elif expr[j] == "]":
+                    depth -= 1
+                j += 1
+            result.append(expr[i:j])
+            i = j
+        else:
+            # Try to match the regex at this position.
+            m = _UNBRACKETED_WILDCARD_CHAIN_RE.match(expr, i)
+            if m:
+                result.append(repl(m))
+                i = m.end()
+            else:
+                result.append(ch)
+                i += 1
+    return "".join(result)
 
 
 # Single regex for tokenization - NUM without leading +/-

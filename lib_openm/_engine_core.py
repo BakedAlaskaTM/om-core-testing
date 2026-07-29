@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import re
 import itertools
@@ -17,6 +18,22 @@ from lib_contracts.types import CircularReferenceError, RuleValidationError, Cal
 from lib_openm.engine_state import _EngineStateMachine
 from lib_openm.rule_eval import CubeResolver, RuleEvaluator, parse_rule_target
 from lib_openm.rule_eval.utils import CellError
+
+
+def _normalize_ieee_special(value: Any) -> Any:
+    """Normalize IEEE 754 special values (NaN, Inf) to CellError.
+
+    Mirrors RuleEngine._normalize_ieee_special in engine.py.
+    Returns CellError("#NUM!") for NaN, CellError("#RANGE!") for inf, otherwise the original value.
+    """
+    if isinstance(value, float):
+        if math.isnan(value):
+            return CellError("#NUM!")
+        if math.isinf(value):
+            return CellError("#RANGE!")
+    return value
+
+
 from lib_openm.model import (
     Cube,
     Dimension,
@@ -31,6 +48,7 @@ from lib_openm.technical_ids import AT_PREFIX, CHANNEL_TO_AT_ID, normalize_techn
 from lib_openm.undo import Action, CompositeAction, UndoManager
 from lib_openm.deps import DependencyGraph
 from lib_openm.config import SLOW_LOG_THRESHOLD
+from lib_utils.coerce import coerce_user_value
 from lib_openm.ports import (
     EVENT_CELL_UPDATED,
     EVENT_CELLS_UPDATED,
@@ -2146,9 +2164,9 @@ class _EngineCore:
             # Slice nodes are not rules - they should propagate precedents to parent
             self._end_tracking_node(node_key, success=success, had_rule_body=False)
 
-    def _function_node_key(self, fn_name: str, call_key: str, base_addr: tuple[str, ...]) -> str:
+    def _function_node_key(self, fn_name: str, call_key: str, base_addr: tuple[str, ...], cube_id: str = "") -> str:
         addr_token = ",".join(base_addr)
-        return f"func::{fn_name}::{addr_token}::{call_key}"
+        return f"func::{cube_id}::{fn_name}::{addr_token}::{call_key}"
 
     def _evaluate_function_node(
         self,
@@ -2156,10 +2174,11 @@ class _EngineCore:
         call_key: str,
         base_addr: tuple[str, ...],
         compute: Callable[[], Any],
+        cube_id: str = "",
     ) -> Any:
         if not self._dep_tracking_enabled:
             return compute()
-        node_key = self._function_node_key(fn_name, call_key, base_addr)
+        node_key = self._function_node_key(fn_name, call_key, base_addr, cube_id)
         if node_key in self._function_cache and not self._dep_graph.is_dirty(node_key):
             self._dep_metrics["func_hits"] = self._dep_metrics.get("func_hits", 0) + 1
             # Even for cache hits, we need to establish dependency edges
@@ -3430,6 +3449,46 @@ class _EngineCore:
     def create_dimension_item(self, dim_id: str, name: str, position: str = "append") -> DimensionItem:
         """Canonical public method for creating a dimension item."""
         return self._add_dimension_item(dim_id, name, position=position)
+
+    def batch_create_dimension_items(
+        self, items: list[tuple[str, str, str]]
+    ) -> list[DimensionItem]:
+        """Create many dimension items in one call with a single event publish.
+
+        Args:
+            items: list of (dim_id, name, position) tuples.
+
+        Returns:
+            list of created DimensionItem objects (or dicts in remote mode).
+
+        This avoids per-item event publishing and cache invalidation, which
+        is the main bottleneck when sourcing scripts that create hundreds of
+        dimension items.
+        """
+        created: list[DimensionItem] = []
+        affected_dims: set[str] = set()
+        for dim_id, name, position in items:
+            dim = self.require_dimension_by_id(dim_id)
+            item = dim.add_item(name, position=position)
+            created.append(item)
+            affected_dims.add(dim_id)
+            # Update affected view outlines (same as _add_dimension_item)
+            for view in self._ws.views.values():
+                if getattr(view, "row_outline", None) and getattr(view, "row_dim_ids", None):
+                    if view.row_dim_ids and view.row_dim_ids[0] == dim_id:
+                        from lib_openm.model import OutlineNode
+                        view.row_outline.append(OutlineNode(label=item.name, item_id=item.id, children=[]))
+        # Single cache invalidation + event publish for the whole batch
+        if affected_dims:
+            self._invalidate_slice_dependent_rules()
+            for dim_id in affected_dims:
+                self._publish_event(EVENT_DIMENSION_ITEM_CREATED, {
+                    "dim_id": dim_id,
+                    "item_id": None,
+                    "name": None,
+                    "batch": True,
+                })
+        return created
 
     def set_dimension_item_order(self, dim_id: str, item_ids: list[str]) -> None:
         """Replace the flat dimension item order exactly with item_ids.
@@ -4952,6 +5011,11 @@ class _EngineCore:
             if did not in used:
                 view.page_dim_ids.append(did)
 
+        self._publish_event(EVENT_VIEW_LAYOUT_CHANGED, {
+            "view_id": view_id,
+            "cube_id": view.cube_id,
+        })
+
     def view_col_items(self, view_id: str) -> list[DimensionItem]:
         view = self.require_view_by_id(view_id)
         if not view.col_dim_ids:
@@ -6228,7 +6292,7 @@ class _EngineCore:
                 base_addr: tuple[str, ...],
                 compute: Callable[[], Any],
             ) -> Any:
-                return engine_ref._evaluate_function_node(fn_name, signature, base_addr, compute)
+                return engine_ref._evaluate_function_node(fn_name, signature, base_addr, compute, cube.id)
 
             def cache_volatile_call(
                 self,
@@ -6430,21 +6494,10 @@ class _EngineCore:
                             return CellError("#REF!")
                         target_item = dim.items[idx + 1]
                     elif item_upper in {"FIRST", "LAST"}:
-                        # FIRST/LAST normally resolve to the first/last item
-                        # in the dimension. If that happens to be the *same*
-                        # item as the current address (e.g. FIRST in the
-                        # first quarter, or LAST in the last quarter), read
-                        # only the raw stored value to avoid a false
-                        # circular-reference when rules test for
-                        # first/last positions.
                         if not dim.items:
                             target_item = None
                         else:
                             target_item = dim.items[0] if item_upper == "FIRST" else dim.items[-1]
-                        if same_cube and target_item is not None and target_item.id == curr_id:
-                            new_addr = list(base_addr)
-                            new_addr[slot] = target_item.id
-                            return _coerce_num(cube.get(tuple(new_addr)))
 
                 if target_item is None:
                     target_item = next(
@@ -6463,7 +6516,7 @@ class _EngineCore:
                 if (
                     target_cube is cube
                     and tuple(new_addr) == base_addr
-                    and item_upper not in {"THIS", "PREV", "NEXT", "FIRST", "LAST"}
+                    and item_upper not in {"THIS", "PREV", "NEXT"}
                 ):
                     raise CircularReferenceError(f"Circular reference: [{dim_name}:{item_name}] refers to itself")
 
@@ -6591,8 +6644,12 @@ class _EngineCore:
                 for dim_id in target_cube.dimension_ids:
                     if dim_id in fixed_axes:
                         axes.append(fixed_axes[dim_id])
-                    elif dim_id == "@" and has_wildcard_star_star:
-                        # When *.* wildcard is used, @ dimension defaults to @.value only
+                    elif dim_id == "@":
+                        # @ dimension always defaults to @.value when not explicitly
+                        # constrained, regardless of *.* wildcard. This prevents
+                        # slice_over_ref from iterating over all 28 @ channels
+                        # (style, format_number, etc.) which would dilute aggregates
+                        # and potentially trigger errors from non-value channels.
                         dim_obj = ws.dimensions[dim_id]
                         value_item = next((it.id for it in dim_obj.items if it.name == "value"), None)
                         axes.append([value_item] if value_item else [it.id for it in dim_obj.items])
@@ -6605,8 +6662,12 @@ class _EngineCore:
                 for raw_addr in itertools.product(*axes):
                     addr = tuple(raw_addr)
                     v = engine_ref._get_cell_by_addr(target_cube, addr)
+                    if isinstance(v, CellError):
+                        return [v]
                     num = _coerce_num(v)
-                    if num is not None and not isinstance(num, CellError):
+                    if isinstance(num, CellError):
+                        return [num]
+                    if num is not None:
                         try:
                             values.append(float(num))
                         except (ValueError, TypeError):
@@ -6868,7 +6929,7 @@ class _EngineCore:
                                 continue  # Skip text values in sum
                         total = float(total) + num
 
-                    return float(total)
+                    return _normalize_ieee_special(float(total))
 
                 return engine_ref._evaluate_slice_node("SUM", target_cube, axes_snapshot, _compute_sum)
 
@@ -7061,11 +7122,11 @@ class _EngineCore:
                             return 0.0
 
                     if fn == "MIN":
-                        return min(values)
+                        return _normalize_ieee_special(min(values))
                     if fn == "MAX":
-                        return max(values)
+                        return _normalize_ieee_special(max(values))
                     if fn in ("AVG", "AVERAGE"):
-                        return sum(values) / len(values)
+                        return _normalize_ieee_special(sum(values) / len(values))
                     if fn == "COUNT":
                         return float(len(values))
 
@@ -7189,20 +7250,12 @@ class _EngineCore:
                         raise KeyError(f"Unknown item {item_name!r} in dimension {dim_name!r}")
                     new_addr[slot] = target_item.id
 
-                # If the override chain resolves back to the original address
-                # via only sequential keywords, avoid a recursive evaluation of
-                # the same cell and instead read the raw stored value. This
-                # only applies within the same cube; cross-cube lookups are
-                # allowed to reuse the same address tuple.
-                if target_cube is cube and tuple(new_addr) == base_addr and saw_seq_keyword:
-                    raw_val = cube.get(tuple(new_addr))
-                else:
-                    lookup_addr = tuple(new_addr)
-                    if len(new_addr) < len(target_cube.dimension_ids) and "@" in target_cube.dimension_ids:
-                        at_dim = ws.dimensions.get("@")
-                        if at_dim and at_dim.items:
-                            lookup_addr = (at_dim.items[0].id, *new_addr)
-                    raw_val = engine_ref._get_cell_by_addr(target_cube, lookup_addr)
+                lookup_addr = tuple(new_addr)
+                if len(new_addr) < len(target_cube.dimension_ids) and "@" in target_cube.dimension_ids:
+                    at_dim = ws.dimensions.get("@")
+                    if at_dim and at_dim.items:
+                        lookup_addr = (at_dim.items[0].id, *new_addr)
+                raw_val = engine_ref._get_cell_by_addr(target_cube, lookup_addr)
 
                 if getattr(self, "_in_dynamic_bound", False) and raw_val is None:
                     raise RuleValidationError(
@@ -8995,6 +9048,42 @@ class _EngineCore:
                 "changed_fields": ["value", "rule"],
             })
 
+    def batch_set_cell_hardvalues_by_addr(
+        self,
+        cube_id: str,
+        entries: list[tuple[tuple[str, ...], Any]],
+    ) -> int:
+        """Set many cell hardvalues in one call with a single undo action.
+
+        Each entry is ``(addr, value)``.  Addresses are normalised to the
+        cube's full dimension order.  A single undo action, a single cache
+        clear, and a single ``event.cells.updated`` publication replace
+        the per-cell overhead of calling ``set_cell_hardvalue_by_addr`` in a
+        loop.
+
+        Returns the number of cells actually set.
+        """
+        cube = self.require_cube_by_id(cube_id)
+        changes: list[tuple[tuple[str, ...], Any, Any]] = []
+        for addr, value in entries:
+            full_addr = _normalize_addr_for_cube(cube, tuple(addr))
+            if value is None:
+                continue
+            coerced = coerce_user_value(value)
+            before = cube.get(full_addr)
+            if coerced == before and full_addr in cube.user_override_addrs:
+                continue
+            changes.append((full_addr, before, coerced))
+        if not changes:
+            return 0
+        action = _BatchCellEditAction(
+            engine=self,
+            cube=cube,
+            changes=changes,
+        )
+        self._undo.push_and_do(action)
+        return len(changes)
+
     def _delete_cell_rule(self, view_id: str, row: int, col: int) -> bool:
         """Delete the cell-level rule at the given row/column coordinates.
 
@@ -9567,6 +9656,47 @@ class _CellEditAction(Action):
             self.cube.user_override_addrs.discard(self.addr)
         self.engine._cell_cache.clear()
         self.engine._on_cell_value_changed(self.cube.id, self.addr)
+
+
+@dataclass(frozen=True)
+class _BatchCellEditAction(Action):
+    """Set many cell hardvalues with a single cache clear and dep-graph pass."""
+    engine: _EngineCore
+    cube: Cube
+    changes: list[tuple[tuple[str, ...], Any, Any]]  # (addr, before, after)
+    description: str = "Batch cell value change"
+
+    def do(self) -> None:
+        for addr, _before, after in self.changes:
+            self.cube.set(addr, after)
+            if after is not None:
+                self.cube.user_override_addrs.add(addr)
+            else:
+                self.cube.user_override_addrs.discard(addr)
+        self.engine._cell_cache.clear()
+        for addr, _before, _after in self.changes:
+            self.engine._invalidate_cell_node(self.cube.id, addr)
+        self.engine._publish_event(EVENT_CELLS_UPDATED, {
+            "cube_id": self.cube.id,
+            "count": len(self.changes),
+            "changed_fields": ["value"],
+        })
+
+    def undo(self) -> None:
+        for addr, before, _after in self.changes:
+            self.cube.set(addr, before)
+            if before is not None:
+                self.cube.user_override_addrs.add(addr)
+            else:
+                self.cube.user_override_addrs.discard(addr)
+        self.engine._cell_cache.clear()
+        for addr, _before, _after in self.changes:
+            self.engine._invalidate_cell_node(self.cube.id, addr)
+        self.engine._publish_event(EVENT_CELLS_UPDATED, {
+            "cube_id": self.cube.id,
+            "count": len(self.changes),
+            "changed_fields": ["value"],
+        })
 
 
 def _coerce_num(value: Any) -> float:

@@ -49,17 +49,21 @@ class ViewTab(QtWidgets.QWidget):
         workspace_read_model=None,
         outline_read_model=None,
         profiler: GuiProfiler | None = None,
+        defer_table_reload: bool = False,
     ) -> None:
         super().__init__(parent)
         self._session = session
         self._view_id = view_id
         self._grid_read_model = grid_read_model or GridReadModel(session) if session is not None else None
         self._workspace_read_model = workspace_read_model or WorkspaceReadModel(session) if session is not None else None
-        self._outline_read_model = outline_read_model or OutlineReadModel(session) if session is not None else None
+        # Share the gui_view_model from workspace_read_model so OutlineReadModel
+        # can use cached dimension snapshots instead of making RPC calls.
+        _gvm = getattr(self._workspace_read_model, "_gui_view_model", None) if self._workspace_read_model is not None else None
+        self._outline_read_model = outline_read_model or OutlineReadModel(session, gui_view_model=_gvm) if session is not None else None
         self._profiler = profiler
         self._span = profiler.span if profiler is not None else NOOP_SPAN
         self._tree_model: TreeSliceTableModel | None = None
-        self._needs_full_reload: bool = False
+        self._needs_full_reload: bool = defer_table_reload
         self._last_known_layout: dict[str, Any] | None = None
 
         # Grey tab background
@@ -125,7 +129,9 @@ class ViewTab(QtWidgets.QWidget):
         outer.addWidget(self._canvas)
 
         # Ensure the bars reflect the current view state.
-        self._rebuild_bars()
+        # When defer_table_reload is True (inactive tab), skip the table
+        # reload to avoid triggering tile fetch queries for non-visible views.
+        self._rebuild_bars(defer_table_reload=defer_table_reload)
 
     @property
     def view_id(self) -> str:
@@ -137,7 +143,7 @@ class ViewTab(QtWidgets.QWidget):
             return []
         return list(view.get("page_dim_ids", []) or [])
 
-    def _rebuild_bars(self, *, invalidate_tiles: bool | str = False) -> None:
+    def _rebuild_bars(self, *, invalidate_tiles: bool | str = False, defer_table_reload: bool = False) -> None:
         view = (
             self._workspace_read_model.get_view(self._view_id)
             if self._workspace_read_model is not None
@@ -145,10 +151,11 @@ class ViewTab(QtWidgets.QWidget):
         )
         self.table.selection_changed.connect(self._on_selection_changed, QtCore.Qt.ConnectionType.UniqueConnection)
         self.table.outline_changed.connect(self.workspace_changed, QtCore.Qt.ConnectionType.UniqueConnection)
-        if invalidate_tiles:
-            self.table.reload(invalidate_tiles=invalidate_tiles)
-        else:
-            self.table.reload()
+        if not defer_table_reload:
+            if invalidate_tiles:
+                self.table.reload(invalidate_tiles=invalidate_tiles)
+            else:
+                self.table.reload()
         self.pivot_bar.rebuild(self._view_id)
         if view is not None:
             self._last_known_layout = {
@@ -535,23 +542,12 @@ class ViewTab(QtWidgets.QWidget):
 
     @QtCore.Slot(str, str, int)
     def _on_drop_row(self, dim_id: str, source_zone: str, insert_index: int) -> None:
-        import time
-        print(f"[DROP-ROW] entered dim={dim_id[:8]} source={source_zone} idx={insert_index}")
-        t0 = time.perf_counter()
         try:
             self._execute_move_dimension(dim_id, dest="row", index=insert_index)
         except Exception:
             return
-        t1 = time.perf_counter()
-        print(f"[DROP-ROW] command returned after {(t1-t0)*1000:.1f} ms")
         self._rebuild_bars()
-        t2 = time.perf_counter()
         self.workspace_changed.emit()
-        t3 = time.perf_counter()
-        print(
-            f"[DROP-ROW] move={t1-t0:.1f}ms rebuild={t2-t1:.1f}ms "
-            f"emit={t3-t2:.1f}ms total={t3-t0:.1f}ms dim={dim_id[:8]}"
-        )
 
     @QtCore.Slot(str, str, int)
     def _on_drop_col(self, dim_id: str, source_zone: str, insert_index: int) -> None:

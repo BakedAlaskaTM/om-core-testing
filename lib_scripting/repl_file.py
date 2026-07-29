@@ -353,6 +353,15 @@ class REPLFileMixin:
             pass  # Remote session or no context
 
         self._source_stack.append(source_path)
+
+        # Suspend UI refresh for the duration of the source command so that
+        # thousands of bus events (one per line) don't each trigger a separate
+        # browser rebuild + view refresh.  A single coalesced refresh fires
+        # when we resume.
+        gui_win = getattr(self, "gui_window", None)
+        if gui_win is not None and hasattr(gui_win, "suspend_ui_refresh"):
+            gui_win.suspend_ui_refresh()
+
         try:
             with open(filepath, 'r') as f:
                 lines = f.readlines()
@@ -361,6 +370,10 @@ class REPLFileMixin:
             executed = 0
             errors = []
             rule_batch: list[dict] = []
+            hardvalue_batches: dict[str, list[dict]] = {}
+            dim_item_batch: list[dict] = []
+            hval_batch: list[tuple[str, list[str], object]] = []
+            _hval_resolve_cache: dict[str, dict] = {}
 
             def _flush_rule_batch() -> None:
                 if not rule_batch:
@@ -377,6 +390,207 @@ class REPLFileMixin:
                 finally:
                     rule_batch.clear()
 
+            _HVAL_CHUNK_SIZE = 500
+
+            def _flush_hardvalue_batches() -> None:
+                if not hardvalue_batches:
+                    return
+                for cid, entries in hardvalue_batches.items():
+                    if not entries:
+                        continue
+                    for i in range(0, len(entries), _HVAL_CHUNK_SIZE):
+                        chunk = entries[i:i + _HVAL_CHUNK_SIZE]
+                        try:
+                            result = self.session.execute(
+                                "set_cell_hardvalues_batch_by_addr",
+                                cube_id=cid, entries=chunk,
+                            )
+                            if not result.success:
+                                raise Exception(result.error or "Batch hardvalue failed")
+                        except Exception as e:
+                            errors.append((line_num, str(e), f"set_cell_hardvalues_batch_by_addr ({len(chunk)} cells)"))
+                            raise
+                hardvalue_batches.clear()
+
+            def _flush_dim_item_batch() -> None:
+                if not dim_item_batch:
+                    return
+                try:
+                    result = self.session.execute(
+                        "create_dimension_items_batch",
+                        entries=dim_item_batch,
+                    )
+                    if not result.success:
+                        raise Exception(result.error or "Batch dim item creation failed")
+                except Exception as e:
+                    errors.append((line_num, str(e), f"create_dimension_items_batch ({len(dim_item_batch)} items)"))
+                    raise
+                finally:
+                    dim_item_batch.clear()
+
+            def _try_batch_dim_item(line_str: str) -> bool:
+                """If line is `exec create_dimension_item ...` or `exec add_dimension_item ...`, queue it."""
+                parts = line_str.split(None, 2)
+                if len(parts) < 2:
+                    return False
+                if parts[0].lower() != "exec":
+                    return False
+                cmd_name = parts[1].lower()
+                if cmd_name not in ("create_dimension_item", "add_dimension_item"):
+                    return False
+                try:
+                    args = shlex.split(line_str[len("exec"):].strip())
+                except ValueError:
+                    return False
+                if not args or args[0].lower() not in ("create_dimension_item", "add_dimension_item"):
+                    return False
+                params = {}
+                for token in args[1:]:
+                    if "=" in token:
+                        k, v = token.split("=", 1)
+                        params[k] = v
+                dim_id = params.get("dim_id")
+                name = params.get("name")
+                if dim_id is None or name is None:
+                    return False
+                position = params.get("position", "append")
+                dim_item_batch.append({"dim_id": dim_id, "name": name, "position": position})
+                return True
+
+            def _flush_hval_batch() -> None:
+                if not hval_batch:
+                    return
+                for cube_name, dim_specs, value in hval_batch:
+                    try:
+                        if cube_name not in _hval_resolve_cache:
+                            cube_id, _ = self._resolve_cube_id(cube_name)
+                            if not cube_id:
+                                errors.append((line_num, f"Cube not found: {cube_name}", f"hval {cube_name}::..."))
+                                continue
+                            cube_detail = self.session.query("cube_detail", cube_id=cube_id)
+                            if not cube_detail:
+                                errors.append((line_num, f"cube_detail query failed for {cube_name}", f"hval {cube_name}::..."))
+                                continue
+                            dim_data = self.session.query("dimension_list")
+                            if not dim_data:
+                                errors.append((line_num, "dimension_list query failed", f"hval {cube_name}::..."))
+                                continue
+                            cube_dim_ids = cube_detail.get("dimension_ids", [])
+                            dim_name_to_id: dict[str, str] = {}
+                            item_name_to_id: dict[str, dict[str, str]] = {}
+                            for d in dim_data.get("dimensions", []):
+                                d_id = d.get("id", "")
+                                d_name = d.get("name", d_id)
+                                dim_name_to_id[d_name] = d_id
+                                item_name_to_id[d_id] = {}
+                                for item in d.get("item_list", []):
+                                    item_name_to_id[d_id][item.get("name", "")] = item.get("id", "")
+                            _hval_resolve_cache[cube_name] = {
+                                "cube_id": cube_id,
+                                "cube_dim_ids": cube_dim_ids,
+                                "dim_name_to_id": dim_name_to_id,
+                                "item_name_to_id": item_name_to_id,
+                            }
+                        rc = _hval_resolve_cache[cube_name]
+                        cube_id = rc["cube_id"]
+                        cube_dim_ids = rc["cube_dim_ids"]
+                        dim_name_to_id = rc["dim_name_to_id"]
+                        item_name_to_id = rc["item_name_to_id"]
+                        resolved: dict[str, str] = {}
+                        for spec in dim_specs:
+                            spec = spec.strip()
+                            if "." not in spec:
+                                continue
+                            dim_name, item_name = spec.split(".", 1)
+                            dim_id = dim_name_to_id.get(dim_name)
+                            if dim_id is None:
+                                for dn, did in dim_name_to_id.items():
+                                    if dn.lower() == dim_name.lower():
+                                        dim_id = did
+                                        break
+                            if dim_id is None:
+                                continue
+                            item_id = item_name_to_id.get(dim_id, {}).get(item_name)
+                            if item_id is None:
+                                for iname, iid in item_name_to_id.get(dim_id, {}).items():
+                                    if iname.lower() == item_name.lower():
+                                        item_id = iid
+                                        break
+                            if item_id is not None:
+                                resolved[dim_id] = item_id
+                        from lib_openm.technical_ids import CHANNEL_TO_AT_ID
+                        addr_list: list[str] = []
+                        for dim_id in cube_dim_ids:
+                            if dim_id == "@":
+                                addr_list.append(CHANNEL_TO_AT_ID["value"])
+                            elif dim_id in resolved:
+                                addr_list.append(resolved[dim_id])
+                            else:
+                                items = item_name_to_id.get(dim_id, {})
+                                if items:
+                                    addr_list.append(next(iter(items.values())))
+                        hardvalue_batches.setdefault(cube_id, []).append({"addr": addr_list, "value": value})
+                    except Exception as e:
+                        errors.append((line_num, str(e), f"hval {cube_name}::..."))
+                hval_batch.clear()
+
+            def _try_batch_hval(line_str: str) -> bool:
+                """If line is `hval Cube::Dim.Item:Dim.Item = value`, queue it."""
+                parts = line_str.split(None, 2)
+                if not parts or parts[0].lower() != "hval":
+                    return False
+                rest = line_str[4:].strip()
+                if "::" not in rest:
+                    return False
+                if "=" not in rest:
+                    return False
+                addr_part, value_part = rest.rsplit("=", 1)
+                addr_part = addr_part.strip()
+                value_str = value_part.strip()
+                if "::" not in addr_part:
+                    return False
+                cube_name, dims_part = addr_part.split("::", 1)
+                cube_name = cube_name.strip()
+                dim_specs = [s.strip() for s in dims_part.split(":") if s.strip()]
+                if not dim_specs:
+                    return False
+                try:
+                    value = self._parse_value(value_str)
+                except Exception:
+                    value = value_str
+                hval_batch.append((cube_name, dim_specs, value))
+                return True
+
+            def _try_batch_hardvalue(line_str: str) -> bool:
+                """If line is `exec set_cell_hardvalue_by_addr ...`, queue it and return True."""
+                parts = line_str.split(None, 2)
+                if len(parts) < 2:
+                    return False
+                if parts[0].lower() != "exec":
+                    return False
+                if parts[1].lower() != "set_cell_hardvalue_by_addr":
+                    return False
+                try:
+                    args = shlex.split(line_str[len("exec"):].strip())
+                except ValueError:
+                    return False
+                if not args or args[0].lower() != "set_cell_hardvalue_by_addr":
+                    return False
+                params = {}
+                for token in args[1:]:
+                    if "=" in token:
+                        k, v = token.split("=", 1)
+                        params[k] = self._parse_value(v)
+                cid = params.get("cube_id")
+                addr = params.get("addr")
+                value = params.get("value")
+                if cid is None or addr is None:
+                    return False
+                if isinstance(addr, str):
+                    addr = addr.split()
+                hardvalue_batches.setdefault(cid, []).append({"addr": list(addr), "value": value})
+                return True
+
             for line_num, line in enumerate(lines, 1):
                 stripped = line.strip()
                 if not stripped or stripped.startswith('#'):
@@ -391,6 +605,9 @@ class REPLFileMixin:
                         and (len(parts) == 1 or parts[1].lower() not in ("delete", "delete-anchored", "set-anchored"))
                     )
                     if is_batchable_rule:
+                        _flush_hval_batch()
+                        _flush_hardvalue_batches()
+                        _flush_dim_item_batch()
                         rule_dict = self.do_rule(stripped[5:].strip(), batch_mode=True)
                         if rule_dict is not None:
                             rule_batch.append(rule_dict)
@@ -400,6 +617,19 @@ class REPLFileMixin:
                         errors.append((line_num, "Invalid rule command", stripped))
                         continue
                     _flush_rule_batch()
+                    if _try_batch_dim_item(stripped):
+                        executed += 1
+                        continue
+                    _flush_dim_item_batch()
+                    if _try_batch_hval(stripped):
+                        executed += 1
+                        continue
+                    _flush_hval_batch()
+                    if _try_batch_hardvalue(stripped):
+                        executed += 1
+                        continue
+                    _flush_hardvalue_batches()
+                    _flush_dim_item_batch()
                     self.onecmd(stripped)
                     executed += 1
                 except Exception as e:
@@ -407,6 +637,18 @@ class REPLFileMixin:
 
             try:
                 _flush_rule_batch()
+            except Exception:
+                pass
+            try:
+                _flush_hval_batch()
+            except Exception:
+                pass
+            try:
+                _flush_hardvalue_batches()
+            except Exception:
+                pass
+            try:
+                _flush_dim_item_batch()
             except Exception:
                 pass
 
@@ -422,6 +664,10 @@ class REPLFileMixin:
             print(f"Error reading file: {e}")
         finally:
             self._source_stack.pop()
+            # Resume UI refresh — fires a single coalesced refresh if any
+            # events were queued during suspension.
+            if gui_win is not None and hasattr(gui_win, "resume_ui_refresh"):
+                gui_win.resume_ui_refresh()
             # Restore history writes
             try:
                 if ctx is not None:

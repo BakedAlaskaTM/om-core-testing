@@ -9,10 +9,15 @@ from typing import Any
 
 
 class OutlineReadModel:
-    """Read-only facade for querying outline trees via session query boundary."""
+    """Read-only facade for querying outline trees via session query boundary.
 
-    def __init__(self, session) -> None:
+    When a gui_view_model is provided, dimension_detail and dimension_outline
+    check the cached snapshots first, avoiding redundant RPC calls.
+    """
+
+    def __init__(self, session, gui_view_model=None) -> None:
         self.session = session
+        self._gui_view_model = gui_view_model
 
     def outline_tree(self, view_id: str, axis: str) -> dict[str, Any] | None:
         """Return outline tree for a view axis (row or col).
@@ -40,6 +45,10 @@ class OutlineReadModel:
 
         Returns None if session is unavailable or query fails.
         """
+        if self._gui_view_model is not None:
+            snap = self._gui_view_model.get_dimension_snapshot(dim_id)
+            if snap:
+                return snap.get("outline")
         if self.session is None:
             return None
         result = self.session.query("dimension_detail", dim_id=dim_id)
@@ -52,6 +61,10 @@ class OutlineReadModel:
 
         Returns None if session is unavailable or query fails.
         """
+        if self._gui_view_model is not None:
+            snap = self._gui_view_model.get_dimension_snapshot(dim_id)
+            if snap:
+                return snap
         if self.session is None:
             return None
         return self.session.query("dimension_detail", dim_id=dim_id)

@@ -347,11 +347,10 @@ def _cmd_query(
         return engine.multithread_recompute_config()
 
     if type == "diagnostics_dirty_count":
-        dirty_keys = engine.dirty_keys()
-        result: dict = {"dirty_count": len(dirty_keys)}
         if kwargs.get("include_keys"):
-            result["dirty_keys"] = dirty_keys
-        return result
+            dirty_keys = engine.dirty_keys()
+            return {"dirty_count": len(dirty_keys), "dirty_keys": dirty_keys}
+        return {"dirty_count": engine.dirty_count()}
 
     # ---- Phase F5b grid snapshot query handlers ----
 
@@ -540,7 +539,7 @@ def _cmd_query(
 
     if type == "cube_list":
         cubes = []
-        for cid, cube in ws.cubes.items():
+        for cid, cube in list(ws.cubes.items()):
             cubes.append({
                 "id": cid,
                 "name": cube.name if hasattr(cube, 'name') else cid,
@@ -550,7 +549,7 @@ def _cmd_query(
 
     if type == "dimension_list":
         dims = []
-        for did, dim in ws.dimensions.items():
+        for did, dim in list(ws.dimensions.items()):
             dim_items = getattr(dim, 'items', [])
             dims.append({
                 "id": did,
@@ -853,16 +852,17 @@ def cmd_workspace_summary(ctx, ws) -> WorkspaceSummaryDTO:
     """Get lightweight workspace state (IDs only, no DTOs)."""
     return WorkspaceSummaryDTO(
         saved_default_view_id=getattr(ws, 'saved_default_view_id', None),
-        view_ids=list(ws.views.keys()),
+        view_ids=list(getattr(ws, 'views_order', None) or ws.views.keys()),
         cube_ids=list(ws.cubes.keys()),
     )
 
 
 def cmd_workspace_snapshot(ctx, engine, ws) -> WorkspaceSnapshotDTO:
     """Get full workspace state (IDs + view/cube DTOs) for bootstrap."""
-    # Build view snapshots
+    # Build view snapshots, preserving views_order from the workspace
     view_snapshots: dict[str, ViewSnapshotDTO] = {}
-    for view_id in ws.views.keys():
+    ordered_view_ids = list(getattr(ws, 'views_order', None) or ws.views.keys())
+    for view_id in ordered_view_ids:
         view = engine.require_view_by_id(view_id)
         layout = view_layout_from_legacy(view)
         view_snapshots[view_id] = ViewSnapshotDTO(
@@ -881,7 +881,7 @@ def cmd_workspace_snapshot(ctx, engine, ws) -> WorkspaceSnapshotDTO:
 
     # Build cube snapshots
     cube_snapshots: dict[str, CubeSnapshotDTO] = {}
-    for cube_id in ws.cubes.keys():
+    for cube_id in list(ws.cubes.keys()):
         cube = engine.require_cube_by_id(cube_id)
         cube_snapshots[cube_id] = CubeSnapshotDTO(
             id=cube.id,
@@ -892,10 +892,14 @@ def cmd_workspace_snapshot(ctx, engine, ws) -> WorkspaceSnapshotDTO:
 
     # Build dimension snapshots
     dimension_snapshots: dict[str, DimensionSnapshotDTO] = {}
-    for dim_id in ws.dimensions.keys():
+    for dim_id in list(ws.dimensions.keys()):
         dim = engine.require_dimension_by_id(dim_id)
         items = getattr(dim, 'items', [])
-        fresh_outline = engine.dimension_outline_for_dim(dim_id) if hasattr(engine, 'dimension_outline_for_dim') else getattr(dim, 'outline', [])
+        fresh_outline: list = []
+        try:
+            fresh_outline = engine.dimension_outline_for_dim(dim_id) if hasattr(engine, 'dimension_outline_for_dim') else getattr(dim, 'outline', [])
+        except Exception:
+            pass
         dimension_snapshots[dim_id] = DimensionSnapshotDTO(
             id=dim.id,
             name=getattr(dim, 'name', ''),
@@ -979,8 +983,13 @@ def cmd_dimension_detail(engine, dim_id: str) -> DimensionSnapshotDTO:
     """Get single dimension snapshot as TypedDict."""
     dim = engine.require_dimension_by_id(dim_id)
     items = getattr(dim, 'items', [])
-    # Use engine.get_dimension_outline to get lazily-rebuilt outline
-    fresh_outline = engine.dimension_outline_for_dim(dim_id) if hasattr(engine, 'dimension_outline_for_dim') else getattr(dim, 'outline', [])
+    # Use engine.get_dimension_outline to get lazily-rebuilt outline.
+    # Catch exceptions so outline RPC failures don't prevent the dimension
+    # snapshot (with items) from being returned — page chips need items.
+    try:
+        fresh_outline = engine.dimension_outline_for_dim(dim_id) if hasattr(engine, 'dimension_outline_for_dim') else getattr(dim, 'outline', [])
+    except Exception:
+        fresh_outline = []
     return DimensionSnapshotDTO(
         id=dim.id,
         name=getattr(dim, 'name', ''),
@@ -1093,7 +1102,7 @@ def cmd_cell_value_by_ref(
     if not cube:
         cube = ws.cubes.get(cube_name)
     if not cube:
-        for c in ws.cubes.values():
+        for c in list(ws.cubes.values()):
             if getattr(c, "name", None) == cube_name:
                 cube = c
                 break
@@ -1234,7 +1243,7 @@ def cmd_workspace_rules(engine, ws) -> dict:
     """
     rules = []
     cube_ids: set[str] = set()
-    for rid, r in ws.rules.items():
+    for rid, r in list(ws.rules.items()):
         addr_mask = getattr(r, "addr_mask", None)
         specificity = sum(1 for v in (addr_mask or ()) if v is not None) if addr_mask else 0
         rules.append({
@@ -1416,8 +1425,52 @@ def _compute_viewport_snapshot_locked(
         tracking_enabled = engine.is_dependency_tracking_enabled()
 
     with engine.dependency_tracking_disabled():
-        # Fetch values and determine sources from read-only APIs only.
-        for rk, ck, addr, key in addr_list:
+        # --- Batch value fetch ---
+        # When the engine supports get_cached_cell_values_batch (e.g.
+        # RemoteEngine), use a single RPC to fetch all cell values instead
+        # of one call per cell.  This is critical for remote engines where
+        # each per-cell call is a network round-trip.
+        #
+        # Optimization: combine main cell addresses AND all channel addresses
+        # into a single batch_fn call.  This reduces RPC calls from
+        # (1 + len(channels)) per tile to just 1 per tile — a 15x reduction
+        # for the typical 14-channel formatted tile fetch.
+        batch_fn = getattr(engine, "get_cached_cell_values_batch", None)
+
+        # Main cell values
+        all_addrs = [addr for _rk, _ck, addr, _key in addr_list]
+
+        if batch_fn is not None and all_addrs:
+            # Collect channel addresses in the same order as channels
+            ch_addr_lists: list[list[tuple[str, ...]]] = []
+            for ch in requested_channels:
+                ch_addr_map = channel_addr_map[ch]
+                ch_addr_lists.append([ch_addr_map[key] for _rk, _ck, _addr, key in addr_list])
+
+            # Combine main + all channel addresses into one flat list
+            combined_addrs = list(all_addrs)
+            for ch_addrs in ch_addr_lists:
+                combined_addrs.extend(ch_addrs)
+
+            combined_values = batch_fn(cube, combined_addrs)
+
+            # Split combined results back into main and per-channel slices
+            n_main = len(all_addrs)
+            batch_values = combined_values[:n_main] if combined_values else [None] * n_main
+            ch_batch_values: dict[str, list] = {}
+            offset = n_main
+            for ch_idx, ch in enumerate(requested_channels):
+                n_ch = len(ch_addr_lists[ch_idx])
+                if combined_values:
+                    ch_batch_values[ch] = combined_values[offset:offset + n_ch]
+                else:
+                    ch_batch_values[ch] = [None] * n_ch
+                offset += n_ch
+        else:
+            batch_values = None
+            ch_batch_values = {}
+
+        for idx, (rk, ck, addr, key) in enumerate(addr_list):
             meta = engine.resolve_cell_meta(cube, addr)
             if (
                 tracking_enabled
@@ -1427,7 +1480,10 @@ def _compute_viewport_snapshot_locked(
                 raise SnapshotInvariantError(
                     f"grid_viewport_snapshot observed dirty/untracked rule cell at {addr}"
                 )
-            value = engine.get_cached_cell_value_by_addr(cube, addr)
+            if batch_values is not None:
+                value = batch_values[idx] if idx < len(batch_values) else None
+            else:
+                value = engine.get_cached_cell_value_by_addr(cube, addr)
             cells[key] = {
                 "value": _coerce_to_primitive(value),
                 "source": meta.source,
@@ -1436,12 +1492,17 @@ def _compute_viewport_snapshot_locked(
                 "error": meta.error,
             }
 
-        # Requested channels
+        # Requested channels — use pre-fetched batch values
         for ch in requested_channels:
             ch_addr_map = channel_addr_map[ch]
-            for _rk, _ck, _addr, key in addr_list:
-                ch_addr = ch_addr_map[key]
-                ch_value = engine.get_cached_cell_value_by_addr(cube, ch_addr)
+            ch_batch = ch_batch_values.get(ch)
+
+            for idx, (_rk, _ck, _addr, key) in enumerate(addr_list):
+                if ch_batch is not None:
+                    ch_value = ch_batch[idx] if idx < len(ch_batch) else None
+                else:
+                    ch_addr = ch_addr_map[key]
+                    ch_value = engine.get_cached_cell_value_by_addr(cube, ch_addr)
                 channel_values[ch][key] = _coerce_to_primitive(ch_value)
 
     return cells, channel_values, visible_addrs

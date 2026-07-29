@@ -16,6 +16,9 @@ demo_data/*
 *.conf
 !.om/config/**
 
+# test coverage
+*.zcov
+
 *.txt
 !version.txt
 !version-manual.txt

@@ -290,12 +290,13 @@ class REPLModelMixin:
             if result.success:
                 dim_result_id = result.data.get("id", dim_id)
                 created_items = 0
-                for item in items:
-                    item_result = self.session.execute(
-                        "create_dimension_item", dim_id=dim_result_id, name=item
+                if items:
+                    entries = [{"dim_id": dim_result_id, "name": item, "position": "append"} for item in items]
+                    batch_result = self.session.execute(
+                        "create_dimension_items_batch", entries=entries
                     )
-                    if item_result.success:
-                        created_items += 1
+                    if batch_result.success:
+                        created_items = len(entries)
                 print(f"Created dimension: {dim_id} ({created_items} items)")
             else:
                 print(f"Error creating dimension: {result.error}")
@@ -343,12 +344,13 @@ class REPLModelMixin:
                 if result.success:
                     dim_result_id = result.data.get("id", dim_name)
                     created_items = 0
-                    for item in items:
-                        item_result = self.session.execute(
-                            "create_dimension_item", dim_id=dim_result_id, name=item
+                    if items:
+                        entries = [{"dim_id": dim_result_id, "name": item, "position": "append"} for item in items]
+                        batch_result = self.session.execute(
+                            "create_dimension_items_batch", entries=entries
                         )
-                        if item_result.success:
-                            created_items += 1
+                        if batch_result.success:
+                            created_items = len(entries)
                     print(f"Created dimension: {dim_name} ({created_items} items)")
                 else:
                     print(f"Error creating dimension: {result.error}")

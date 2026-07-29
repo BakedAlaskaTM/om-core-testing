@@ -112,6 +112,11 @@ class GUIEventAdapter:
         "clear_cache",
         "set_view_col_width",
         "set_view_row_header_width",
+        "set_cell_hardvalue_by_addr",
+        "set_cell_hardvalues_batch_by_addr",
+        "create_dimension_items_batch",
+        "set_cell_value",
+        "hardcode_cell",
     }
 
     def _emit_ui_refresh(self, command_id: str) -> None:
@@ -123,13 +128,12 @@ class GUIEventAdapter:
         it falls back to a direct call.
         """
         if command_id in self._GRID_REFRESH_EXCLUDES:
-            logger.info("[GUIEventAdapter] command '%s' is in refresh excludes; no refresh", command_id)
             return
         if command_id not in self._GRID_COMMANDS:
             if not any(command_id.startswith(p) for p in self._GRID_REFRESH_PREFIXES):
-                logger.info("[GUIEventAdapter] command '%s' does not match refresh prefixes; no refresh", command_id)
                 return
-        logger.info("[GUIEventAdapter] command '%s' triggers ui refresh", command_id)
+        if getattr(self.gui_window, "_ui_refresh_suspended", False):
+            return
         from PySide6 import QtCore
         if isinstance(self.gui_window, QtCore.QObject) and isValid(self.gui_window):
             self.gui_window._refresh_gui_requested.emit()

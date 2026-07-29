@@ -478,6 +478,9 @@ class _ChipZoneBase(QtWidgets.QWidget):
             if self._own_zone == "page":
                 items = [(it.get("id"), it.get("name")) for it in dim_dto.get("items", [])]
                 current_id = self._workspace_read_model.page_selection(view_id, dim_id)
+                if current_id is None or not any(iid == current_id for iid, _ in items):
+                    if items:
+                        current_id = items[0][0]
                 chip = PageChip(dim_id, dim_dto.get("name", ""), items, current_id, self, is_seq=is_seq)
                 chip._zone = self._own_zone   # override zone so drag knows origin
                 chip.item_selected.connect(self._on_chip_selected)
@@ -675,6 +678,9 @@ class TopLeftChipBar(_ChipZoneBase):
             if self._own_zone == "page":
                 items = [(it.get("id"), it.get("name")) for it in dim_dto.get("items", [])]
                 current_id = self._workspace_read_model.page_selection(view_id, dim_id)
+                if current_id is None or not any(iid == current_id for iid, _ in items):
+                    if items:
+                        current_id = items[0][0]
                 chip = PageChip(dim_id, dim_dto.get("name", ""), items, current_id, self, is_seq=is_seq)
                 chip._zone = self._own_zone
                 chip.item_selected.connect(self._on_chip_selected)

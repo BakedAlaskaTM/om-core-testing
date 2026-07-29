@@ -257,9 +257,16 @@ class CalculationFlowPanel(QtWidgets.QWidget):
 
         if self._session is not None and self._focus_cube_id is not None:
             try:
-                cube_list = self._session.query("cube_list") or {}
-                cube_ids = {c["id"] for c in cube_list.get("cubes", [])}
-                if self._focus_cube_id not in cube_ids:
+                # Use gui_view_model cache if available to avoid cube_list RPC
+                _gvm = getattr(self._session, "_gui_view_model", None)
+                if _gvm is not None:
+                    snap = _gvm.get_cube_snapshot(self._focus_cube_id)
+                    cube_exists = snap is not None
+                else:
+                    cube_list = self._session.query("cube_list") or {}
+                    cube_ids = {c["id"] for c in cube_list.get("cubes", [])}
+                    cube_exists = self._focus_cube_id in cube_ids
+                if not cube_exists:
                     self._focus_cube_id = None
                     self._focus_addr = None
             except Exception:

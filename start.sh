@@ -52,6 +52,10 @@ while [ $# -gt 0 ]; do
             # Preserve positional args by shifting onto a carry list and
             # re-setting them after the loop.
             CARRY_ARGS+=("$1")
+            # Track --log separately so it can be forwarded to the TUI.
+            if [ "$1" = "--log" ]; then
+                TUI_LOG_FLAG=1
+            fi
             shift
             ;;
     esac
@@ -154,7 +158,7 @@ elif [ "$1" = "--repl" ]; then
 elif [ "$1" = "--tui" ]; then
     # TUI client only (connects to existing --runtime)
     echo "Starting OM TUI client..."
-    $PYTHON -O main.py --tui
+    $PYTHON -O main.py --tui "${@:2}"
     TUI_EXIT=$?
     stty echo 2>/dev/null || true
     exit $TUI_EXIT
@@ -197,6 +201,10 @@ else
 
         echo "Opening TUI in a separate terminal..."
         TUI_CMD="cd \"$SCRIPT_DIR\" && ./start.sh --tui"
+        # Forward --log flag if present.
+        if [ "${TUI_LOG_FLAG:-0}" = "1" ]; then
+            TUI_CMD="$TUI_CMD --log"
+        fi
         # Forward transport args so the TUI connects to the right endpoint.
         if [ -n "${OPENM_TRANSPORT_SOCKET:-}" ]; then
             TUI_CMD="$TUI_CMD --socket \"$OPENM_TRANSPORT_SOCKET\""
@@ -209,6 +217,9 @@ else
         fi
         # Build the macOS variant (no shell quoting needed inside AppleScript).
         TUI_CMD_MAC="cd \"$SCRIPT_DIR\" && ./start.sh --tui"
+        if [ "${TUI_LOG_FLAG:-0}" = "1" ]; then
+            TUI_CMD_MAC="$TUI_CMD_MAC --log"
+        fi
         if [ -n "${OPENM_TRANSPORT_SOCKET:-}" ]; then
             TUI_CMD_MAC="$TUI_CMD_MAC --socket \"$OPENM_TRANSPORT_SOCKET\""
         fi

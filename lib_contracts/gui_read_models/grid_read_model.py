@@ -27,32 +27,49 @@ class GridReadModel:
         - Table row/column counts -> row_keys() / col_keys()
         - Header labels -> row_header() / col_header()
 
-    Caching is NOT included in Phase E. It will be added later when
-    invalidation events are designed.
+    A lightweight per-view key cache avoids redundant bus queries
+    within a single reload cycle. Call invalidate_cache() when the
+    view shape changes.
     """
 
     def __init__(self, session) -> None:
         self.session = session
+        self._row_key_cache: dict[str, list[tuple[str, ...]]] = {}
+        self._col_key_cache: dict[str, list[tuple[str, ...]]] = {}
+
+    def invalidate_cache(self, view_id: str | None = None) -> None:
+        if view_id is None:
+            self._row_key_cache.clear()
+            self._col_key_cache.clear()
+        else:
+            self._row_key_cache.pop(view_id, None)
+            self._col_key_cache.pop(view_id, None)
 
     def row_keys(
         self,
         view_id: str,
     ) -> list[tuple[str, ...]]:
         """Get row keys for a view."""
+        cached = self._row_key_cache.get(view_id)
+        if cached is not None:
+            return cached
         data = self.session.query("view_row_keys", view_id=view_id)
-        if data:
-            return data.get("keys", [])
-        return []
+        keys = data.get("keys", []) if data else []
+        self._row_key_cache[view_id] = keys
+        return keys
 
     def col_keys(
         self,
         view_id: str,
     ) -> list[tuple[str, ...]]:
         """Get column keys for a view."""
+        cached = self._col_key_cache.get(view_id)
+        if cached is not None:
+            return cached
         data = self.session.query("view_col_keys", view_id=view_id)
-        if data:
-            return data.get("keys", [])
-        return []
+        keys = data.get("keys", []) if data else []
+        self._col_key_cache[view_id] = keys
+        return keys
 
     def row_header(
         self,

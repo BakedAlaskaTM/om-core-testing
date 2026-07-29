@@ -170,13 +170,18 @@ class MessageBus:
             except Exception as e:
                 logger.error(f"Publish hook error on topic '{topic}': {e}", exc_info=True)
 
-        # Collect matching subscribers, deduplicated by callback identity (id)
-        seen: set[int] = set()
+        # Collect matching subscribers, deduplicated by callback identity.
+        # Bound methods create a new temporary object on each access, so
+        # id(callback) is unreliable — use (id(__self__), id(__func__)) instead.
+        seen: set[tuple] = set()
         callbacks: list[Callable[[Any], None]] = []
         for pattern, subs in list(self._subscribers.items()):
             if _topic_matches(pattern, topic):
                 for callback in list(subs):
-                    key = id(callback)
+                    if hasattr(callback, "__self__") and hasattr(callback, "__func__"):
+                        key: tuple = (id(callback.__self__), id(callback.__func__))
+                    else:
+                        key = (id(callback),)
                     if key in seen:
                         continue
                     seen.add(key)

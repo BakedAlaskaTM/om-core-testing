@@ -352,7 +352,18 @@ def _run_repl_client():
 def _run_tui_client():
     """Run TUI client mode — connect to transport server and start prompt_toolkit TUI."""
     from lib_runtime.tui_host import start_tui
-    start_tui()
+
+    monitor_log = None
+    if '--log' in sys.argv:
+        sys.argv.remove('--log')
+        from datetime import datetime
+        from pathlib import Path
+        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        log_path = Path(__file__).resolve().parent / f"monitor-{ts}.log"
+        monitor_log = open(log_path, "a", encoding="utf-8")
+        print(f"Monitor log: {log_path}")
+
+    start_tui(log_file=monitor_log)
 
 
 def _run_runtime_mode():
@@ -377,6 +388,7 @@ def _print_usage() -> None:
     print("  --gui-only        Start GUI with embedded runtime (transition)")
     print("  --repl            Start REPL client (connects to --runtime)")
     print("  --tui             Start TUI client (connects to --runtime)")
+    print("  --tui --log       Start TUI with monitor logging to monitor-<timestamp>.log")
     print("  --batch <file>    Execute script as remote client")
     print("  --headless <file> Execute script as remote client (alias for --batch)")
     print("  --gui-with-repl   Legacy combined mode (deprecated)")

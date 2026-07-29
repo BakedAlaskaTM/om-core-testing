@@ -165,7 +165,14 @@ class Connection:
             self._sock = None
         self._connected = False
 
-    def call(self, method: str, *args: Any, **kwargs: Any) -> Any:
+    def call(
+        self,
+        method: str,
+        *args: Any,
+        timeout: float | None = None,
+        lock_timeout: float | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Send an RPC request and return the result.
 
         Thread-safe: serializes concurrent calls so multiple threads can
@@ -179,10 +186,30 @@ class Connection:
         after _CIRCUIT_BREAKER_THRESHOLD consecutive failures, calls fail
         fast for _CIRCUIT_BREAKER_COOLDOWN seconds before allowing a probe.
 
+        Args:
+            method: RPC method name.
+            timeout: Optional per-call timeout in seconds. If provided,
+                temporarily overrides the default socket timeout for this
+                call only. Use a longer timeout for expensive operations
+                like bootstrap_dep_graph.
+            lock_timeout: Optional timeout in seconds for acquiring the
+                connection lock. If the lock cannot be acquired within
+                this period, raises TimeoutError. Use for quick queries
+                that should fail fast when a long-running RPC holds the
+                lock (e.g. dirty_count during a recompute).
+
         Raises RemoteEngineError (or a mapped subclass) on server errors.
         Raises EngineShuttingDownError if the connection is lost.
         """
-        with self._lock:
+        if lock_timeout is not None:
+            if not self._lock.acquire(timeout=lock_timeout):
+                raise TimeoutError(
+                    f"Connection lock timeout after {lock_timeout}s "
+                    f"waiting for lock (method={method})"
+                )
+        else:
+            self._lock.acquire()
+        try:
             # Circuit breaker: fail fast if the server is down.
             now = time.monotonic()
             if self._consecutive_failures >= self._CIRCUIT_BREAKER_THRESHOLD:
@@ -195,7 +222,7 @@ class Connection:
             last_exc: Exception | None = None
             for attempt in range(1 + len(self._RETRY_DELAYS)):
                 try:
-                    result = self._call_locked(method, *args, **kwargs)
+                    result = self._call_locked(method, *args, timeout=timeout, **kwargs)
                     self._consecutive_failures = 0
                     return result
                 except (ConnectionRefusedError, ConnectionResetError,
@@ -223,6 +250,8 @@ class Connection:
                             method, 1 + len(self._RETRY_DELAYS), exc,
                         )
             raise last_exc  # type: ignore[misc]
+        finally:
+            self._lock.release()
 
     def _close_socket(self) -> None:
         """Close the current socket and mark as disconnected."""
@@ -234,32 +263,41 @@ class Connection:
             self._sock = None
         self._connected = False
 
-    def _call_locked(self, method: str, *args: Any, **kwargs: Any) -> Any:
+    def _call_locked(self, method: str, *args: Any, timeout: float | None = None, **kwargs: Any) -> Any:
         if not self._connected or self._sock is None:
             self.connect()
         assert self._sock is not None
 
-        payload = msgpack.packb(
-            {
-                "id": str(uuid.uuid4()),
-                "method": method,
-                "args": list(args),
-                "kwargs": kwargs,
-                "meta": {},
-            },
-            use_bin_type=True,
-        )
-        try:
-            self._sock.sendall(struct.pack(">I", len(payload)) + payload)
-        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
-            self._close_socket()
-            raise
+        # Apply per-call timeout if provided.
+        saved_timeout = self._sock.gettimeout()
+        if timeout is not None:
+            self._sock.settimeout(timeout)
 
         try:
-            resp_bytes = self._recv_frame()
-        except (TimeoutError, OSError):
-            self._close_socket()
-            raise
+            payload = msgpack.packb(
+                {
+                    "id": str(uuid.uuid4()),
+                    "method": method,
+                    "args": list(args),
+                    "kwargs": kwargs,
+                    "meta": {},
+                },
+                use_bin_type=True,
+            )
+            try:
+                self._sock.sendall(struct.pack(">I", len(payload)) + payload)
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
+                self._close_socket()
+                raise
+
+            try:
+                resp_bytes = self._recv_frame()
+            except (TimeoutError, OSError):
+                self._close_socket()
+                raise
+        finally:
+            if timeout is not None and self._sock is not None:
+                self._sock.settimeout(saved_timeout)
 
         if not resp_bytes:
             self._close_socket()
@@ -286,10 +324,15 @@ class Connection:
 
     def _recv_frame(self) -> bytes:
         assert self._sock is not None
+        actual_timeout = self._timeout
+        try:
+            actual_timeout = self._sock.gettimeout() or self._timeout
+        except OSError:
+            pass
         try:
             len_bytes = self._sock.recv(4)
         except socket.timeout:
-            raise TimeoutError(f"socket recv timeout after {self._timeout}s waiting for frame header")
+            raise TimeoutError(f"socket recv timeout after {actual_timeout}s waiting for frame header")
         if len(len_bytes) < 4:
             return b""
         length = int.from_bytes(len_bytes, "big")
@@ -299,7 +342,7 @@ class Connection:
             try:
                 chunk = self._sock.recv(min(remaining, 65536))
             except socket.timeout:
-                raise TimeoutError(f"socket recv timeout after {self._timeout}s reading frame body")
+                raise TimeoutError(f"socket recv timeout after {actual_timeout}s reading frame body")
             if not chunk:
                 break
             chunks.append(chunk)

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Cap poll replies so a single event buffer cannot produce a multi-MB message.
 _MAX_EVENTS_PER_POLL = 100
+_MAX_EVENTS_PER_TOPIC_QUEUE = 5000
 
 
 class SocketTransportServer:
@@ -338,9 +339,10 @@ class SocketTransportServer:
             if t not in conn_bus_subs:
                 def _make_handler(topic_name: str, queues: dict[str, list] = conn_event_queues):
                     def handler(event: Any) -> None:
-                        if topic_name == "event.profiler.start":
-                            logger.warning("[transport-server] queued profiler start event for client")
-                        queues.setdefault(topic_name, []).append(event)
+                        q = queues.setdefault(topic_name, [])
+                        q.append(event)
+                        if len(q) > _MAX_EVENTS_PER_TOPIC_QUEUE:
+                            del q[:len(q) - _MAX_EVENTS_PER_TOPIC_QUEUE]
                     return handler
 
                 cb = _make_handler(t)

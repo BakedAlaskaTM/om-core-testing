@@ -189,27 +189,20 @@ def handle_create_dimension_item(
     item = engine.create_dimension_item(cmd.dim_id, cmd.name, position=cmd.position)
     # RemoteEngine returns a dict; Python engine returns a DimensionItem object
     item_id = item["id"] if isinstance(item, dict) else item.id
-    publish_domain_event(
-        bus,
-        "event.dimension_item.created",
-        {"dim_id": cmd.dim_id, "item_id": item_id, "name": cmd.name},
-        correlation_id=getattr(ctx, "correlation_id", None),
-        session_id=getattr(ctx, "session_id", None),
-        causation_id=getattr(ctx, "command_message_id", None),
-    )
-    publish_domain_event(
-        bus,
-        "event.dimension.structure_changed",
-        DimensionStructureChangedEvent(
-            dim_id=cmd.dim_id,
-            reason="add_dimension_item",
-            affected_node_ids=[item_id],
-        ),
-        correlation_id=getattr(ctx, "correlation_id", None),
-        session_id=getattr(ctx, "session_id", None),
-        causation_id=getattr(ctx, "command_message_id", None),
-    )
+    # Engine already publishes dimension_item.created via _publish_event.
+    # No need to publish duplicate events here — that would flood the bus
+    # with 2 extra events per call (3 total) during batch operations.
     return _HandlerResult(ok=True, data={"id": item_id})
+
+
+def handle_create_dimension_items_batch(
+    cmd, engine: Any, bus: Any, ctx: Any = None
+) -> _HandlerResult[Any]:
+    """Batch-create many dimension items with a single event publish."""
+    items = [(e["dim_id"], e["name"], e.get("position", "append")) for e in cmd.entries]
+    created = engine.batch_create_dimension_items(items)
+    item_ids = [it["id"] if isinstance(it, dict) else it.id for it in created]
+    return _HandlerResult(ok=True, data={"ids": item_ids})
 
 
 def handle_create_group(
@@ -485,6 +478,21 @@ def cmd_create_dimension_item(
     Thin wrapper around :func:`handle_create_dimension_item_adapter`.
     """
     return handle_create_dimension_item_adapter(ctx, dim_id, name, position)
+
+
+def cmd_create_dimension_items_batch(
+    ctx: Any, entries: list[dict]
+) -> Any:
+    """Batch-create many dimension items — canonical batch command.
+
+    Each entry in *entries* is a dict with keys: dim_id, name, position (optional).
+    """
+    bus = get_message_bus()
+    result = handle_create_dimension_items_batch(
+        type("BatchCmd", (), {"entries": entries})(),
+        ctx.engine, bus, ctx=ctx,
+    )
+    return _adapt_result(result)
 
 
 def cmd_create_aggregate_item(

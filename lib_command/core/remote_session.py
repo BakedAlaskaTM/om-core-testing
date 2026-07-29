@@ -14,6 +14,23 @@ logger = logging.getLogger(__name__)
 
 DEBUG_SESSION = False
 
+# Commands that invoke expensive Zig RPC calls (recalculate_all, apply_rule_batch
+# on large workspaces, save/load) and can far exceed the default 30s transport
+# timeout.  The Zig RPC timeout for recalculate_all is 300s, so we use 310s to
+# give the server a chance to respond before the transport gives up.
+_LONG_RUNNING_COMMANDS: frozenset[str] = frozenset({
+    "apply_rule_batch",
+    "run_recalculation",
+    "recalculate_all",
+    "recompute_dirty",
+    "save_workspace",
+    "load_workspace",
+    "create_new_workspace",
+    "replace_workspace",
+    "set_cell_hardvalues_batch_by_addr",
+})
+_LONG_RUNNING_TIMEOUT: float = 310.0
+
 
 class RemoteCommandSession:
     """Mirrors CommandSession but depends only on TransportClientProtocol."""
@@ -96,6 +113,12 @@ class RemoteCommandSession:
                         else PROFILE_SHORT_HEADROOM_SECONDS
                     )
                     timeout = effective_duration + headroom
+                elif command_id in _LONG_RUNNING_COMMANDS:
+                    # These commands invoke expensive Zig RPC calls (e.g.
+                    # recalculate_all with timeout=300s, apply_rule_batch on
+                    # large workspaces) that can far exceed the default 30s
+                    # transport timeout.
+                    timeout = _LONG_RUNNING_TIMEOUT
                 result = self.transport_client.send(
                     self.session_id, command_id, timeout=timeout, **params
                 )

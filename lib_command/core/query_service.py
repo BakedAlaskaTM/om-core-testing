@@ -113,9 +113,11 @@ class QueryService:
         self.bus = bus or self.bus
         if self.bus is None:
             raise RuntimeError("QueryService requires a MessageBus to subscribe")
-        # Catalog topics plus wildcard patterns for unknown/legacy query types.
-        for topic in QUERY_TOPICS:
-            self.bus.subscribe(topic, self._handle_query_envelope)
+        # Wildcard patterns cover all query topics:
+        #   query.*    → 2-segment topics (e.g., query.something)
+        #   query.*.*  → 3-segment topics (e.g., query.view.detail)
+        # The bus deduplication prevents double-dispatch when a topic
+        # matches multiple patterns.
         self.bus.subscribe("query.*", self._handle_query_envelope)
         self.bus.subscribe("query.*.*", self._handle_query_envelope)
 

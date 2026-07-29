@@ -19,7 +19,7 @@ import sys
 import textwrap
 import threading
 import time
-from typing import TYPE_CHECKING
+from typing import TextIO, TYPE_CHECKING
 
 from datetime import datetime
 
@@ -129,8 +129,9 @@ class _CmdCompleter(Completer):
 class PromptToolkitTUI:
     """Full-screen TUI built on prompt_toolkit.Application."""
 
-    def __init__(self, repl: "OpenMREPL") -> None:
+    def __init__(self, repl: "OpenMREPL", monitor_log_file: TextIO | None = None) -> None:
         self.repl = repl
+        self._monitor_log_file = monitor_log_file
         self._running = True
         self._busy = False
         self._busy_command: str | None = None
@@ -296,7 +297,7 @@ class PromptToolkitTUI:
         )
 
         # -- create monitor overlay now that self.app exists ---------------
-        self.monitor = BusMonitorOverlay(self.app)
+        self.monitor = BusMonitorOverlay(self.app, log_file=self._monitor_log_file)
 
         # -- splash banner --------------------------------------------------
         self._draw_banner()

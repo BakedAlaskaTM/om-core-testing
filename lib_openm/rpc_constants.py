@@ -68,6 +68,7 @@ class RpcMethod:
     # Cell methods
     ADDR_TO_CELL_REF = "addr_to_cell_ref"
     BATCH_SET_CELL_DATA = "batch_set_cell_data"
+    BATCH_SET_CELL_HARDVALUES_BY_ADDR = "batch_set_cell_hardvalues_by_addr"
     CELL_VALUE_FOR_VIEW_RC = "cell_value_for_view_rc"
     CLEAR_CELL_HARDVALUE = "clear_cell_hardvalue"
     EVALUATE_CELL = "evaluate_cell"

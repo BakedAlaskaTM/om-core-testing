@@ -74,14 +74,12 @@ class RuleEvaluator:
     def _coerce_number(value: Any) -> Any:
         """Coerce a value to float for numeric operations.
 
-        Returns CellError("#VALUE!") if the value cannot be converted.
+        Returns CellError("#VALUE!") if the value is not a number.
+        Text is never coerced — matching TM1/Anaplan/Quantrix behavior.
         """
         if isinstance(value, (int, float)):
             return float(value)
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return CellError("#VALUE!")
+        return CellError("#VALUE!")
 
     def _eval_or_error(
         self, node: Any, resolver: CubeResolver | None, addr: tuple[str, ...]
@@ -150,6 +148,9 @@ class RuleEvaluator:
             "QUOTIENT": self._fn_quotient,
             "ROUNDUP": self._fn_roundup,
             "ROUNDDOWN": self._fn_rounddown,
+            "TRUNC": self._fn_trunc,
+            "FLOOR": self._fn_floor,
+            "CEILING": self._fn_ceiling,
             # Logical functions
             "AND": self._fn_and,
             "OR": self._fn_or,
@@ -171,6 +172,8 @@ class RuleEvaluator:
             "PARE": self._eval_pare,
             # Array/string operations
             "JOIN": self._fn_join,
+            "CONCAT": self._fn_concat,
+            "CONCATENATE": self._fn_concat,
             # Volatile functions
             "RAND": self._fn_rand,
             "RANDBETWEEN": self._fn_randbetween,
@@ -182,6 +185,13 @@ class RuleEvaluator:
             "REPT": self._fn_rept,
             "CODE": self._fn_code,
             "CHAR": self._fn_char,
+            "UPPER": self._fn_upper,
+            "LOWER": self._fn_lower,
+            "PROPER": self._fn_proper,
+            "SUBSTITUTE": self._fn_substitute,
+            "REPLACE": self._fn_replace,
+            "MID": self._fn_mid,
+            "FIND": self._fn_find,
             # Array slicing
             "SLICE": self._fn_slice,
             # Color functions
@@ -329,7 +339,7 @@ class RuleEvaluator:
             if self._is_error(v):
                 return v
             result = -v if node.op == "-" else v
-            return _normalize_negative_zero(result)
+            return self._normalize_ieee_special(_normalize_negative_zero(result))
 
         if isinstance(node, _AstBinOp):
             l = self._eval(node.l, resolver, addr, volatile_seq)
@@ -340,6 +350,13 @@ class RuleEvaluator:
             if self._is_error(r):
                 return r
             op = node.op
+            if op in ("+", "-", "*", "/", "**"):
+                l = self._coerce_number(l)
+                if self._is_error(l):
+                    return l
+                r = self._coerce_number(r)
+                if self._is_error(r):
+                    return r
             if op == "+":
                 result = l + r
                 return self._normalize_ieee_special(_normalize_negative_zero(result))
@@ -1008,7 +1025,7 @@ class RuleEvaluator:
                     total += float(v)
                 except (ValueError, TypeError):
                     continue  # Treat non-numeric text as 0
-        return total
+        return self._normalize_ieee_special(total)
 
     def _eval_xls_xirr(self, node: _AstCall, resolver: CubeResolver, addr: tuple[str, ...]) -> Any:
         """Evaluate XLS_XIRR function."""
@@ -1113,6 +1130,8 @@ class RuleEvaluator:
         cond = self._eval(node.args[0], resolver, addr)
         if self._is_error(cond):
             return cond
+        if isinstance(cond, str):
+            return CellError("#VALUE!")
         branch = node.args[1] if cond else node.args[2]
         return self._eval(branch, resolver, addr)
 
@@ -1125,7 +1144,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        return abs(v)
+        return self._normalize_ieee_special(abs(v))
 
     def _fn_round(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, min_args=1, max_args=2)
@@ -1143,8 +1162,14 @@ class RuleEvaluator:
             p = self._coerce_number(p)
             if self._is_error(p):
                 return p
-            places = int(p)
-        return round(v, places)
+            places = max(0, int(p))
+        factor = 10 ** places
+        scaled = v * factor
+        if scaled >= 0:
+            result = math.floor(scaled + 0.5) / factor
+        else:
+            result = math.ceil(scaled - 0.5) / factor
+        return self._normalize_ieee_special(float(result))
 
     def _fn_pi(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=0)
@@ -1160,7 +1185,7 @@ class RuleEvaluator:
             return v
         if v <= 0:
             return CellError("#NUM!")
-        return math.log(v)
+        return self._normalize_ieee_special(math.log(v))
 
     def _fn_log(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, min_args=1, max_args=2)
@@ -1182,10 +1207,10 @@ class RuleEvaluator:
             if base <= 0 or base == 1:
                 return CellError("#NUM!")
             try:
-                return math.log(v, base)
+                return self._normalize_ieee_special(math.log(v, base))
             except (ValueError, ZeroDivisionError):
                 return CellError("#NUM!")
-        return math.log10(v)
+        return self._normalize_ieee_special(math.log10(v))
 
     def _fn_log10(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1197,7 +1222,7 @@ class RuleEvaluator:
             return v
         if v <= 0:
             return CellError("#NUM!")
-        return math.log10(v)
+        return self._normalize_ieee_special(math.log10(v))
 
     def _fn_exp(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1222,7 +1247,7 @@ class RuleEvaluator:
             return v
         if v < 0:
             return CellError("#NUM!")
-        return math.sqrt(v)
+        return self._normalize_ieee_special(math.sqrt(v))
 
     def _fn_power(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=2)
@@ -1251,7 +1276,7 @@ class RuleEvaluator:
             return CellError("#DIV/0!")
         if isinstance(result, complex):
             return CellError("#NUM!")
-        return result
+        return self._normalize_ieee_special(result)
 
     def _fn_sin(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1391,7 +1416,7 @@ class RuleEvaluator:
             return divisor
         if divisor == 0:
             raise ZeroDivisionError("#DIV/0!")
-        return dividend % divisor
+        return self._normalize_ieee_special(dividend % divisor)
 
     def _fn_quotient(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=2)
@@ -1409,7 +1434,10 @@ class RuleEvaluator:
             return divisor
         if divisor == 0:
             raise ZeroDivisionError("#DIV/0!")
-        return float(int(dividend / divisor))
+        try:
+            return self._normalize_ieee_special(float(int(dividend / divisor)))
+        except OverflowError:
+            return CellError("#RANGE!")
 
     def _fn_roundup(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, min_args=1, max_args=2)
@@ -1427,9 +1455,9 @@ class RuleEvaluator:
             p = self._coerce_number(p)
             if self._is_error(p):
                 return p
-            places = int(p)
+            places = max(0, int(p))
         factor = 10 ** places
-        return math.ceil(v * factor) / factor if v >= 0 else math.floor(v * factor) / factor
+        return self._normalize_ieee_special(math.ceil(v * factor) / factor if v >= 0 else math.floor(v * factor) / factor)
 
     def _fn_rounddown(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, min_args=1, max_args=2)
@@ -1447,9 +1475,88 @@ class RuleEvaluator:
             p = self._coerce_number(p)
             if self._is_error(p):
                 return p
-            places = int(p)
+            places = max(0, int(p))
         factor = 10 ** places
-        return math.floor(v * factor) / factor if v >= 0 else math.ceil(v * factor) / factor
+        return self._normalize_ieee_special(math.floor(v * factor) / factor if v >= 0 else math.ceil(v * factor) / factor)
+
+    def _fn_trunc(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=1, max_args=2)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        v = self._coerce_number(v)
+        if self._is_error(v):
+            return v
+        if len(node.args) >= 2:
+            p = self._eval(node.args[1], resolver, addr)
+            if self._is_error(p):
+                return p
+            p = self._coerce_number(p)
+            if self._is_error(p):
+                return p
+            places = max(0, int(p))
+        else:
+            places = 0
+        factor = 10 ** places
+        return self._normalize_ieee_special(float(int(v * factor)) / factor)
+
+    def _fn_floor(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=1, max_args=2)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        v = self._coerce_number(v)
+        if self._is_error(v):
+            return v
+        if len(node.args) >= 2:
+            sig = self._eval(node.args[1], resolver, addr)
+            if self._is_error(sig):
+                return sig
+            sig = self._coerce_number(sig)
+            if self._is_error(sig):
+                return sig
+        else:
+            sig = 1.0
+        if sig == 0:
+            raise ZeroDivisionError("#DIV/0!")
+        return self._normalize_ieee_special(math.floor(v / sig) * sig)
+
+    def _fn_ceiling(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=1, max_args=2)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        v = self._coerce_number(v)
+        if self._is_error(v):
+            return v
+        if len(node.args) >= 2:
+            sig = self._eval(node.args[1], resolver, addr)
+            if self._is_error(sig):
+                return sig
+            sig = self._coerce_number(sig)
+            if self._is_error(sig):
+                return sig
+        else:
+            sig = 1.0
+        if sig == 0:
+            raise ZeroDivisionError("#DIV/0!")
+        return self._normalize_ieee_special(math.ceil(v / sig) * sig)
+
+    def _fn_concat(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=1)
+        parts: list[str] = []
+        for arg in node.args:
+            v = self._eval(arg, resolver, addr)
+            if self._is_error(v):
+                return v
+            if isinstance(v, list):
+                for item in v:
+                    if self._is_error(item):
+                        return item
+                    parts.append(self._format_for_string(item))
+            else:
+                parts.append(self._format_for_string(v))
+        return "".join(parts)
 
     # Logical functions
     def _fn_and(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
@@ -1542,8 +1649,12 @@ class RuleEvaluator:
         high = self._eval(node.args[1], resolver, addr)
         if self._is_error(high):
             return high
-        low_int = int(float(low))
-        high_int = int(float(high))
+        if not isinstance(low, (int, float)):
+            return CellError("#VALUE!")
+        if not isinstance(high, (int, float)):
+            return CellError("#VALUE!")
+        low_int = math.floor(low)
+        high_int = math.floor(high)
         if low_int > high_int:
             raise ValueError("RANDBETWEEN requires bottom <= top")
         return float(random.randint(low_int, high_int))
@@ -1741,7 +1852,7 @@ class RuleEvaluator:
             return text
         formatted_text = self._format_for_string(text)
         if not formatted_text:
-            return 0.0
+            return CellError("#VALUE!")
         return float(ord(formatted_text[0]))
 
     def _fn_char(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
@@ -1756,6 +1867,136 @@ class RuleEvaluator:
         if code_num < 1 or code_num > 255:
             return CellError("#VALUE!")
         return chr(code_num)
+
+    def _fn_upper(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=1)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        return self._format_for_string(v).upper()
+
+    def _fn_lower(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=1)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        return self._format_for_string(v).lower()
+
+    def _fn_proper(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=1)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        return self._format_for_string(v).title()
+
+    def _fn_substitute(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=3, max_args=4)
+        text = self._eval(node.args[0], resolver, addr)
+        if self._is_error(text):
+            return text
+        old_text = self._eval(node.args[1], resolver, addr)
+        if self._is_error(old_text):
+            return old_text
+        new_text = self._eval(node.args[2], resolver, addr)
+        if self._is_error(new_text):
+            return new_text
+        s = self._format_for_string(text)
+        old_str = self._format_for_string(old_text)
+        new_str = self._format_for_string(new_text)
+        if not old_str:
+            return s
+        if len(node.args) == 4:
+            instance_raw = self._eval(node.args[3], resolver, addr)
+            if self._is_error(instance_raw):
+                return instance_raw
+            instance_num = int(self._coerce_number(instance_raw))
+            if instance_num < 1:
+                return CellError("#VALUE!")
+            count = 0
+            result = []
+            i = 0
+            while i < len(s):
+                if s[i:i + len(old_str)] == old_str:
+                    count += 1
+                    if count == instance_num:
+                        result.append(new_str)
+                        i += len(old_str)
+                        result.append(s[i:])
+                        return "".join(result)
+                    result.append(old_str)
+                    i += len(old_str)
+                else:
+                    result.append(s[i])
+                    i += 1
+            return s
+        return s.replace(old_str, new_str)
+
+    def _fn_replace(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=4)
+        text = self._eval(node.args[0], resolver, addr)
+        if self._is_error(text):
+            return text
+        start_raw = self._eval(node.args[1], resolver, addr)
+        if self._is_error(start_raw):
+            return start_raw
+        num_raw = self._eval(node.args[2], resolver, addr)
+        if self._is_error(num_raw):
+            return num_raw
+        new_text = self._eval(node.args[3], resolver, addr)
+        if self._is_error(new_text):
+            return new_text
+        s = self._format_for_string(text)
+        start_num = int(self._coerce_number(start_raw))
+        num_chars = int(self._coerce_number(num_raw))
+        new_str = self._format_for_string(new_text)
+        if start_num < 1:
+            return CellError("#VALUE!")
+        start_idx = start_num - 1
+        return s[:start_idx] + new_str + s[start_idx + num_chars:]
+
+    def _fn_mid(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=3)
+        text = self._eval(node.args[0], resolver, addr)
+        if self._is_error(text):
+            return text
+        start_raw = self._eval(node.args[1], resolver, addr)
+        if self._is_error(start_raw):
+            return start_raw
+        num_raw = self._eval(node.args[2], resolver, addr)
+        if self._is_error(num_raw):
+            return num_raw
+        s = self._format_for_string(text)
+        start_num = int(self._coerce_number(start_raw))
+        num_chars = int(self._coerce_number(num_raw))
+        if start_num < 1 or num_chars < 0:
+            return CellError("#VALUE!")
+        start_idx = start_num - 1
+        return s[start_idx:start_idx + num_chars]
+
+    def _fn_find(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=2, max_args=3)
+        find_text = self._eval(node.args[0], resolver, addr)
+        if self._is_error(find_text):
+            return find_text
+        within_text = self._eval(node.args[1], resolver, addr)
+        if self._is_error(within_text):
+            return within_text
+        find_str = self._format_for_string(find_text)
+        within_str = self._format_for_string(within_text)
+        start_num = 1
+        if len(node.args) == 3:
+            start_raw = self._eval(node.args[2], resolver, addr)
+            if self._is_error(start_raw):
+                return start_raw
+            start_num = int(self._coerce_number(start_raw))
+        if start_num < 1:
+            return CellError("#VALUE!")
+        if not find_str:
+            return float(start_num)
+        idx = within_str.find(find_str, start_num - 1)
+        if idx == -1:
+            return CellError("#VALUE!")
+        return float(idx + 1)
 
     def _fn_slice(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         """SLICE function: returns a list/array of values from the specified reference(s)."""
@@ -1905,8 +2146,8 @@ class RuleEvaluator:
 
         try:
             h = float(h) % 360
-            s = max(0.0, min(1.0, float(s)))
-            v = max(0.0, min(1.0, float(v)))
+            s = max(0.0, min(1.0, float(s) / 100.0))
+            v = max(0.0, min(1.0, float(v) / 100.0))
         except (TypeError, ValueError):
             return CellError("#VALUE!")
 
@@ -1928,11 +2169,11 @@ class RuleEvaluator:
         else:
             r, g, b = c, 0, x
 
-        r = int((r + m) * 255)
-        g = int((g + m) * 255)
-        b = int((b + m) * 255)
+        r = round((r + m) * 255)
+        g = round((g + m) * 255)
+        b = round((b + m) * 255)
 
-        return f"#{r:02x}{g:02x}{b:02x}"
+        return f"#{r:02X}{g:02X}{b:02X}"
 
     def _fn_rgb(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         """RGB(red, green, blue) - create hex color string from RGB values.
@@ -1965,7 +2206,7 @@ class RuleEvaluator:
         except (TypeError, ValueError):
             return CellError("#VALUE!")
 
-        return f"#{r:02x}{g:02x}{b:02x}"
+        return f"#{r:02X}{g:02X}{b:02X}"
 
     def _fn_ref(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         """REF function: returns list of coordinate tuples for debugging.
@@ -2090,15 +2331,55 @@ class RuleEvaluator:
 
     @staticmethod
     def _format_for_string(v: Any) -> str:
-        """Format a value for string operations, removing .0 for whole numbers."""
+        """Format a value for string operations using Excel 'General' format.
+
+        - Whole numbers < 1e12: integer format (no decimal point)
+        - Numbers >= 1e12 or < 1e-4: scientific notation (shortest round-trip)
+        - Otherwise: shortest round-tripping decimal (str(v))
+
+        Uses up to 17 significant decimal digits to guarantee exact binary64
+        round-trip. Fifteen digits suffice for decimal input; seventeen may be
+        required to reconstruct an arbitrary binary64 bit pattern exactly.
+        """
         if v is None:
             return ""
         if isinstance(v, bool):
             return "TRUE" if v else "FALSE"
         if isinstance(v, (int, float)):
-            # Remove .0 for whole numbers
-            if isinstance(v, float) and v.is_integer():
-                return str(int(v))
+            if isinstance(v, float):
+                if v == 0:
+                    return "0"
+                abs_v = abs(v)
+                if abs_v >= 1e12 or abs_v < 1e-4:
+                    s = repr(v)
+                    if "e" in s or "E" in s:
+                        parts = s.replace("E", "e").split("e")
+                        mant, exp_s = parts[0], parts[1]
+                        if "." in mant:
+                            mant = mant.rstrip("0").rstrip(".")
+                        ei = int(exp_s)
+                        sign = "+" if ei >= 0 else "-"
+                        return f"{mant}e{sign}{abs(ei):02d}"
+                    neg = s.startswith("-")
+                    if neg:
+                        s = s[1:]
+                    if "." in s:
+                        int_part, frac_part = s.split(".")
+                    else:
+                        int_part, frac_part = s, ""
+                    frac_part = frac_part.rstrip("0")
+                    digits = int_part + frac_part
+                    exp = len(int_part) - 1
+                    if len(digits) == 1:
+                        mant = digits
+                    else:
+                        mant = digits[0] + "." + digits[1:]
+                    if "." in mant:
+                        mant = mant.rstrip("0").rstrip(".")
+                    sign = "+" if exp >= 0 else "-"
+                    return ("-" if neg else "") + f"{mant}e{sign}{abs(exp):02d}"
+                if v.is_integer():
+                    return str(int(v))
             return str(v)
         return str(v)
 
@@ -2241,6 +2522,64 @@ class RuleEvaluator:
                     if result is not NotImplemented:
                         return result
 
+        # For multi-arg aggregates, expand cross-cube reference args as slices
+        # (wildcarding unshared dimensions) instead of scalar resolution.
+        if fn in ("SUM", "MIN", "MAX", "AVG", "AVERAGE", "COUNT", "COUNTA") and resolver is not None and len(node.args) > 1:
+            slice_fn = getattr(resolver, "slice_over_ref", None)
+            if slice_fn is not None:
+                nums: list[float] = []
+                non_empty_count = 0
+                all_expanded = True
+                for arg in node.args:
+                    if isinstance(arg, _AstRef) and getattr(arg, "cube_name", None):
+                        try:
+                            vals = slice_fn([(arg.dim_name, arg.item_name)], addr, arg.cube_name)
+                        except (KeyError, ValueError, TypeError):
+                            all_expanded = False
+                            break
+                        for v in vals:
+                            if self._is_error(v):
+                                return v
+                            if v is not None:
+                                non_empty_count += 1
+                                try:
+                                    nums.append(float(v))
+                                except (ValueError, TypeError):
+                                    pass
+                    elif isinstance(arg, _AstMultiRef) and getattr(arg, "cube_name", None):
+                        try:
+                            vals = slice_fn(list(arg.pairs), addr, arg.cube_name)
+                        except (KeyError, ValueError, TypeError):
+                            all_expanded = False
+                            break
+                        for v in vals:
+                            if self._is_error(v):
+                                return v
+                            if v is not None:
+                                non_empty_count += 1
+                                try:
+                                    nums.append(float(v))
+                                except (ValueError, TypeError):
+                                    pass
+                    else:
+                        all_expanded = False
+                        break
+                if all_expanded:
+                    if fn == "SUM":
+                        return self._normalize_ieee_special(sum(nums) if nums else 0.0)
+                    if fn == "MIN":
+                        return self._normalize_ieee_special(min(nums) if nums else 0.0)
+                    if fn == "MAX":
+                        return self._normalize_ieee_special(max(nums) if nums else 0.0)
+                    if fn in ("AVG", "AVERAGE"):
+                        if not nums:
+                            return CellError("#DIV/0!")
+                        return self._normalize_ieee_special(sum(nums) / len(nums))
+                    if fn == "COUNT":
+                        return float(len(nums))
+                    if fn == "COUNTA":
+                        return float(non_empty_count)
+
         # COUNTIF and COUNTIFS
         if fn == "COUNTIF" and len(node.args) >= 2:
             return self._eval_countif(node.args, resolver, addr)
@@ -2311,15 +2650,15 @@ class RuleEvaluator:
                         continue
 
         if fn == "SUM":
-            return sum(nums) if nums else 0.0
+            return self._normalize_ieee_special(sum(nums) if nums else 0.0)
         if fn == "MIN":
-            return min(nums) if nums else 0.0
+            return self._normalize_ieee_special(min(nums) if nums else 0.0)
         if fn == "MAX":
-            return max(nums) if nums else 0.0
+            return self._normalize_ieee_special(max(nums) if nums else 0.0)
         if fn in ("AVG", "AVERAGE"):
             if not nums:
                 return CellError("#DIV/0!")
-            return sum(nums) / len(nums)
+            return self._normalize_ieee_special(sum(nums) / len(nums))
         if fn == "COUNT":
             return float(len(nums))
         if fn == "COUNTA":

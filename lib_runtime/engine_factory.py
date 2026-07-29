@@ -25,6 +25,8 @@ def create_engine(
     *,
     enable_dependency_tracking: bool = True,
     engine_mode: str | None = None,
+    server_args: list[str] | None = None,
+    operating_mode: str | None = None,
 ) -> Engine:
     """Create and configure an Engine instance.
 
@@ -33,11 +35,15 @@ def create_engine(
         enable_dependency_tracking: Whether to enable dep tracking.
         engine_mode: "python" or "remote". If None,
             reads OMENGINE_MODE env var (default: "python").
+        server_args: Extra CLI args to pass to the server binary (remote mode only).
+        operating_mode: Remote server operating mode — "design" or "production".
+            If None, reads OMENGINE_OPERATING_MODE env var. Remote mode only.
     """
     mode = engine_mode or os.environ.get("OMENGINE_MODE", "python")
 
     if mode == "remote":
-        return _create_remote_engine(workspace, enable_dependency_tracking)
+        operating_mode_resolved = operating_mode or os.environ.get("OMENGINE_OPERATING_MODE")
+        return _create_remote_engine(workspace, enable_dependency_tracking, server_args, operating_mode_resolved)
     else:
         engine = Engine(workspace, event_publisher=BusEventPublisher())
         engine.enable_dependency_tracking(enable_dependency_tracking)
@@ -47,6 +53,8 @@ def create_engine(
 def _create_remote_engine(
     workspace: Workspace,
     enable_dependency_tracking: bool,
+    server_args: list[str] | None = None,
+    operating_mode: str | None = None,
 ) -> Engine:
     """Create a RemoteEngine that delegates all operations to a remote server."""
     from lib_openm.remote_engine import RemoteEngine
@@ -58,7 +66,7 @@ def _create_remote_engine(
         str(engine_cfg("remote", "endpoint", "unix:///tmp/om-engine.sock")),
     )
 
-    launcher = Launcher(endpoint=endpoint)
+    launcher = Launcher(endpoint=endpoint, server_args=server_args, mode=operating_mode)
     launcher.start()
 
     try:

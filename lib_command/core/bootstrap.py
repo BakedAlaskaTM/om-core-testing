@@ -496,6 +496,7 @@ def register_default_commands(registry: CommandRegistry | None = None) -> Comman
         handle_move_items_to_group_adapter,
         handle_ungroup_items_adapter,
         cmd_create_dimension_item,
+        cmd_create_dimension_items_batch,
         cmd_create_aggregate_item,
     )
 
@@ -546,6 +547,16 @@ def register_default_commands(registry: CommandRegistry | None = None) -> Comman
             cmd_create_dimension_item,
             description="Create a new dimension item",
             params={"dim_id": str, "name": str},
+        )
+
+    if not registry.is_registered("create_dimension_items_batch"):
+        registry.register(
+            "create_dimension_items_batch",
+            "Create Dimension Items Batch",
+            CommandCategory.MODEL,
+            cmd_create_dimension_items_batch,
+            description="Batch-create many dimension items with a single event",
+            params={"entries": list},
         )
 
     if not registry.is_registered("clear_dimension_outline"):
@@ -742,6 +753,7 @@ def register_default_commands(registry: CommandRegistry | None = None) -> Comman
         cmd_delete_cube,
         cmd_delete_dimension,
         cmd_set_cell_hardvalue_by_addr,
+        cmd_set_cell_hardvalues_batch_by_addr,
     )
 
     # Canonical cell value commands (hardvalue / rule separation)
@@ -946,6 +958,16 @@ def register_default_commands(registry: CommandRegistry | None = None) -> Comman
             cmd_set_cell_hardvalue_by_addr,
             description="Set a user hardvalue using a full cube address tuple",
             params={"cube_id": str, "addr": list, "value": object},
+        )
+
+    if not registry.is_registered("set_cell_hardvalues_batch_by_addr"):
+        registry.register(
+            "set_cell_hardvalues_batch_by_addr",
+            "Set Cell Hardvalues Batch By Address",
+            CommandCategory.DATA,
+            cmd_set_cell_hardvalues_batch_by_addr,
+            description="Set many cell hardvalues in one call with a single undo group",
+            params={"cube_id": str, "entries": list},
         )
 
     # === Phase 1C: Range / Paste Command ===

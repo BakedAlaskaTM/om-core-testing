@@ -89,9 +89,10 @@ class GUIViewModel:
     # View snapshots (C.2)
     # =========================================================================
 
-    def get_view_snapshot(self, view_id: str) -> dict:
-        """Return a single view snapshot as deep copy."""
-        return copy.deepcopy(self._view_data.get(view_id, {}))
+    def get_view_snapshot(self, view_id: str) -> dict | None:
+        """Return a single view snapshot as deep copy, or None if not cached."""
+        snap = self._view_data.get(view_id)
+        return copy.deepcopy(snap) if snap is not None else None
 
     def get_all_view_snapshots(self) -> dict:
         """Return all view snapshots as deep copy (never reference to internal data)."""
@@ -109,9 +110,10 @@ class GUIViewModel:
     # Cube snapshots (C.2)
     # =========================================================================
 
-    def get_cube_snapshot(self, cube_id: str) -> dict:
-        """Return a single cube snapshot as deep copy."""
-        return copy.deepcopy(self._cube_data.get(cube_id, {}))
+    def get_cube_snapshot(self, cube_id: str) -> dict | None:
+        """Return a single cube snapshot as deep copy, or None if not cached."""
+        snap = self._cube_data.get(cube_id)
+        return copy.deepcopy(snap) if snap is not None else None
 
     def get_all_cube_snapshots(self) -> dict:
         """Return all cube snapshots as deep copy (never reference to internal data)."""
@@ -129,9 +131,10 @@ class GUIViewModel:
     # Dimension snapshots (E2)
     # =========================================================================
 
-    def get_dimension_snapshot(self, dim_id: str) -> dict:
-        """Return a single dimension snapshot as deep copy."""
-        return copy.deepcopy(self._dim_data.get(dim_id, {}))
+    def get_dimension_snapshot(self, dim_id: str) -> dict | None:
+        """Return a single dimension snapshot as deep copy, or None if not cached."""
+        snap = self._dim_data.get(dim_id)
+        return copy.deepcopy(snap) if snap is not None else None
 
     def get_all_dimension_snapshots(self) -> dict:
         """Return all dimension snapshots as deep copy."""
@@ -163,7 +166,7 @@ class GUIViewModel:
         self._current_cube_id = active_view.get("cube_id") if active_view else None
         self._view_data = copy.deepcopy(view_snapshots)
         self._cube_data = copy.deepcopy(snapshot.get("cube_snapshots", {}))
-        self._dim_data = {}  # Phase E: clear stale dimension cache on rebootstrap
+        self._dim_data = copy.deepcopy(snapshot.get("dimension_snapshots", {}))
 
     # =========================================================================
     # Dirty state (B.5)

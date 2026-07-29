@@ -150,6 +150,16 @@ def cmd_create(
                 else:
                     layout = _build_default_layout(cube)
 
+            # Ensure every cube dimension is assigned to an axis.  Dimensions
+            # not explicitly placed on rows/cols/page (notably the technical @
+            # dimension when the script specifies only user dimensions on page)
+            # are appended to page so the view covers the full cube shape.
+            used = set(layout.rows) | set(layout.cols) | set(layout.page)
+            for did in cube.dimension_ids:
+                if did not in used:
+                    layout.page.append(did)
+                    used.add(did)
+
             validate_view_layout_for_cube(cube, layout)
 
             row_dim_id = layout.rows[0] if layout.rows else ""
@@ -376,14 +386,9 @@ def cmd_create_dimension(
 
     dim = engine.create_dimension(name, dim_type=dim_type)
     ctx.status(f"Created dimension: {name}")
-    publish_domain_event(
-        get_message_bus(),
-        "event.dimension.created",
-        {"dim_id": dim.id, "name": name, "dim_type": dim_type},
-        correlation_id=getattr(ctx, "correlation_id", None),
-        session_id=getattr(ctx, "session_id", None),
-        causation_id=getattr(ctx, "command_message_id", None),
-    )
+    # Engine already publishes event.dimension.created with DTO enrichment
+    # via EventDTOProjector. Do NOT republish here — the duplicate unenriched
+    # event triggers redundant dimension_detail queries in GUIReadModelBinder.
     return {"type": "dimension", "name": name, "id": dim.id}
 
 
@@ -423,14 +428,9 @@ def cmd_create_cube(
 
     cube = engine.create_cube(name, resolved_ids)
     ctx.status(f"Created cube: {name}")
-    publish_domain_event(
-        get_message_bus(),
-        "event.cube.created",
-        {"cube_id": cube.id, "name": name, "dimension_ids": resolved_ids},
-        correlation_id=getattr(ctx, "correlation_id", None),
-        session_id=getattr(ctx, "session_id", None),
-        causation_id=getattr(ctx, "command_message_id", None),
-    )
+    # Engine already publishes event.cube.created with DTO enrichment
+    # via EventDTOProjector. Do NOT republish here — the duplicate unenriched
+    # event triggers redundant cube_detail queries in GUIReadModelBinder.
     return {"type": "cube", "name": name, "id": cube.id}
 
 

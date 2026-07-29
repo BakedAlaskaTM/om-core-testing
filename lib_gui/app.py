@@ -617,6 +617,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self._ui_refresh_timer: QtCore.QTimer | None = None
         self._ui_refresh_needs_browser: bool = False
         self._ui_refresh_interval_ms: int = 50
+        self._ui_refresh_suspended: bool = False
+
+        # Debounce timer for model browser rebuilds.  A burst of
+        # dimension.structure_changed / dimension_item.created events (e.g.
+        # during script sourcing) is coalesced into a single rebuild.
+        self._browser_rebuild_timer: QtCore.QTimer | None = None
+        self._browser_rebuild_interval_ms: int = 100
         
         # Domain event subscriptions (work in both local and remote mode)
         self.session.subscribe("event.profiler.start", self._on_profiler_start)
@@ -671,6 +678,10 @@ class MainWindow(QtWidgets.QMainWindow):
             from lib_gui.gui_view_model import GUIViewModel
             self.gui_view_model = GUIViewModel()
             self.gui_view_model.set_current_view_id(self._active_view_id)
+            self.workspace_read_model._gui_view_model = self.gui_view_model
+            # Also attach to session so downstream widgets (e.g. CalculationFlowPanel)
+            # can access the cache without constructor changes.
+            setattr(self.session, "_gui_view_model", self.gui_view_model)
 
             # C.3 + C.4: Bootstrap ViewModel and register read model binder
             self._bootstrap_view_model()
@@ -765,7 +776,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.view_tab_requested.connect(self._do_add_view_tab)
         self.view_activation_requested.connect(self._do_activate_view)
         self.tabs_rebuild_requested.connect(self._do_rebuild_tabs)
-        self.model_browser_rebuild_requested.connect(self._do_rebuild_model_browser)
+        self.model_browser_rebuild_requested.connect(self._schedule_browser_rebuild)
         self.dimension_renamed_requested.connect(self._do_dimension_renamed)
         self.dimension_item_renamed_requested.connect(self._do_dimension_item_renamed)
         self._refresh_gui_requested.connect(self.refresh_gui)
@@ -2940,6 +2951,23 @@ class MainWindow(QtWidgets.QMainWindow):
         """Refresh the GUI view. Called by ui.* event handlers."""
         self._schedule_ui_refresh(needs_browser=False)
 
+    def suspend_ui_refresh(self) -> None:
+        """Suppress debounced UI refreshes until resume_ui_refresh is called.
+
+        Used by batch operations (e.g. `source` command) that emit many events
+        in a tight loop.  Each event would otherwise restart the debounce timer
+        and trigger a full browser + view rebuild every 50 ms.
+        """
+        self._ui_refresh_suspended = True
+        if self._ui_refresh_timer is not None:
+            self._ui_refresh_timer.stop()
+
+    def resume_ui_refresh(self) -> None:
+        """Resume UI refresh and fire a single coalesced refresh if one is pending."""
+        self._ui_refresh_suspended = False
+        if self._ui_refresh_needs_browser:
+            self._schedule_ui_refresh(needs_browser=True)
+
     def _schedule_ui_refresh(self, needs_browser: bool) -> None:
         """Coalesce rapid refresh requests into a single GUI update.
 
@@ -2948,8 +2976,9 @@ class MainWindow(QtWidgets.QMainWindow):
         reload all views. We instead set a flag and restart a short debounce
         timer; the actual work happens once, when the timer fires.
         """
-        logger.info("[MainWindow] schedule_ui_refresh needs_browser=%s", needs_browser)
         self._ui_refresh_needs_browser |= needs_browser
+        if self._ui_refresh_suspended:
+            return
         if self._ui_refresh_timer is None:
             self._ui_refresh_timer = QtCore.QTimer(self)
             self._ui_refresh_timer.setSingleShot(True)
@@ -3155,9 +3184,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.dimension_item_renamed_requested.emit()
 
     def _on_dimension_structure_changed_event(self, event) -> None:
-        """Handle event.dimension.structure_changed — emit signal so slot runs on GUI thread."""
-        logger.info("[MainWindow] event dimension.structure_changed")
-        self.model_browser_rebuild_requested.emit()
+        """Handle event.dimension.structure_changed — debounce browser rebuild."""
+        logger.debug("[MainWindow] event dimension.structure_changed")
+        self._schedule_browser_rebuild()
 
     def _on_view_created_event(self, event):
         """Handle event.view.created — emit signal so slot runs on GUI thread."""
@@ -3165,7 +3194,7 @@ class MainWindow(QtWidgets.QMainWindow):
         logger.info("[MainWindow] event view.created view=%s", view_id[:8] if view_id else None)
         if view_id:
             self.view_tab_requested.emit(view_id)
-            self.model_browser_rebuild_requested.emit()
+            self._schedule_browser_rebuild()
 
     def _do_add_view_tab(self, view_id: str) -> None:
         try:
@@ -3185,6 +3214,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self._workspace.activate_view(view_id)
         except Exception:
             logging.exception("[_do_activate_view] failed for %s", view_id[:8])
+
+    @QtCore.Slot()
+    def _schedule_browser_rebuild(self) -> None:
+        """Debounce model browser rebuilds to coalesce event bursts."""
+        if not self._is_gui_thread():
+            QtCore.QTimer.singleShot(0, self._schedule_browser_rebuild)
+            return
+        if self._browser_rebuild_timer is None:
+            self._browser_rebuild_timer = QtCore.QTimer(self)
+            self._browser_rebuild_timer.setSingleShot(True)
+            self._browser_rebuild_timer.timeout.connect(self._do_rebuild_model_browser)
+        self._browser_rebuild_timer.start(self._browser_rebuild_interval_ms)
 
     def _do_rebuild_model_browser(self) -> None:
         try:
@@ -3234,12 +3275,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.model_browser_rebuild_requested.emit()
 
     def _on_dimension_item_created_event(self, event) -> None:
-        """Handle event.dimension_item.created — emit signal so slot runs on GUI thread."""
-        self.model_browser_rebuild_requested.emit()
+        """Handle event.dimension_item.created — debounce browser rebuild."""
+        self._schedule_browser_rebuild()
 
     def _on_dimension_item_deleted_event(self, event) -> None:
-        """Handle event.dimension_item.deleted — emit signal so slot runs on GUI thread."""
-        self.model_browser_rebuild_requested.emit()
+        """Handle event.dimension_item.deleted — debounce browser rebuild."""
+        self._schedule_browser_rebuild()
 
     def _on_selection_changed_event(self, event) -> None:
         """Handle event.selection.changed — emit signal so slot runs on GUI thread."""
@@ -3852,7 +3893,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._workspace.reload_active_view()
             # Derive current view from session state, not workspace saved default.
             result = self.session.query("active_view_current")
-            view_id = result.get("active_view_id") if result else None
+            view_id = result.get("view_id") if result else None
             if view_id is not None:
                 self._active_view_id = view_id
             self._sync_tile_fetch_signals()
@@ -6217,6 +6258,11 @@ class MainWindow(QtWidgets.QMainWindow):
         desired_tracking = self._dock_perf._toggle.isChecked()
         desired_mt = self._dock_perf._mt_toggle.isChecked()
         self.session.execute("set_dependency_tracking", enabled=desired_tracking)
+        # Re-bootstrap DTO cache so Model Browser and view tabs show cubes/views
+        # from the newly-created workspace instead of stale snapshots.
+        if self.gui_view_model is not None:
+            self._bootstrap_view_model()
+        self.grid_read_model.invalidate_cache()
         self._dock_browser.rebuild()
         self._workspace.reload_workspace()
         for win in list(self._workspace_windows):
