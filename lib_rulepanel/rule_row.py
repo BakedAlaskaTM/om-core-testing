@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QFrame, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QTextEdit, QMenu, QSizePolicy
 )
-from PySide6.QtCore import Qt, Signal, QPoint, QMimeData, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, Signal, QPoint, QMimeData, QPropertyAnimation, QEasingCurve, QTimer
 from PySide6.QtGui import QIcon, QPixmap, QColor, QPainter, QDrag, QKeyEvent
 from PySide6.QtSvg import QSvgRenderer
 
@@ -243,36 +243,35 @@ class EditableRuleRow(QFrame):
         super().focusOutEvent(event)
 
     def resizeEvent(self, event):
-        """Keep the rule label tall enough for its wrapped text."""
+        """Defer height update to break the layout feedback loop.
+
+        setMinimumHeight triggers an async LayoutRequest which fires another
+        resizeEvent.  Doing the update synchronously creates an oscillating
+        cycle (height bounces every paint).  Deferring to the next event-loop
+        iteration lets the layout settle before we touch minimumHeight again.
+        """
         super().resizeEvent(event)
         if self.is_editing:
             return
+        if getattr(self, "_height_timer", None) is not None:
+            return
+        self._height_timer = QTimer(self)
+        self._height_timer.setSingleShot(True)
+        self._height_timer.timeout.connect(self._update_label_height)
+        self._height_timer.start(0)
+
+    def _update_label_height(self):
+        """Set the label's minimum height to fit its wrapped text."""
+        self._height_timer = None
         label = getattr(self, "rule_body_label", None)
         if not isinstance(label, QLabel):
             return
         width = label.width()
         if width <= 0:
             return
-        # Compute heights without the previous minimumHeight influencing the
-        # result, because QLabel::heightForWidth returns at least the current
-        # minimumHeight once it has been set.
         old_min = label.minimumHeight()
         label.setMinimumHeight(0)
         target_height = label.heightForWidth(width)
-        natural_height = label.heightForWidth(100000)
-
-        # Use comfortable margins for a single-line rule, but tighten the bar
-        # when the expression wraps so multi-line rows do not look bloated.
-        is_wrapped = target_height > natural_height + 4
-        if is_wrapped != getattr(self, "_is_wrapped", False):
-            self._is_wrapped = is_wrapped
-            if is_wrapped:
-                self.row_layout.setContentsMargins(4, 1, 8, 0)
-                self.meta_layout.setContentsMargins(28, 0, 8, 1)
-            else:
-                self.row_layout.setContentsMargins(4, 4, 8, 2)
-                self.meta_layout.setContentsMargins(28, 2, 8, 2)
-
         if target_height > 0 and old_min != target_height:
             label.setMinimumHeight(target_height)
 

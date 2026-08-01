@@ -907,7 +907,8 @@ class RemoteEngine:
         cube_id = cube.id if hasattr(cube, "id") else cube
         addr_key = "|".join(str(a) for a in addr)
         result = self._conn.call(
-            RpcMethod.EVALUATE_CELL, cube_id, addr_key
+            RpcMethod.EVALUATE_CELL, cube_id, addr_key,
+            timeout=300.0,
         )
         value, _ = _deserialize_value(result)
         return value
@@ -918,7 +919,8 @@ class RemoteEngine:
         cube_id = cube.id if hasattr(cube, "id") else cube
         addr_keys = ["|".join(str(a) for a in addr) for addr in addrs]
         result = self._conn.call(
-            RpcMethod.EVALUATE_CELLS, cube_id, addr_keys
+            RpcMethod.EVALUATE_CELLS, cube_id, addr_keys,
+            timeout=300.0,
         )
         return [_dto_to_cell_value(v) for v in result] if result else []
 
@@ -1043,7 +1045,7 @@ class RemoteEngine:
             return cv.value if cv is not None else None
         # The remote server's get_cached_cell_value only returns hardcoded values.
         # Fall back to evaluate_cell for rule-computed cells so the grid shows data.
-        eval_result = self._conn.call(RpcMethod.EVALUATE_CELL, cube_id, addr_key)
+        eval_result = self._conn.call(RpcMethod.EVALUATE_CELL, cube_id, addr_key, timeout=300.0)
         if eval_result is None:
             return None
         value, _ = _deserialize_value(eval_result)
@@ -1082,7 +1084,7 @@ class RemoteEngine:
             chunk = addr_keys[i:i + _CHUNK_SIZE]
             result = self._conn.call(
                 RpcMethod.EVALUATE_CELLS, cube_id, chunk,
-                timeout=120.0,
+                timeout=300.0,
             )
             if not result:
                 values.extend([None] * len(chunk))

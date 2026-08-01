@@ -33,6 +33,7 @@ dependencies = [
     "pympler==1.1",
     "radon==6.0.1",
     "py-spy==0.4.2",
+    "gmpy2==2.3.1",
 ]
 
 [project.urls]

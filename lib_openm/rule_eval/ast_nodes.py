@@ -101,6 +101,8 @@ _FUNCTIONS = {
     "COUNTA",
     "COUNTIF",
     "COUNTIFS",
+    "SUMIF",
+    "SUMIFS",
     "ABS",
     "ROUND",
     "ROUNDUP",
@@ -160,5 +162,15 @@ _FUNCTIONS = {
     "COLORMAP",
     "HSV2RGB",
     "RGB",
+    # Date functions
+    "MONTH",
+    "DAY",
+    "YEAR",
+    "DATE",
+    "EOMONTH",
+    "TODAY",
+    "NOW",
+    "WEEKDAY",
+    "WEEKNUM",
 }
 _FUNCTIONS |= XLS_FUNCTIONS

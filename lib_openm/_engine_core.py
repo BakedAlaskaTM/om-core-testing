@@ -2106,10 +2106,6 @@ class _EngineCore:
                 # Add edge from this node to parent for dirty propagation up the chain
                 if parent_key:
                     self._dep_graph.add_edge(node_key, parent_key)
-                    # Also link to root cell (eval_context[0]) for dirty propagation
-                    root_key = eval_context[0] if eval_context else None
-                    if root_key and root_key != parent_key and root_key != node_key:
-                        self._dep_graph.add_edge(node_key, root_key)
                 # Record precedents for this node so it gets marked dirty when they change
                 if precedents:
                     self._dep_graph.replace_precedents(node_key, precedents)
@@ -7331,10 +7327,6 @@ class _EngineCore:
                 )
                 if dim is None:
                     raise KeyError(f"Dimension {dim_name!r} not in cube {target_cube.name!r}")
-                if dim.dim_type != "seq":
-                    raise ValueError(
-                        f"POS only supports sequential dimensions; dimension {dim.name!r} has dim_type={dim.dim_type!r}",
-                    )
                 slot = target_cube.dimension_ids.index(dim.id)
                 if not (0 <= slot < len(seeded_addr)):
                     raise KeyError(f"Address slot out of range for dimension {dim_name!r}")
@@ -7360,10 +7352,6 @@ class _EngineCore:
                 )
                 if dim is None:
                     raise KeyError(f"Dimension {dim_name!r} not in cube {target_cube.name!r}")
-                if dim.dim_type != "seq":
-                    raise ValueError(
-                        f"POSMAX only supports sequential dimensions; dimension {dim.name!r} has dim_type={dim.dim_type!r}",
-                    )
                 return float(len(dim.items))
 
             def ancestors_for_dim(
@@ -8350,6 +8338,14 @@ class _EngineCore:
                 parent_precedents = pending_precedents.pop(parent_key, set())
                 if parent_precedents:
                     self._dep_graph.replace_precedents(parent_key, parent_precedents)
+            # Clean up eval_context before raising.  The append at line 8240
+            # is not covered by the try/finally below, so without this cleanup
+            # the stale node_key would remain in eval_context and corrupt
+            # subsequent evaluations' dependency tracking.  Do NOT touch
+            # pending_precedents or _tracked_nodes here — the victim's own
+            # try/finally will handle those when it completes.
+            if tracking and node_key is not None and eval_context and eval_context[-1] == node_key:
+                eval_context.pop()
             raise CircularReferenceError(f"Circular reference at {(cube.id, addr)}")
         eval_stack.add(key)
         try:

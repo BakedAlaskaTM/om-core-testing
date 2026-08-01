@@ -7,7 +7,16 @@ import math
 import random
 from typing import Any, Callable
 
-from lib_openm.xls_compat import XLS_FUNCTIONS, eval_xls_function
+from lib_openm import cr_math
+
+from lib_openm.xls_compat import (
+    XLS_FUNCTIONS,
+    eval_xls_function,
+    _coerce_excel_date,
+    _excel_year_from_value,
+    _excel_serial_from_date,
+    _excel_serial_from_datetime,
+)
 
 from .ast_nodes import (
     _AstBinOp, _AstCall, _AstCtxRef, _AstDynamicMultiRef, _AstMultiRef,
@@ -156,6 +165,8 @@ class RuleEvaluator:
             "OR": self._fn_or,
             "NOT": self._fn_not,
             "XOR": self._fn_xor,
+            "TRUE": self._fn_true,
+            "FALSE": self._fn_false,
             # Type conversion
             "VALUE": self._fn_value,
             "IFERROR": self._fn_iferror,
@@ -199,6 +210,16 @@ class RuleEvaluator:
             "HSV2RGB": self._fn_hsv2rgb,
             "RGB": self._fn_rgb,
             "REF": self._fn_ref,
+            # Date functions
+            "MONTH": self._fn_month,
+            "DAY": self._fn_day,
+            "YEAR": self._fn_year,
+            "DATE": self._fn_date,
+            "EOMONTH": self._fn_eomonth,
+            "TODAY": self._fn_today,
+            "NOW": self._fn_now,
+            "WEEKDAY": self._fn_weekday,
+            "WEEKNUM": self._fn_weeknum,
         }
         # Dynamically add registered UDF handlers
         try:
@@ -382,8 +403,8 @@ class RuleEvaluator:
                     return CellError("#NUM!")
                 return self._normalize_ieee_special(_normalize_negative_zero(result))
             if op == "&":
-                left_s = "" if l is None else str(l)
-                right_s = "" if r is None else str(r)
+                left_s = self._format_for_string(l)
+                right_s = self._format_for_string(r)
                 return left_s + right_s
             if op == ">":  return 1.0 if l > r else 0.0
             if op == "<":  return 1.0 if l < r else 0.0
@@ -1185,7 +1206,7 @@ class RuleEvaluator:
             return v
         if v <= 0:
             return CellError("#NUM!")
-        return self._normalize_ieee_special(math.log(v))
+        return self._normalize_ieee_special(cr_math.log(v))
 
     def _fn_log(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, min_args=1, max_args=2)
@@ -1206,11 +1227,8 @@ class RuleEvaluator:
                 return base
             if base <= 0 or base == 1:
                 return CellError("#NUM!")
-            try:
-                return self._normalize_ieee_special(math.log(v, base))
-            except (ValueError, ZeroDivisionError):
-                return CellError("#NUM!")
-        return self._normalize_ieee_special(math.log10(v))
+            return self._normalize_ieee_special(cr_math.log(v) / cr_math.log(base))
+        return self._normalize_ieee_special(cr_math.log10(v))
 
     def _fn_log10(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1222,7 +1240,7 @@ class RuleEvaluator:
             return v
         if v <= 0:
             return CellError("#NUM!")
-        return self._normalize_ieee_special(math.log10(v))
+        return self._normalize_ieee_special(cr_math.log10(v))
 
     def _fn_exp(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1232,10 +1250,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        try:
-            return math.exp(v)
-        except OverflowError:
-            return CellError("#RANGE!")
+        return self._normalize_ieee_special(cr_math.exp(v))
 
     def _fn_sqrt(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1247,7 +1262,7 @@ class RuleEvaluator:
             return v
         if v < 0:
             return CellError("#NUM!")
-        return self._normalize_ieee_special(math.sqrt(v))
+        return self._normalize_ieee_special(cr_math.sqrt(v))
 
     def _fn_power(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=2)
@@ -1266,14 +1281,7 @@ class RuleEvaluator:
         # Match spreadsheet semantics: 0 raised to a negative exponent is a division-by-zero error.
         if base == 0 and exp < 0:
             return CellError("#DIV/0!")
-        try:
-            result = math.pow(base, exp)
-        except ValueError:
-            return CellError("#NUM!")
-        except OverflowError:
-            return CellError("#RANGE!")
-        except ZeroDivisionError:
-            return CellError("#DIV/0!")
+        result = cr_math.pow(base, exp)
         if isinstance(result, complex):
             return CellError("#NUM!")
         return self._normalize_ieee_special(result)
@@ -1286,7 +1294,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        return math.sin(v)
+        return self._normalize_ieee_special(cr_math.sin(v))
 
     def _fn_cos(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1296,7 +1304,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        return math.cos(v)
+        return self._normalize_ieee_special(cr_math.cos(v))
 
     def _fn_tan(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1306,7 +1314,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        return math.tan(v)
+        return self._normalize_ieee_special(cr_math.tan(v))
 
     def _fn_asin(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1316,10 +1324,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        try:
-            return math.asin(v)
-        except ValueError:
-            return CellError("#NUM!")
+        return self._normalize_ieee_special(cr_math.asin(v))
 
     def _fn_acos(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1329,10 +1334,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        try:
-            return math.acos(v)
-        except ValueError:
-            return CellError("#NUM!")
+        return self._normalize_ieee_special(cr_math.acos(v))
 
     def _fn_atan(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1342,7 +1344,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        return math.atan(v)
+        return self._normalize_ieee_special(cr_math.atan(v))
 
     def _fn_atan2(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=2)
@@ -1358,7 +1360,7 @@ class RuleEvaluator:
         x = self._coerce_number(x)
         if self._is_error(x):
             return x
-        return math.atan2(y, x)
+        return self._normalize_ieee_special(cr_math.atan2(y, x))
 
     def _fn_radians(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1368,7 +1370,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        return math.radians(v)
+        return self._normalize_ieee_special(cr_math.radians(v))
 
     def _fn_degrees(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1378,7 +1380,7 @@ class RuleEvaluator:
         v = self._coerce_number(v)
         if self._is_error(v):
             return v
-        return math.degrees(v)
+        return self._normalize_ieee_special(cr_math.degrees(v))
 
     def _fn_sign(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1494,7 +1496,7 @@ class RuleEvaluator:
             p = self._coerce_number(p)
             if self._is_error(p):
                 return p
-            places = max(0, int(p))
+            places = int(p)
         else:
             places = 0
         factor = 10 ** places
@@ -1605,6 +1607,14 @@ class RuleEvaluator:
                 true_count += 1
         return 1.0 if (true_count % 2 == 1) else 0.0
 
+    def _fn_true(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=0)
+        return 1.0
+
+    def _fn_false(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=0)
+        return 0.0
+
     # Type conversion functions
     def _fn_value(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=1)
@@ -1636,6 +1646,178 @@ class RuleEvaluator:
         if self._is_error(v):
             return self._eval(node.args[1], resolver, addr)
         return v
+
+    def _fn_month(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=1)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        try:
+            d = _coerce_excel_date(v, "month")
+            return float(d.month)
+        except (ValueError, TypeError):
+            return CellError("#VALUE!")
+
+    def _fn_day(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=1)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        try:
+            d = _coerce_excel_date(v, "day")
+            return float(d.day)
+        except (ValueError, TypeError):
+            return CellError("#VALUE!")
+
+    def _fn_year(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=1)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        try:
+            return _excel_year_from_value(v)
+        except (ValueError, TypeError):
+            return CellError("#VALUE!")
+
+    def _fn_date(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=3)
+        vals = []
+        for arg in node.args:
+            v = self._eval(arg, resolver, addr)
+            if self._is_error(v):
+                return v
+            vals.append(v)
+        try:
+            from datetime import date as _date
+            return _excel_serial_from_date(_date(int(float(vals[0])), int(float(vals[1])), int(float(vals[2]))))
+        except (ValueError, TypeError):
+            return CellError("#VALUE!")
+
+    def _fn_eomonth(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=2)
+        v0 = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v0):
+            return v0
+        v1 = self._eval(node.args[1], resolver, addr)
+        if self._is_error(v1):
+            return v1
+        try:
+            from datetime import date as _date, timedelta as _timedelta
+            start_date = _coerce_excel_date(v0, "eomonth")
+            month_delta = int(float(v1))
+            month_index = start_date.year * 12 + (start_date.month - 1) + month_delta
+            target_year = month_index // 12
+            target_month = month_index % 12 + 1
+            if target_month == 12:
+                next_month = _date(target_year + 1, 1, 1)
+            else:
+                next_month = _date(target_year, target_month + 1, 1)
+            return _excel_serial_from_date(next_month - _timedelta(days=1))
+        except (ValueError, TypeError):
+            return CellError("#VALUE!")
+
+    def _fn_today(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=0)
+        from datetime import date as _date
+        return _excel_serial_from_date(_date.today())
+
+    def _fn_now(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, exact=0)
+        from datetime import datetime as _datetime
+        return _excel_serial_from_datetime(_datetime.now())
+
+    def _fn_weekday(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=1, max_args=2)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        rtype = 1
+        if len(node.args) >= 2:
+            rt = self._eval(node.args[1], resolver, addr)
+            if self._is_error(rt):
+                return rt
+            try:
+                rtype = int(float(rt))
+            except (ValueError, TypeError):
+                return CellError("#VALUE!")
+        try:
+            d = _coerce_excel_date(v, "weekday")
+        except (ValueError, TypeError):
+            return CellError("#VALUE!")
+        dow = d.weekday()  # Monday=0..Sunday=6
+        # ISO 26300 §6.10.21 WEEKDAY type table
+        if rtype == 1:
+            return float((dow + 1) % 7 + 1)
+        elif rtype == 2:
+            return float(dow + 1)
+        elif rtype == 3:
+            return float(dow)
+        elif 11 <= rtype <= 17:
+            shift = rtype - 11  # 0=Mon..6=Sun
+            return float((dow - shift) % 7 + 1)
+        else:
+            return CellError("#NUM!")
+
+    def _fn_weeknum(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
+        self._require_argc(node, min_args=1, max_args=2)
+        v = self._eval(node.args[0], resolver, addr)
+        if self._is_error(v):
+            return v
+        mode = 1
+        if len(node.args) >= 2:
+            m = self._eval(node.args[1], resolver, addr)
+            if self._is_error(m):
+                return m
+            try:
+                mode = int(float(m))
+            except (ValueError, TypeError):
+                return CellError("#VALUE!")
+        # Validate mode per ISO 26300 §6.10.22 constraints
+        if not (mode in (1, 2, 21, 150) or 11 <= mode <= 17):
+            return CellError("#NUM!")
+        try:
+            d = _coerce_excel_date(v, "weeknum")
+        except (ValueError, TypeError):
+            return CellError("#VALUE!")
+        if mode in (21, 150):
+            # ISO 8601: first week with the first Thursday
+            from datetime import date as _date, timedelta as _td
+            jan1 = _date(d.year, 1, 1)
+            # Find the Thursday of the first ISO week
+            # ISO week 1 is the week containing the first Thursday
+            thursday_of_week1 = jan1 + _td(days=(3 - jan1.weekday()) % 7)
+            week1_monday = thursday_of_week1 - _td(days=3)
+            if d < week1_monday:
+                # Belongs to last week of previous year
+                prev_dec31 = _date(d.year - 1, 12, 31)
+                prev_thursday = prev_dec31 + _td(days=(3 - prev_dec31.weekday()) % 7)
+                prev_week1_monday = prev_thursday - _td(days=3)
+                return float((d - prev_week1_monday).days // 7 + 1)
+            return float((d - week1_monday).days // 7 + 1)
+        else:
+            # Modes 1,2,11-17: week containing Jan 1 is week 1
+            # Week starts on: mode 1=Sunday, mode 2=Monday, 11=Mon,12=Tue,...17=Sun
+            if mode == 1:
+                week_start_dow = 6  # Sunday
+            elif mode == 2 or mode == 11:
+                week_start_dow = 0  # Monday
+            else:
+                week_start_dow = mode - 11  # 12=Tue(1),...,17=Sun(6)
+            from datetime import date as _date, timedelta as _td2
+            jan1 = _date(d.year, 1, 1)
+            jan1_dow = jan1.weekday()  # Mon=0..Sun=6
+            # Days from Jan 1 to the start of week 1 (Jan 1 is in week 1)
+            # Week 1 starts at Jan 1 minus offset to the week_start day
+            offset = (jan1_dow - week_start_dow) % 7
+            week1_start = jan1 - _td2(days=offset)
+            if d < week1_start:
+                # In the last week of the previous year
+                prev_jan1 = _date(d.year - 1, 1, 1)
+                prev_jan1_dow = prev_jan1.weekday()
+                prev_offset = (prev_jan1_dow - week_start_dow) % 7
+                prev_week1_start = prev_jan1 - _td2(days=prev_offset)
+                return float((d - prev_week1_start).days // 7 + 1)
+            return float((d - week1_start).days // 7 + 1)
 
     def _fn_rand(self, node: _AstCall, resolver: CubeResolver | None, addr: tuple[str, ...]) -> Any:
         self._require_argc(node, exact=0)
@@ -2524,17 +2706,35 @@ class RuleEvaluator:
 
         # For multi-arg aggregates, expand cross-cube reference args as slices
         # (wildcarding unshared dimensions) instead of scalar resolution.
+        # Only use the slice path when ALL args are cross-cube refs; otherwise
+        # slice_over_ref would record spurious dependency edges for args that
+        # are ultimately resolved via scalar resolve_ref instead.
         if fn in ("SUM", "MIN", "MAX", "AVG", "AVERAGE", "COUNT", "COUNTA") and resolver is not None and len(node.args) > 1:
             slice_fn = getattr(resolver, "slice_over_ref", None)
             if slice_fn is not None:
-                nums: list[float] = []
-                non_empty_count = 0
-                all_expanded = True
-                for arg in node.args:
-                    if isinstance(arg, _AstRef) and getattr(arg, "cube_name", None):
-                        try:
-                            vals = slice_fn([(arg.dim_name, arg.item_name)], addr, arg.cube_name)
-                        except (KeyError, ValueError, TypeError):
+                all_cross_cube = all(
+                    (isinstance(a, _AstRef) or isinstance(a, _AstMultiRef))
+                    and getattr(a, "cube_name", None) is not None
+                    for a in node.args
+                )
+                if all_cross_cube:
+                    nums: list[float] = []
+                    non_empty_count = 0
+                    all_expanded = True
+                    for arg in node.args:
+                        if isinstance(arg, _AstRef):
+                            try:
+                                vals = slice_fn([(arg.dim_name, arg.item_name)], addr, arg.cube_name)
+                            except (KeyError, ValueError, TypeError):
+                                all_expanded = False
+                                break
+                        elif isinstance(arg, _AstMultiRef):
+                            try:
+                                vals = slice_fn(list(arg.pairs), addr, arg.cube_name)
+                            except (KeyError, ValueError, TypeError):
+                                all_expanded = False
+                                break
+                        else:
                             all_expanded = False
                             break
                         for v in vals:
@@ -2546,45 +2746,33 @@ class RuleEvaluator:
                                     nums.append(float(v))
                                 except (ValueError, TypeError):
                                     pass
-                    elif isinstance(arg, _AstMultiRef) and getattr(arg, "cube_name", None):
-                        try:
-                            vals = slice_fn(list(arg.pairs), addr, arg.cube_name)
-                        except (KeyError, ValueError, TypeError):
-                            all_expanded = False
-                            break
-                        for v in vals:
-                            if self._is_error(v):
-                                return v
-                            if v is not None:
-                                non_empty_count += 1
-                                try:
-                                    nums.append(float(v))
-                                except (ValueError, TypeError):
-                                    pass
-                    else:
-                        all_expanded = False
-                        break
-                if all_expanded:
-                    if fn == "SUM":
-                        return self._normalize_ieee_special(sum(nums) if nums else 0.0)
-                    if fn == "MIN":
-                        return self._normalize_ieee_special(min(nums) if nums else 0.0)
-                    if fn == "MAX":
-                        return self._normalize_ieee_special(max(nums) if nums else 0.0)
-                    if fn in ("AVG", "AVERAGE"):
-                        if not nums:
-                            return CellError("#DIV/0!")
-                        return self._normalize_ieee_special(sum(nums) / len(nums))
-                    if fn == "COUNT":
-                        return float(len(nums))
-                    if fn == "COUNTA":
-                        return float(non_empty_count)
+                    if all_expanded:
+                        if fn == "SUM":
+                            return self._normalize_ieee_special(sum(nums) if nums else 0.0)
+                        if fn == "MIN":
+                            return self._normalize_ieee_special(min(nums) if nums else 0.0)
+                        if fn == "MAX":
+                            return self._normalize_ieee_special(max(nums) if nums else 0.0)
+                        if fn in ("AVG", "AVERAGE"):
+                            if not nums:
+                                return CellError("#DIV/0!")
+                            return self._normalize_ieee_special(sum(nums) / len(nums))
+                        if fn == "COUNT":
+                            return float(len(nums))
+                        if fn == "COUNTA":
+                            return float(non_empty_count)
 
         # COUNTIF and COUNTIFS
         if fn == "COUNTIF" and len(node.args) >= 2:
             return self._eval_countif(node.args, resolver, addr)
         if fn == "COUNTIFS" and len(node.args) >= 2 and len(node.args) % 2 == 0:
             return self._eval_countifs(node.args, resolver, addr)
+        # SUMIF
+        if fn == "SUMIF" and len(node.args) >= 2:
+            return self._eval_sumif(node.args, resolver, addr)
+        # SUMIFS
+        if fn == "SUMIFS" and len(node.args) >= 3 and len(node.args) % 2 == 1:
+            return self._eval_sumifs(node.args, resolver, addr)
 
         # Handle aggregate functions with evaluated arguments
         vals = [self._eval(a, resolver, addr) for a in node.args]
@@ -2724,6 +2912,82 @@ class RuleEvaluator:
                 count += 1
         return float(count)
 
+    def _eval_sumif(self, args, resolver, addr):
+        """SUMIF(range, criteria [, sum_range]) - sum cells matching criteria."""
+        if len(args) < 2:
+            return 0.0
+        range_arg = args[0]
+        criteria_arg = args[1]
+
+        # Evaluate criteria
+        criteria_val = self._eval(criteria_arg, resolver, addr)
+        if self._is_error(criteria_val):
+            return criteria_val
+        criteria_str = str(criteria_val) if criteria_val is not None else ""
+
+        # Get values from criteria range
+        range_values = self._eval_range_values(range_arg, resolver, addr)
+        if self._is_error(range_values):
+            return range_values
+
+        # Get sum range values (optional 3rd arg; defaults to range)
+        if len(args) >= 3:
+            sum_values = self._eval_range_values(args[2], resolver, addr)
+            if self._is_error(sum_values):
+                return sum_values
+        else:
+            sum_values = range_values
+
+        # Sum matching values
+        total = 0.0
+        min_len = min(len(range_values), len(sum_values))
+        for i in range(min_len):
+            if self._value_matches_criteria(range_values[i], criteria_str):
+                v = sum_values[i]
+                if v is None:
+                    continue
+                try:
+                    total += float(v)
+                except (ValueError, TypeError):
+                    pass
+        return total
+
+    def _eval_sumifs(self, args, resolver, addr):
+        """SUMIFS(sum_range, criteria_range1, criteria1, ...) - sum cells matching all criteria."""
+        if len(args) < 3 or len(args) % 2 != 1:
+            return 0.0
+
+        sum_values = self._eval_range_values(args[0], resolver, addr)
+        if self._is_error(sum_values):
+            return sum_values
+
+        # Collect criteria pairs
+        pairs = []
+        for i in range(1, len(args), 2):
+            range_values = self._eval_range_values(args[i], resolver, addr)
+            if self._is_error(range_values):
+                return range_values
+            criteria_val = self._eval(args[i + 1], resolver, addr)
+            if self._is_error(criteria_val):
+                return criteria_val
+            criteria_str = str(criteria_val) if criteria_val is not None else ""
+            pairs.append((range_values, criteria_str))
+
+        total = 0.0
+        for i in range(len(sum_values)):
+            if all(
+                i < len(pairs[k][0]) and self._value_matches_criteria(pairs[k][0][i], pairs[k][1])
+                for k in range(len(pairs))
+            ):
+                v = sum_values[i]
+                if v is None:
+                    continue
+                try:
+                    total += float(v)
+                except (ValueError, TypeError):
+                    pass
+        return total
+
     def _eval_range_values(self, range_arg, resolver, addr):
         """Evaluate a range argument and return list of values."""
         # Handle reference to cube slice
@@ -2744,6 +3008,47 @@ class RuleEvaluator:
                     return result
                 if isinstance(result, float):
                     return [result]
+
+        # Handle multi-ref (e.g. Cube::Dim.*:Dim2.Item) via slice_over_ref
+        if isinstance(range_arg, _AstMultiRef) and resolver is not None:
+            cube_name = getattr(range_arg, "cube_name", None)
+            # Try slice_over_ref first for cross-cube wildcard expansion
+            slice_fn = getattr(resolver, "slice_over_ref", None)
+            if slice_fn is not None:
+                try:
+                    result = self._with_seq_keyword_guard(
+                        resolver,
+                        getattr(range_arg, "allow_seq_keywords", False),
+                        slice_fn,
+                        list(range_arg.pairs),
+                        addr,
+                        cube_name,
+                    )
+                    if isinstance(result, list):
+                        return result
+                    if isinstance(result, float):
+                        return [result]
+                except (KeyError, ValueError, TypeError):
+                    pass
+            # Fall back to aggregate_over_ref with COUNTA_VALUES
+            agg_fn = getattr(resolver, "aggregate_over_ref", None)
+            if agg_fn is not None:
+                try:
+                    result = self._with_seq_keyword_guard(
+                        resolver,
+                        getattr(range_arg, "allow_seq_keywords", False),
+                        agg_fn,
+                        list(range_arg.pairs),
+                        addr,
+                        cube_name,
+                        "COUNTA_VALUES",
+                    )
+                    if isinstance(result, list):
+                        return result
+                    if isinstance(result, float):
+                        return [result]
+                except (KeyError, ValueError, TypeError):
+                    pass
 
         # Evaluate directly
         val = self._eval(range_arg, resolver, addr)

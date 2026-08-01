@@ -184,6 +184,8 @@ class _Parser:
             # spreadsheet semantics and keeps expressions like
             # IF(cond, TRUE, FALSE) working without requiring dedicated
             # dimensions or items named "TRUE"/"FALSE".
+            if name_upper in ("TRUE", "FALSE") and self._peek().kind == _TT_LPAREN:
+                return self._call(name_upper)
             if name_upper == "TRUE":
                 self._eat()
                 return _AstNum(1.0)
@@ -191,7 +193,8 @@ class _Parser:
                 self._eat()
                 return _AstNum(0.0)
             if name_upper in _FUNCTIONS or name_upper in _UdfFunctions:
-                return self._call(name_upper)
+                if self._peek().kind == _TT_LPAREN:
+                    return self._call(name_upper)
             # Unknown name followed by ( — treat as function call for #NAME! at eval time
             if self._peek().kind == _TT_LPAREN:
                 return self._call(name_upper)
