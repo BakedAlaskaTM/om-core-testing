@@ -247,12 +247,16 @@ class RemoteEngine:
             # The server may not return views; merge from local copy if missing.
             if not ws_from_server.views and self._local_ws is not None:
                 ws_from_server.views = self._local_ws.views
-            # The server does not manage view ordering or saved default view.
-            # Always restore these from the local copy when available, even if
-            # the server returned views (the server may return views in a
-            # different order, e.g. sorted by ID, and may omit views_order
-            # entirely).
+            # The server does not manage workspace id/name, view ordering, or
+            # saved default view. Always restore these from the local copy when
+            # available, even if the server returned views (the server may
+            # return views in a different order, e.g. sorted by ID, and may
+            # omit views_order entirely).
             if self._local_ws is not None:
+                if not ws_from_server.id:
+                    ws_from_server.id = self._local_ws.id
+                if not ws_from_server.name or ws_from_server.name == "Untitled":
+                    ws_from_server.name = self._local_ws.name
                 if not ws_from_server.views_order:
                     ws_from_server.views_order = self._local_ws.views_order
                 if not ws_from_server.saved_default_view_id:
@@ -680,9 +684,14 @@ class RemoteEngine:
             del self._cached_workspace.cubes[cube_id]
         publish_events(self, result.get("events", []))
 
-    def attach_dimension_to_cube(self, cube_id: str, dim_id: str) -> None:
+    def attach_dimension_to_cube(
+        self, cube_id: str, dim_id: str, default_item_id: str | None = None
+    ) -> None:
+        kwargs: dict[str, Any] = {}
+        if default_item_id is not None:
+            kwargs["default_item_id"] = default_item_id
         result = self._conn.call(
-            RpcMethod.ATTACH_DIMENSION, cube_id=cube_id, dim_id=dim_id
+            RpcMethod.ATTACH_DIMENSION, cube_id=cube_id, dim_id=dim_id, **kwargs
         )
         self._invalidate_workspace_cache()
         publish_events(self, result.get("events", []))
@@ -691,6 +700,20 @@ class RemoteEngine:
         result = self._conn.call(
             RpcMethod.DETACH_DIMENSION, cube_id=cube_id, dim_id=dim_id
         )
+        # Update _local_ws to stay in sync with server state
+        if self._local_ws is not None:
+            cube = self._local_ws.cubes.get(cube_id)
+            if cube is not None and dim_id in cube.dimension_ids:
+                cube.dimension_ids.remove(dim_id)
+            for view in self._local_ws.views.values():
+                if view.cube_id != cube_id:
+                    continue
+                for axis in ("row_dim_ids", "col_dim_ids", "page_dim_ids"):
+                    lst = getattr(view, axis, [])
+                    if dim_id in lst:
+                        lst.remove(dim_id)
+                if hasattr(view, "page_selections") and dim_id in view.page_selections:
+                    del view.page_selections[dim_id]
         self._invalidate_workspace_cache()
         publish_events(self, result.get("events", []))
 
@@ -940,7 +963,12 @@ class RemoteEngine:
             value=value,
         )
         publish_events(self, result.get("events", []))
-        # Cell value changes don't affect workspace structure.
+        # Sync local user_override_addrs so snapshot queries render the hardvalue indicator.
+        addr_tuple = tuple(addr_key.split("|"))
+        if value is not None:
+            cube.user_override_addrs.add(addr_tuple)
+        else:
+            cube.user_override_addrs.discard(addr_tuple)
 
     def set_cell_hardvalue_by_addr(
         self, cube_id: str, addr: tuple, value: Any
@@ -952,7 +980,13 @@ class RemoteEngine:
             value=value,
         )
         publish_events(self, result.get("events", []))
-        # Cell value changes don't affect workspace structure.
+        # Sync local user_override_addrs so snapshot queries render the hardvalue indicator.
+        cube = self.workspace.cubes.get(cube_id)
+        if cube is not None:
+            if value is not None:
+                cube.user_override_addrs.add(tuple(addr))
+            else:
+                cube.user_override_addrs.discard(tuple(addr))
 
     def batch_set_cell_hardvalues_by_addr(
         self, cube_id: str, entries: list
@@ -967,6 +1001,14 @@ class RemoteEngine:
                 cube_id=cube_id, entries=wire_entries,
             )
             publish_events(self, result.get("events", []))
+            # Sync local user_override_addrs for all entries.
+            cube = self.workspace.cubes.get(cube_id)
+            if cube is not None:
+                for addr, val in entries:
+                    if val is not None:
+                        cube.user_override_addrs.add(tuple(addr))
+                    else:
+                        cube.user_override_addrs.discard(tuple(addr))
             return int(result.get("count", len(entries)))
         except RemoteEngineError as exc:
             if "unknown method" not in str(exc).lower():
@@ -988,6 +1030,14 @@ class RemoteEngine:
         finally:
             self._suppress_events = was_suppressed
         publish_events(self, [])
+        # Sync local user_override_addrs for fallback path.
+        cube = self.workspace.cubes.get(cube_id)
+        if cube is not None:
+            for addr, val in entries:
+                if val is not None:
+                    cube.user_override_addrs.add(tuple(addr))
+                else:
+                    cube.user_override_addrs.discard(tuple(addr))
         return count
 
     def clear_cell_hardvalue_by_addr(
@@ -999,7 +1049,10 @@ class RemoteEngine:
             cube_id, addr_key,
         )
         publish_events(self, result.get("events", []))
-        # Cell value changes don't affect workspace structure.
+        # Sync local user_override_addrs so snapshot queries drop the hardvalue indicator.
+        cube = self.workspace.cubes.get(cube_id)
+        if cube is not None:
+            cube.user_override_addrs.discard(tuple(addr))
 
     def clear_cell_hardvalue(self, view_id: str, cell_ref: dict) -> None:
         ws = self.workspace
@@ -1015,6 +1068,9 @@ class RemoteEngine:
             view.cube_id, addr_key,
         )
         publish_events(self, result.get("events", []))
+        # Sync local user_override_addrs so snapshot queries drop the hardvalue indicator.
+        addr_tuple = tuple(addr_key.split("|"))
+        cube.user_override_addrs.discard(addr_tuple)
         # Cell value changes don't affect workspace structure.
 
     def get_cell_value(self, view_id: str, cell_ref: dict) -> Any:
@@ -1358,8 +1414,8 @@ class RemoteEngine:
         if index is not None:
             kwargs["index"] = index
         result = self._conn.call(RpcMethod.MOVE_VIEW_DIMENSION, **kwargs)
-        publish_events(self, result.get("events", []))
-        # Update _local_ws view to stay in sync with server state
+        # Update _local_ws view and invalidate cache BEFORE publishing events
+        # so that event handlers querying view_detail see the updated layout.
         if self._local_ws is not None:
             view = self._local_ws.views.get(view_id)
             if view is not None:
@@ -1376,6 +1432,7 @@ class RemoteEngine:
                 elif dest == "page":
                     view.page_dim_ids.insert(index if index is not None and index <= len(view.page_dim_ids) else len(view.page_dim_ids), dim_id)
         self._invalidate_workspace_cache()
+        publish_events(self, result.get("events", []))
 
     def list_views(self) -> list:
         result = self._conn.call(RpcMethod.LIST_VIEWS)

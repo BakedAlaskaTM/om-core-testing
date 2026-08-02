@@ -7799,6 +7799,11 @@ class MainWindow(QtWidgets.QMainWindow):
         result = self.session.execute("undo")
         if result.success and result.data and result.data.get("changed"):
             desc = result.data.get("description")
+            # Rebootstrap the GUI view model cache because the Zig server
+            # does not emit events on undo/redo, leaving cached view
+            # snapshots stale.
+            if self.gui_read_model_binder is not None:
+                self.gui_read_model_binder._do_rebootstrap()
             self._dock_browser.rebuild()
             self._suppress_tile_fetches(True)
             self._reload_active_view()
@@ -7817,6 +7822,8 @@ class MainWindow(QtWidgets.QMainWindow):
         result = self.session.execute("redo")
         if result.success and result.data and result.data.get("changed"):
             desc = result.data.get("description")
+            if self.gui_read_model_binder is not None:
+                self.gui_read_model_binder._do_rebootstrap()
             self._dock_browser.rebuild()
             self._suppress_tile_fetches(True)
             self._reload_active_view()
