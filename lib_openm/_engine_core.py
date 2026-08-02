@@ -2496,28 +2496,40 @@ class _EngineCore:
         return all(item is None for item in aligned[: len(cube.dimension_ids)])
 
     def _validate_no_bidirectional_recurrence(self, expression: str) -> None:
-        """Check that rule does not contain both PREV and NEXT.
-        
-        Recurrence rules that reference both backward and forward directions
-        create unresolvable dependencies and are not allowed.
+        """Check that no single dimension has both PREV and NEXT in the rule body.
+
+        Bidirectional recurrence on the same dimension creates unresolvable
+        circular dependencies.  PREV on one dimension and NEXT on a different
+        dimension is a valid cross-dimensional reference and is allowed.
         """
-        from .rule_eval import _tokenise, _Parser, _SEQ_KEYWORDS, _AstRef, _AstMultiRef, _AstBinOp, _AstUnOp, _AstCall, RuleValidationError
-        
+        from .rule_eval import _tokenise, _Parser, _SEQ_KEYWORDS, _AstRef, _AstMultiRef, _AstDynamicMultiRef, _AstBinOp, _AstUnOp, _AstCall, RuleValidationError
+
         tokens = _tokenise(expression)
         ast_node = _Parser(tokens).parse()
-        
-        seq_keywords_found: set[str] = set()
-        
+
+        dim_keywords: dict[str, set[str]] = {}
+
         def _collect_keywords(n: Any) -> None:
             if isinstance(n, _AstRef):
+                if not getattr(n, "allow_seq_keywords", False):
+                    return
                 item_upper = n.item_name.upper()
                 if item_upper in _SEQ_KEYWORDS:
-                    seq_keywords_found.add(item_upper)
+                    dim_keywords.setdefault(n.dim_name, set()).add(item_upper)
             elif isinstance(n, _AstMultiRef):
-                for _, item_name in n.pairs:
+                if not getattr(n, "allow_seq_keywords", False):
+                    return
+                for dim_name, item_name in n.pairs:
                     item_upper = item_name.upper()
                     if item_upper in _SEQ_KEYWORDS:
-                        seq_keywords_found.add(item_upper)
+                        dim_keywords.setdefault(dim_name, set()).add(item_upper)
+            elif isinstance(n, _AstDynamicMultiRef):
+                for dim_name, item_name in n.pairs:
+                    item_upper = item_name.upper()
+                    if item_upper in _SEQ_KEYWORDS:
+                        dim_keywords.setdefault(dim_name, set()).add(item_upper)
+                for dc in n.dynamic_calls:
+                    _collect_keywords(dc)
             elif isinstance(n, _AstBinOp):
                 _collect_keywords(n.l)
                 _collect_keywords(n.r)
@@ -2526,15 +2538,16 @@ class _EngineCore:
             elif isinstance(n, _AstCall):
                 for arg in n.args:
                     _collect_keywords(arg)
-        
+
         _collect_keywords(ast_node)
-        
-        # Check for bidirectional recurrence: both PREV and NEXT present
-        if "PREV" in seq_keywords_found and "NEXT" in seq_keywords_found:
-            raise RuleValidationError(
-                "Bidirectional recurrence rule detected: cannot use both PREV and NEXT in the same rule. "
-                "Recurrence rules must calculate in one direction only (either backward with PREV or forward with NEXT, not both)."
-            )
+
+        for dim_name, keywords in dim_keywords.items():
+            if "PREV" in keywords and "NEXT" in keywords:
+                raise RuleValidationError(
+                    f"Bidirectional recurrence detected on dimension '{dim_name}': "
+                    f"cannot use both PREV and NEXT for the same dimension in a single rule. "
+                    f"Recurrence must calculate in one direction only per dimension."
+                )
 
     def _validate_cross_cube_wildcard_mapping_dims(
         self,
@@ -9471,6 +9484,8 @@ class _EngineCore:
         cube = self.require_cube_by_id(cube_id)
         expression = self._normalize_expression(expression)
 
+        # Validate expression for bidirectional recurrence before any evaluation.
+        self._validate_no_bidirectional_recurrence(expression)
         addr_mask, primary_dim_id, primary_item_id = self._resolve_rule_targets(
             cube, targets, use_defaults_for_unspecified=is_anchored
         )

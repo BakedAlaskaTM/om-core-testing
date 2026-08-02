@@ -93,6 +93,7 @@ def _normalise_bare_wildcard_ref(expr: str) -> str:
 _UNBRACKETED_WILDCARD_CHAIN_RE = re.compile(
     r"(?<![A-Za-z0-9_%\[])"  # not part of a larger identifier or already bracketed
     + r"(?:([A-Za-z_%][A-Za-z0-9_\s%]*)::\s*)?"
+    + r"(?:(@\.[A-Za-z_][A-Za-z0-9_]*)\s*:\s*)?"  # optional @.channel: prefix
     + r"([A-Za-z_%][A-Za-z0-9_\s%]*\.(?:\*|[A-Za-z0-9_%][A-Za-z0-9_\s%]*)"
     + r"(?:\s*:\s*[A-Za-z_%][A-Za-z0-9_\s%]*\.(?:\*|[A-Za-z0-9_%][A-Za-z0-9_\s%]*))*)"
     + r"(?![A-Za-z0-9_%])"
@@ -113,10 +114,12 @@ def _normalise_unbracketed_wildcard_chains(expr: str) -> str:
     """
 
     def repl(match: re.Match[str]) -> str:
-        cube, chain = match.group(1), match.group(2)
+        cube, channel, chain = match.group(1), match.group(2), match.group(3)
         if ".*" not in chain:
             return match.group(0)
         chain = chain.replace(":", ",")
+        if channel:
+            chain = f"{channel},{chain}"
         if cube:
             return f"{cube}::[{chain}]"
         return f"[{chain}]"

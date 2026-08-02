@@ -306,28 +306,43 @@ class RuleEvaluator:
         return _normalize_negative_zero(result)
 
     def _validate_no_bidirectional_recurrence(self, node: Any) -> None:
-        """Check that rule body does not contain both PREV and NEXT (bidirectional recurrence).
-        
-        Recurrence rules that look both backward and forward create unresolvable
-        dependencies and are not allowed.
+        """Check that no single dimension has both PREV and NEXT in the rule body.
+
+        Bidirectional recurrence on the same dimension creates unresolvable
+        circular dependencies: cell B depends on cell C (via NEXT) and cell C
+        depends on cell B (via PREV).  However, PREV on one dimension and NEXT
+        on a *different* dimension is a valid cross-dimensional reference (e.g.
+        ``Year[PREV] + Scenario[NEXT]``), so only same-dimension conflicts are
+        rejected.
         """
-        seq_keywords_found: set[str] = set()
-        
+        # dim_name -> set of sequential keywords found for that dimension
+        dim_keywords: dict[str, set[str]] = {}
+
         def _collect_keywords(n: Any) -> None:
             if isinstance(n, _AstRef):
+                if not getattr(n, "allow_seq_keywords", False):
+                    return
                 item_upper = n.item_name.upper()
                 if item_upper in _SEQ_KEYWORDS:
-                    seq_keywords_found.add(item_upper)
+                    dim_keywords.setdefault(n.dim_name, set()).add(item_upper)
             elif isinstance(n, _AstMultiRef):
-                for _, item_name in n.pairs:
+                if not getattr(n, "allow_seq_keywords", False):
+                    return
+                for dim_name, item_name in n.pairs:
                     item_upper = item_name.upper()
                     if item_upper in _SEQ_KEYWORDS:
-                        seq_keywords_found.add(item_upper)
+                        dim_keywords.setdefault(dim_name, set()).add(item_upper)
+            elif isinstance(n, _AstDynamicMultiRef):
+                for dim_name, item_name in n.pairs:
+                    item_upper = item_name.upper()
+                    if item_upper in _SEQ_KEYWORDS:
+                        dim_keywords.setdefault(dim_name, set()).add(item_upper)
+                for dc in n.dynamic_calls:
+                    _collect_keywords(dc)
             elif isinstance(n, _AstCtxRef):
-                # Check contextual refs (bare names like PREV, NEXT)
                 name_upper = n.name.upper()
                 if name_upper in _SEQ_KEYWORDS:
-                    seq_keywords_found.add(name_upper)
+                    dim_keywords.setdefault("__ctx__", set()).add(name_upper)
             elif isinstance(n, _AstBinOp):
                 _collect_keywords(n.l)
                 _collect_keywords(n.r)
@@ -336,15 +351,16 @@ class RuleEvaluator:
             elif isinstance(n, _AstCall):
                 for arg in n.args:
                     _collect_keywords(arg)
-        
+
         _collect_keywords(node)
-        
-        # Check for bidirectional recurrence: both PREV and NEXT present
-        if "PREV" in seq_keywords_found and "NEXT" in seq_keywords_found:
-            raise RuleValidationError(
-                "Bidirectional recurrence rule detected: cannot use both PREV and NEXT in the same rule. "
-                "Recurrence rules must calculate in one direction only (either backward with PREV or forward with NEXT, not both)."
-            )
+
+        for dim_name, keywords in dim_keywords.items():
+            if "PREV" in keywords and "NEXT" in keywords:
+                raise RuleValidationError(
+                    f"Bidirectional recurrence detected on dimension '{dim_name}': "
+                    f"cannot use both PREV and NEXT for the same dimension in a single rule. "
+                    f"Recurrence must calculate in one direction only per dimension."
+                )
 
     def _eval(self, node: Any, resolver: CubeResolver | None, addr: tuple[str, ...], volatile_seq: list[int] | None = None) -> Any:
         _RULE_EVAL_DEBUG and print(f"DEBUG _eval: node type={type(node).__name__}, isinstance _AstDynamicMultiRef={isinstance(node, _AstDynamicMultiRef)}")
