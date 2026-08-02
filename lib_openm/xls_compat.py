@@ -51,6 +51,29 @@ XLS_FUNCTIONS = {
 _ERROR_SENTINELS = ()  # Deprecated: use isinstance(x, CellError) instead
 _EXCEL_EPOCH = date(1899, 12, 30)
 
+# Derived constants — all traced to _EXCEL_EPOCH, not independently defined.
+_EXCEL_EPOCH_SERIAL_1970 = (date(1970, 1, 1) - _EXCEL_EPOCH).days  # 25569
+SECONDS_PER_DAY = 86_400.0
+EXCEL_EPOCH_UNIX = -_EXCEL_EPOCH_SERIAL_1970 * SECONDS_PER_DAY  # -2209161600.0
+
+
+def serial_days_to_unix_seconds(days: float) -> float:
+    """Convert Excel day-serial to Unix timestamp (seconds since 1970-01-01 UTC).
+
+    Boundary-only: for OS clock, API timestamps, logs, external integrations.
+    Never called from the evaluation path.
+    """
+    return days * SECONDS_PER_DAY + EXCEL_EPOCH_UNIX
+
+
+def unix_seconds_to_serial_days(seconds: float) -> float:
+    """Convert Unix timestamp to Excel day-serial.
+
+    Boundary-only: for OS clock, API timestamps, logs, external integrations.
+    Never called from the evaluation path.
+    """
+    return (seconds - EXCEL_EPOCH_UNIX) / SECONDS_PER_DAY
+
 
 def _split_text_format_sections(fmt: str) -> list[str]:
     if ";" in fmt:
