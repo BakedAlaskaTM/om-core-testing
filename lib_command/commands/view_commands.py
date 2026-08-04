@@ -98,6 +98,24 @@ def cmd_move_view_dimension(
     return {"affected": 1, "property": "view_dimension", "view_id": view_id, "dim_id": dim_id, "dest": dest}
 
 
+def _persist_view_col_width(engine: Any, view_id: str, col_index: int, width: int) -> None:
+    """Persist a column width on the engine (local or remote)."""
+    if hasattr(engine, "set_view_col_width"):
+        engine.set_view_col_width(view_id, col_index, width)
+    else:
+        view = engine.require_view_by_id(view_id)
+        view.set_col_width(col_index, width)
+
+
+def _persist_view_row_header_width(engine: Any, view_id: str, depth_or_index: int, width: int) -> None:
+    """Persist a row-header width on the engine (local or remote)."""
+    if hasattr(engine, "set_view_row_header_width"):
+        engine.set_view_row_header_width(view_id, depth_or_index, width)
+    else:
+        view = engine.require_view_by_id(view_id)
+        view.set_row_header_width(depth_or_index, width)
+
+
 def cmd_set_view_col_width(
     ctx: Any,
     view_id: str,
@@ -111,8 +129,7 @@ def cmd_set_view_col_width(
         raise ValueError("col_index must be non-negative")
     if width < 0:
         raise ValueError("width must be non-negative")
-    view = ctx.engine.require_view_by_id(view_id)
-    view.set_col_width(col_index, width)
+    _persist_view_col_width(ctx.engine, view_id, col_index, width)
     return {
         "affected": 1,
         "property": "col_widths",
@@ -135,8 +152,7 @@ def cmd_set_view_row_header_width(
         raise ValueError("depth_or_index must be non-negative")
     if width < 0:
         raise ValueError("width must be non-negative")
-    view = ctx.engine.require_view_by_id(view_id)
-    view.set_row_header_width(depth_or_index, width)
+    _persist_view_row_header_width(ctx.engine, view_id, depth_or_index, width)
     return {
         "affected": 1,
         "property": "row_header_widths",

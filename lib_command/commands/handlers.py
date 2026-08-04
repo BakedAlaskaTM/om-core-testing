@@ -39,6 +39,7 @@ from lib_command.commands.graph_mutations import (
 from lib_command.events.domain_events import DimensionStructureChangedEvent
 from lib_command.core.message_bus import get_message_bus
 from lib_command.core.domain_event_publisher import publish_domain_event
+from lib_openm._engine_core import AddAggregateItemResult
 
 
 def handle_rename_group_node(
@@ -109,6 +110,14 @@ def handle_add_aggregate_item(
     cmd: AddAggregateItemCommand, engine: Any, bus: Any, ctx: Any = None
 ) -> _HandlerResult[Any]:
     result = engine.create_aggregate_item(cmd.dim_id, cmd.group_node_id, cmd.name)
+    if isinstance(result, dict):
+        result = AddAggregateItemResult(
+            item_id=result["item_id"],
+            item_name=result.get("item_name", cmd.name),
+            item_node_id=result["item_node_id"],
+            aggregate_edge_id=result.get("aggregate_edge_id", result.get("edge_id")),
+            group_node_id=result["group_node_id"],
+        )
     publish_domain_event(
         bus,
         "event.dimension.structure_changed",
@@ -468,6 +477,19 @@ def handle_ungroup_items_adapter(
     ctx: Any, dim_id: str, item_ids: list[str]
 ) -> None:
     ctx.engine.ungroup_items(dim_id, item_ids)
+    bus = get_message_bus()
+    publish_domain_event(
+        bus,
+        "event.dimension.structure_changed",
+        DimensionStructureChangedEvent(
+            dim_id=dim_id,
+            reason="ungroup_items",
+            affected_node_ids=[],
+        ),
+        correlation_id=getattr(ctx, "correlation_id", None),
+        session_id=getattr(ctx, "session_id", None),
+        causation_id=getattr(ctx, "command_message_id", None),
+    )
 
 
 def cmd_create_dimension_item(

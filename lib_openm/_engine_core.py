@@ -3368,6 +3368,16 @@ class _EngineCore:
             "cube_id": view.cube_id,
         })
 
+    def set_view_col_width(self, view_id: str, col_index: int, width: int) -> None:
+        """Set one persisted column width for a view."""
+        view = self._ws.views[view_id]
+        view.set_col_width(col_index, width)
+
+    def set_view_row_header_width(self, view_id: str, depth_or_index: int, width: int) -> None:
+        """Set one persisted row-header width for a view."""
+        view = self._ws.views[view_id]
+        view.set_row_header_width(depth_or_index, width)
+
     def _remap_view_col_widths(self, view_id: str, old_keys: list[tuple[str, ...]], old_widths: dict[int, int]) -> None:
         """Rebuild view.col_widths after column keys have changed.
 
@@ -3630,6 +3640,40 @@ class _EngineCore:
         end = offset + limit if limit is not None else None
         return all_ids[start:end]
 
+    def _cleanup_empty_groups(self, dim_id: str) -> None:
+        """Remove GROUP nodes that have no MEMBER_OF or AGGREG_OF children."""
+        from lib_openm.graph_mutation import (
+            _all_nodes_for_dim,
+            _all_edges_for_dim,
+            _remove_node_raw,
+            _display_parent_edge,
+            _delete_edge_raw,
+            _set_node_root_ord,
+            _root_level_nodes,
+        )
+
+        changed = True
+        while changed:
+            changed = False
+            all_nodes = {n["node_id"]: n for n in _all_nodes_for_dim(dim_id, self._ws)}
+            all_edges = _all_edges_for_dim(dim_id, self._ws)
+            for node_id, node in all_nodes.items():
+                if node.get("kind") != "GROUP":
+                    continue
+                has_children = any(
+                    e["tgt"] == node_id and e["kind"] in ("MEMBER_OF", "AGGREG_OF")
+                    for e in all_edges
+                )
+                if not has_children:
+                    parent_edge = _display_parent_edge(node_id, dim_id, self._ws)
+                    if parent_edge:
+                        _delete_edge_raw(parent_edge["edge_id"], self._ws)
+                    else:
+                        _set_node_root_ord(node_id, None, self._ws)
+                    _remove_node_raw(node_id, self._ws)
+                    changed = True
+                    break
+
     def _compact_dimension_graph(self, dim_id: str) -> int:
         """Remove orphaned ITEM_REF nodes with no edges and no root order.
 
@@ -3678,6 +3722,9 @@ class _EngineCore:
                 parent_to_children.setdefault(edge["tgt"], []).append(edge["src"])
 
         node_set = set(node_ids)
+        # Track insertion order so the result preserves the caller's intended order.
+        ordered_result: list[str] = []
+        added: set[str] = set()
 
         changed = True
         while changed:
@@ -3694,7 +3741,18 @@ class _EngineCore:
                     changed = True
                     break
 
-        return list(node_set)
+        # Rebuild in original order, replacing reduced children with their parent.
+        for nid in node_ids:
+            if nid in node_set and nid not in added:
+                ordered_result.append(nid)
+                added.add(nid)
+        # Append any parents that were added by reduction but weren't in the original list.
+        for nid in node_set:
+            if nid not in added:
+                ordered_result.append(nid)
+                added.add(nid)
+
+        return ordered_result
 
     def move_nodes(
         self,
@@ -3834,11 +3892,9 @@ class _EngineCore:
                 # Collect existing edges, delete them all, then rebuild
                 existing_edges = [e for e in _all_edges_for_dim(dim_id, self._ws)
                                   if e["tgt"] == new_parent_node_id and e["kind"] == "MEMBER_OF"]
-                print(f"[move_nodes] new_parent={new_parent_node_id}, existing_edges_to_parent={len(existing_edges)}")
                 existing_edges.sort(key=lambda e: e["ord"] if e["ord"] is not None else 0)
                 children = [e["src"] for e in existing_edges]
                 for edge in existing_edges:
-                    print(f"[move_nodes] deleting existing edge to parent: {edge['edge_id']}")
                     _delete_edge_raw(edge["edge_id"], self._ws)
 
                 for node_id in node_ids:
@@ -3988,11 +4044,18 @@ class _EngineCore:
                         _create_edge_raw(new_id("edg"), group_edge_kind, sid, group_parent_id, dim_id, i, self._ws)
                 else:
                     # Group was at root; children become root at group's position
-                    roots = [n["node_id"] for n in _root_level_nodes(dim_id, self._ws)]
+                    child_set = set(child_node_ids)
+                    roots = [n["node_id"] for n in _root_level_nodes(dim_id, self._ws)
+                             if n["node_id"] not in child_set]
                     for cid in reversed(child_node_ids):
                         roots.insert(group_insert_idx, cid)
                     for i, rid in enumerate(roots):
                         _set_node_root_ord(rid, i, self._ws)
+
+        # Prune all empty groups in this dimension (not just the parent).
+        # move_empty_parents may have moved the immediate parent to root,
+        # leaving the grandparent empty — a full scan catches that.
+        self._cleanup_empty_groups(dim_id)
 
         # Update rules that reference the deleted group label
         if deleted_group_label:
@@ -4476,6 +4539,49 @@ class _EngineCore:
         if outline and not _has_graph_data(dim_id, self._ws):
             from lib_openm.outline_graph_bridge import migrate_outline_to_graph
             migrate_outline_to_graph(dim, self._ws)
+
+        # Validate partial group membership: if any selected item is already
+        # in a group, ALL members of that group must also be selected.
+        if child_item_ids:
+            from lib_openm.graph_mutation import (
+                _find_item_ref_node_id,
+                _display_parent_edge,
+                _all_edges_for_dim,
+                _all_nodes_for_dim,
+            )
+            selected_set = set(child_item_ids)
+            all_nodes = {n["node_id"]: n for n in _all_nodes_for_dim(dim_id, self._ws)}
+            all_edges = _all_edges_for_dim(dim_id, self._ws)
+            for item_id in child_item_ids:
+                nid = _find_item_ref_node_id(dim_id, item_id, self._ws)
+                if nid is None:
+                    continue
+                parent_edge = _display_parent_edge(nid, dim_id, self._ws)
+                if parent_edge is None:
+                    continue
+                parent_id = parent_edge["tgt"]
+                parent_node = all_nodes.get(parent_id)
+                if parent_node is None or parent_node.get("kind") != "GROUP":
+                    continue
+                # Collect all item IDs that are children of this parent group
+                group_members: set[str] = set()
+                for edge in all_edges:
+                    if edge["tgt"] == parent_id and edge["kind"] == "MEMBER_OF":
+                        child_nid = edge["src"]
+                        child_node = all_nodes.get(child_nid)
+                        if child_node and child_node.get("kind") == "ITEM_REF":
+                            ref = child_node.get("ref")
+                            if ref:
+                                group_members.add(ref)
+                # Check if selection includes all group members
+                if not group_members.issubset(selected_set):
+                    missing = group_members - selected_set
+                    parent_label = parent_node.get("label", parent_id)
+                    raise ValueError(
+                        f"Cannot create group '{label}': item is part of group "
+                        f"'{parent_label}' but not all members of that group "
+                        f"are selected (missing {len(missing)} item(s))."
+                    )
 
         # Capture root-level order before any mutations so we can preserve it.
         roots_before = [n["node_id"] for n in _root_level_nodes(dim_id, self._ws)]

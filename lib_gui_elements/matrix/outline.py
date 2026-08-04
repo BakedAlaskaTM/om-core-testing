@@ -959,6 +959,13 @@ class OutlineHelper:
                     dim_id=dim_id,
                     item_ids=item_ids,
                 )
+                # Delete the now-empty group node
+                self._grid.execute_command(
+                    "delete_group_node",
+                    dim_id=dim_id,
+                    node_id=group_node.node_id,
+                    promote_children="to_parent",
+                )
             else:
                 # No items; just delete the empty group
                 self._grid.execute_command(

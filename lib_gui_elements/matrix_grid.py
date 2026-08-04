@@ -133,6 +133,13 @@ class TileFetchThread(QtCore.QThread):
                     self._view_id[:8] if self._view_id else None,
                 )
                 return {}
+            if DEBUG_GUI:
+                result_tiles = result.get("tiles", {})
+                total_cells = sum(len(t.get("cells", {})) for t in result_tiles.values())
+                DEBUG_GUI and print(
+                    f"[TILE-QUERY] result view={self._view_id[:8] if self._view_id else None} "
+                    f"tiles={len(result_tiles)} total_cells={total_cells} plain={self._plain}"
+                )
             return result
 
     def run(self) -> None:
@@ -473,6 +480,14 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         # Phase 5C: read session selection state into local rendering cache on init.
         self._apply_session_selection()
 
+    def _is_system_cube_view(self) -> bool:
+        """Check if this grid is showing a system cube view (%RECNOD, %RECEDG, etc.)."""
+        view = self._workspace_read_model.get_view(self._view_id) if self._view_id else None
+        if view is None:
+            return False
+        name = view.get("name", "")
+        return isinstance(name, str) and name.startswith("%")
+
     def showEvent(self, event: QtGui.QShowEvent) -> None:
         # Restore focus policies before the standard show logic runs.
         if hasattr(self, '_saved_focus_policy'):
@@ -714,6 +729,8 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
             item_id = self._workspace_read_model.page_selection(self._view_id, dim_id)
             if item_id:
                 page_selections[dim_id] = item_id
+        if self._is_system_cube_view() and DEBUG_GUI:
+            print(f"[SYS-CUBE] _build_page_selections: {page_selections}", flush=True)
         return page_selections
 
     def _is_thread_alive(self, thread: QtCore.QThread | None) -> bool:
@@ -1275,6 +1292,61 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
             if missing_tiles:
                 self._schedule_tile_fetch()
 
+            is_sys = self._is_system_cube_view()
+            if is_sys and DEBUG_GUI:
+                total_tiles = len(self._tile_cache)
+                fresh_tiles = len(fresh_bounds)
+                stale_tiles = total_tiles - fresh_tiles
+                visible_cells_count = len(cells)
+                visible_range = (first_row, last_row, first_col, last_col)
+                print(
+                    f"[SYS-CUBE] _fetch_visible_cells view={self._view_id[:8] if self._view_id else None} "
+                    f"range={visible_range} data_gen={self._data_generation} "
+                    f"tiles={total_tiles} fresh={fresh_tiles} stale={stale_tiles} "
+                    f"missing={len(missing_tiles)} cells_found={visible_cells_count} "
+                    f"row_keys={len(self._row_keys)} col_keys={len(self._col_keys)}",
+                    flush=True,
+                )
+                if total_tiles == 0:
+                    print(f"[SYS-CUBE]   -> tile_cache is EMPTY, no tiles fetched yet", flush=True)
+                elif fresh_tiles == 0:
+                    print(f"[SYS-CUBE]   -> all tiles are STALE (data_gen mismatch)", flush=True)
+                if visible_cells_count > 0:
+                    for (r_v, c_v), cell_v in list(cells.items())[:5]:
+                        print(
+                            f"[SYS-CUBE]   -> cell ({r_v},{c_v}) value={cell_v.get('value')!r} "
+                            f"source={cell_v.get('source')} error={cell_v.get('error')}",
+                            flush=True,
+                        )
+                if visible_cells_count == 0 and fresh_tiles > 0:
+                    for tile_bounds_check, snapshot_check in self._tile_cache.items():
+                        if self._formatted_tile_data_gens.get(tile_bounds_check, -1) != self._data_generation:
+                            continue
+                        sc = snapshot_check.get("cells", {})
+                        print(
+                            f"[SYS-CUBE]   -> fresh tile {tile_bounds_check} has {len(sc)} cells, "
+                            f"sample keys: {list(sc.keys())[:3]}",
+                            flush=True,
+                        )
+                        if sc:
+                            for r_check in range(max(first_row, tile_bounds_check[0]), min(last_row, tile_bounds_check[1]) + 1):
+                                try:
+                                    rk = self._row_keys[self._leaf_row_index(r_check)]
+                                except Exception:
+                                    print(f"[SYS-CUBE]   -> leaf_row_index({r_check}) FAILED", flush=True)
+                                    continue
+                                for c_check in range(max(first_col, tile_bounds_check[2]), min(last_col, tile_bounds_check[3]) + 1):
+                                    try:
+                                        ck = self._col_keys[c_check]
+                                        ck_str = make_viewport_cell_key(rk, ck)
+                                        has = ck_str in sc
+                                        if not has:
+                                            print(f"[SYS-CUBE]   -> cell_key MISS r={r_check} c={c_check} rk={rk} ck={ck} key={ck_str[:60]}", flush=True)
+                                    except Exception as e:
+                                        print(f"[SYS-CUBE]   -> cell_key ERROR r={r_check} c={c_check}: {e}", flush=True)
+                                    break
+                                break
+
             return cells, hard_addrs, font_colors, fills
 
     def _schedule_tile_fetch(self) -> None:
@@ -1383,10 +1455,25 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
 
     def _start_tile_fetch_impl(self) -> None:
         self._pending_tile_fetch = False
+        is_sys = self._is_system_cube_view()
         if not self._rows or not self._cols or not self._view_id or self._session is None:
+            if is_sys and DEBUG_GUI:
+                print(
+                    f"[SYS-CUBE] _start_tile_fetch_impl EARLY RETURN: "
+                    f"rows={len(self._rows)} cols={len(self._cols)} "
+                    f"view_id={self._view_id[:8] if self._view_id else None} "
+                    f"session={self._session is not None}",
+                    flush=True,
+                )
             return
         if getattr(self, '_tile_fetch_suppressed', False):
             self._pending_tile_fetch = True
+            if is_sys and DEBUG_GUI:
+                print(
+                    f"[SYS-CUBE] _start_tile_fetch_impl SUPPRESSED: "
+                    f"tile_fetch_suppressed=True, deferring",
+                    flush=True,
+                )
             return
 
         # Refresh runtime config that may have changed via Options dialog
@@ -1535,6 +1622,14 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                 and self._image_data_gens.get(bounds, -1) == self._data_generation
             }
         fmt_tiles = self._build_tile_list(first_row, last_row, first_col, last_col, tile_h, tile_w, fmt_skip)
+        if is_sys and DEBUG_GUI:
+            print(
+                f"[SYS-CUBE] _start_tile_fetch_impl LAUNCH: "
+                f"reason={tile_reason} fmt_tiles={len(fmt_tiles)} "
+                f"skip={len(fmt_skip)} gen={gen} data_gen={self._data_generation} "
+                f"page_sel={page_selections}",
+                flush=True,
+            )
         if fmt_tiles:
             fmt_tiles.sort(key=_tile_priority)
             fmt_thread = TileFetchThread(
@@ -1560,15 +1655,22 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
     @QtCore.Slot()
     def _on_tile_ready(self, snapshot: dict, bounds: tuple, generation: int, is_plain: bool = False, data_gen: int = 0) -> None:
         """Receive one small tile from background thread; queue pre-render to pool."""
+        is_sys = self._is_system_cube_view()
         if is_plain:
             if generation != self._plain_generation:
+                if is_sys and DEBUG_GUI:
+                    print(f"[SYS-CUBE] _on_tile_ready REJECTED plain gen={generation} current={self._plain_generation} bounds={bounds}", flush=True)
                 DEBUG_GUI and print(f"DEBUG _on_tile_ready: REJECTED plain gen={generation} current={self._plain_generation}")
                 return
         elif generation != self._tile_generation:
+            if is_sys and DEBUG_GUI:
+                print(f"[SYS-CUBE] _on_tile_ready REJECTED fmt gen={generation} current={self._tile_generation} bounds={bounds}", flush=True)
             DEBUG_GUI and print(f"DEBUG _on_tile_ready: REJECTED fmt gen={generation} current={self._tile_generation}")
             return
         # NEW: reject tile fetched before a mutation but delivered after it
         if data_gen != self._data_generation:
+            if is_sys and DEBUG_GUI:
+                print(f"[SYS-CUBE] _on_tile_ready REJECTED stale data_gen={data_gen} current={self._data_generation} bounds={bounds}", flush=True)
             DEBUG_GUI and print(f"DEBUG _on_tile_ready: REJECTED stale data_gen={data_gen} current={self._data_generation}")
             return
         if not is_plain:
@@ -1577,6 +1679,9 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
             self._formatted_tile_data_gens[bounds] = data_gen
             self._tile_image_cache.pop(bounds, None)   # force re-render
             self._image_data_gens.pop(bounds, None)
+        if is_sys and DEBUG_GUI:
+            cell_count = len(snapshot.get("cells", {}))
+            print(f"[SYS-CUBE] _on_tile_ready ACCEPTED bounds={bounds} cells={cell_count} plain={is_plain} gen={generation} data_gen={data_gen}", flush=True)
         # Coalesce rapid tile arrivals on the GUI thread and schedule renderers
         # in one pass rather than one QThreadPool.start() per signal.
         self._tile_ready_batch.append((snapshot, bounds, generation, is_plain, data_gen))
@@ -1788,6 +1893,8 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                     # Cell data
                     cell = snapshot_cells.get(cell_key)
                     if cell is None:
+                        if self._is_system_cube_view() and DEBUG_GUI:
+                            print(f"[SYS-CUBE] _render_tile_image cell_key MISS: r={r_i} c={c} key={cell_key[:60]}", flush=True)
                         x += col_w
                         continue
 
@@ -1798,6 +1905,14 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                     cell_value = cell.get("value")
                     cell_source = cell.get("source")
                     is_hard_value = is_hardnumber or (cell_source == "override" and cell_value is not None)
+
+                    if self._is_system_cube_view() and DEBUG_GUI:
+                        _vt = get_value_type(cell_value)
+                        print(
+                            f"[SYS-CUBE] _render_tile_image CELL r={r_i} c={c} key={cell_key[:60]} "
+                            f"value={cell_value!r} type={_vt} source={cell_source} error={cell.get('error')}",
+                            flush=True,
+                        )
 
                     if is_hard_value:
                         p.fillRect(cell_r.adjusted(1, 1, 0, 0), QtGui.QColor("#ffff99"))
@@ -1839,6 +1954,14 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                             v = self._format_text(v, fmt.format_text)
                     except Exception:
                         v = "" if cell_value is None else str(cell_value)
+
+                    if self._is_system_cube_view() and DEBUG_GUI:
+                        print(
+                            f"[SYS-CUBE]   -> rendered v={v!r} value_type={value_type} "
+                            f"format_null={fmt.format_null!r} font_color={engine_font_color!r} "
+                            f"bg={effective_bg!r}",
+                            flush=True,
+                        )
 
                     font = QtGui.QFont(
                         str(fmt.font_family) if fmt.font_family else "sans-serif",
@@ -2060,8 +2183,14 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
             "col_dim_ids": list(view.get("col_dim_ids", []) or []) if view else None,
             "page_dim_ids": list(view.get("page_dim_ids", []) or []) if view else None,
         }
+        is_sys = self._is_system_cube_view()
+        if is_sys and DEBUG_GUI:
+            view_name = view.get("name", "?") if view else "?"
+            print(f"[SYS-CUBE] _do_reload view={view_name} id={self._view_id[:8] if self._view_id else None} meta={meta}", flush=True)
         DEBUG_GUI and print(f"[DO-RELOAD] view={self._view_id[:8] if self._view_id else None} meta={meta}")
         if view is None:
+            if is_sys and DEBUG_GUI:
+                print(f"[SYS-CUBE] _do_reload: view is None, returning early", flush=True)
             return
 
         # F5c: cache view metadata for paintEvent (avoids paint-path get_view)
@@ -2166,6 +2295,20 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         self._col_header_levels = 1
         self._col_band_levels = 0
         self._build_cols(view, raw_col_keys)
+
+        if is_sys and DEBUG_GUI:
+            print(
+                f"[SYS-CUBE] _do_reload built: rows={len(self._rows)} cols={len(self._cols)} "
+                f"row_keys={len(self._row_keys)} col_keys={len(self._col_keys)} "
+                f"raw_row_keys={len(raw_row_keys)} raw_col_keys={len(raw_col_keys)}",
+                flush=True,
+            )
+            if self._row_keys:
+                print(f"[SYS-CUBE]   sample row_keys: {self._row_keys[:3]}", flush=True)
+            if self._col_keys:
+                print(f"[SYS-CUBE]   sample col_keys: {self._col_keys[:3]}", flush=True)
+            if not self._row_keys or not self._col_keys:
+                print(f"[SYS-CUBE]   *** EMPTY KEYS after build ***", flush=True)
 
         # Structural change (insert/delete/reorder): snapshot data and tile
         # images to the right of the first change are stale.  For a pure
@@ -3195,6 +3338,14 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         root = self._outline_root(axis)
         src_path = self._path_for_item_id(axis, item_id)
 
+        # Track the parent group node so we can delete it if it becomes empty
+        parent_group_node_id = None
+        if src_path and len(src_path) > 1:
+            parent_path = tuple(src_path[:-1])
+            parent_node = self._get_node_at_path(root, parent_path)
+            if parent_node is not None:
+                parent_group_node_id = getattr(parent_node, 'node_id', None)
+
         def _count_leaves_before(nodes, target_path):
             count = 0
             current_path = []
@@ -3243,28 +3394,16 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
             position=position,
         )
 
-        # After move, check for empty groups and clean up
-        dim = self._workspace_read_model.get_dimension(dim_id)
-        if dim:
-            root = self._outline_root(axis)
-            # Delete empty groups iteratively so parent groups become empty too
-            def _find_empty_groups(nodes):
-                for node in nodes:
-                    if node.item_id is None and not node.children and getattr(node, 'node_id', None):
-                        yield node.node_id
-                    if node.children:
-                        yield from _find_empty_groups(node.children)
-
-            while True:
-                root = self._outline_root(axis)
-                empty = list(_find_empty_groups(root))
-                if not empty:
-                    break
-                for gid in empty:
+        # Delete the parent group if it is now empty (only child was the moved item)
+        if parent_group_node_id:
+            parent_node = self._get_node_at_path(root, tuple(src_path[:-1])) if src_path else None
+            if parent_node is not None:
+                remaining_children = [c for c in (parent_node.children or []) if c.item_id != item_id]
+                if not remaining_children:
                     self.execute_command(
                         "delete_group_node",
                         dim_id=dim_id,
-                        node_id=gid,
+                        node_id=parent_group_node_id,
                         promote_children="to_parent",
                     )
 
@@ -3752,6 +3891,13 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         )
         outline = self._axis_outline("row")
 
+        if self._is_system_cube_view() and DEBUG_GUI:
+            print(
+                f"[SYS-CUBE] _build_rows: row_dim_ids={row_dim_ids} "
+                f"raw_row_keys={len(raw_row_keys)} outline={len(outline) if outline else 0} nodes",
+                flush=True,
+            )
+
         # No row dimensions: treat as a single "value" row (or N generic rows) so
         # 1D cubes with their only dimension on the X-axis still display data.
         if not row_dim_ids:
@@ -3870,6 +4016,29 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                     )
                     row_keys_from_outline.append(key_map[item_id])
                     added_ids.add(item_id)
+                # Append ungraphed items (in dim.items order) that have no
+                # node in the outline graph.  This matches the engine's
+                # _dimension_effective_order which appends ungraphed items
+                # after graphed ones.
+                if dim is not None:
+                    for it in dim.get("items", []):
+                        iid = it["id"]
+                        if iid in key_map and iid not in added_ids:
+                            label = name_by_id.get(iid, str(iid))
+                            self._rows.append(
+                                {
+                                    "is_leaf": True,
+                                    "node_id": None,
+                                    "item_id": iid,
+                                    "labels": [label],
+                                    "label_paths": [],
+                                    "path": (len(self._rows),),
+                                    "display_edge_kind": None,
+                                    "is_aggregate": False,
+                                }
+                            )
+                            row_keys_from_outline.append(key_map[iid])
+                            added_ids.add(iid)
                 # Use outline order rows and bands
                 self._row_band_levels = outline_band_levels
                 self._row_header_levels = max(1, outline_band_levels + 1)
@@ -4029,6 +4198,13 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
             or []
         )
         outline = self._axis_outline("col")
+
+        if self._is_system_cube_view() and DEBUG_GUI:
+            print(
+                f"[SYS-CUBE] _build_cols: col_dim_ids={col_dim_ids} "
+                f"raw_col_keys={len(raw_col_keys)} outline={len(outline) if outline else 0} nodes",
+                flush=True,
+            )
 
         if len(col_dim_ids) == 1 and outline:
             def _max_outline_depth(nodes: list, d: int) -> int:
@@ -5111,6 +5287,13 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                     cell = visible_cells.get((r_i, c))
                     pending = self._pending_cell_values.get((r_i, c))
                     if cell is None and pending is None:
+                        _is_sys_paint = self._is_system_cube_view()
+                        if _is_sys_paint and DEBUG_GUI:
+                            print(
+                                f"[SYS-CUBE] paintEvent SKIP r={r_i} c={c} cell=None pending=None "
+                                f"in_cached={in_cached} visible_cells_count={len(visible_cells)}",
+                                flush=True,
+                            )
                         continue
                     if pending is not None:
                         cell = {"value": pending, "source": "override", "addr": None}
@@ -6741,7 +6924,11 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                         for sid in selected_items
                     )
 
-                if all_have_paths:
+                _outline_nodes = self._outline_root(axis)
+                _has_graph = bool(_outline_nodes) and any(
+                    getattr(n, 'node_id', None) is not None for n in _outline_nodes
+                )
+                if all_have_paths and _has_graph:
                     self._reorder_multiple_in_outline(axis, selected_items, dest_path, after)
                 else:
                     self._reorder_multiple_flat_items(axis, selected_items, dest_item_id, after)
@@ -6754,9 +6941,10 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
             DEBUG_GUI and print(f"DEBUG dropEvent: SINGLE LEAF REORDER axis={axis} item_id={item_id} dest={dest_col_or_row}")
             DEBUG_GUI and print(f"DEBUG dropEvent: SINGLE LEAF REORDER axis={axis} item_id={item_id} dest={dest_col_or_row}")
             src_path = self._path_for_item_id(axis, item_id)
-            has_outline = bool(self._outline_root(axis))
-            DEBUG_GUI and print(f"DEBUG dropEvent: src_path={src_path} has_outline={has_outline}")
-            DEBUG_GUI and print(f"DEBUG dropEvent: src_path={src_path} has_outline={has_outline}")
+            _outline_nodes = self._outline_root(axis)
+            has_outline = bool(_outline_nodes) and any(
+                getattr(n, 'node_id', None) is not None for n in _outline_nodes
+            )
             
             # Try outline-based reordering first
             if axis == "col" and 0 <= dest_col_or_row < len(self._cols):

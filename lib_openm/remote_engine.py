@@ -1409,6 +1409,22 @@ class RemoteEngine:
             view.page_dim_ids = list(page_dim_ids)
         self._invalidate_workspace_cache()
 
+    def set_view_col_width(self, view_id: str, col_index: int, width: int) -> None:
+        self._conn.call(
+            RpcMethod.SET_VIEW_COL_WIDTH,
+            view_id=view_id, col_index=col_index, width=width,
+        )
+        if self._cached_workspace is not None and view_id in self._cached_workspace.views:
+            self._cached_workspace.views[view_id].set_col_width(col_index, width)
+
+    def set_view_row_header_width(self, view_id: str, depth_or_index: int, width: int) -> None:
+        self._conn.call(
+            RpcMethod.SET_VIEW_ROW_HEADER_WIDTH,
+            view_id=view_id, depth_or_index=depth_or_index, width=width,
+        )
+        if self._cached_workspace is not None and view_id in self._cached_workspace.views:
+            self._cached_workspace.views[view_id].set_row_header_width(depth_or_index, width)
+
     def move_view_dimension(self, view_id: str, dim_id: str, dest: str, index: int | None = None) -> None:
         kwargs = dict(view_id=view_id, dim_id=dim_id, dest=dest)
         if index is not None:
@@ -2005,6 +2021,10 @@ class RemoteEngine:
             "parent_group_id": parent_group_id,
         }
         result = self._conn.call(RpcMethod.ENSURE_GROUP_IN_GRAPH, **payload)
+        if isinstance(result, dict):
+            self._invalidate_workspace_cache()
+            publish_events(self, result.get("events", []))
+            return str(result.get("data") or "")
         return str(result) if result else ""
 
     # ------------------------------------------------------------------
