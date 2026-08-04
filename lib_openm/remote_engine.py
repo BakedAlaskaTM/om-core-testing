@@ -594,9 +594,11 @@ class RemoteEngine:
             new_name=new_name,
         )
         if self._local_ws is not None and dim_id in self._local_ws.dimensions:
-            for it in self._local_ws.dimensions[dim_id].items:
+            from lib_openm.model import DimensionItem
+            dim = self._local_ws.dimensions[dim_id]
+            for idx, it in enumerate(dim.items):
                 if it.id == item_id:
-                    it.name = new_name
+                    dim.items[idx] = DimensionItem(id=it.id, name=new_name)
                     break
         self._invalidate_workspace_cache()
         publish_events(self, result.get("events", []))

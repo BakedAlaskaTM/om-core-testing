@@ -856,10 +856,17 @@ class HeaderEditHelper:
         Navigation should only happen when:
         - Cursor is at the left border and Left is pressed
         - Cursor is at the right border and Right is pressed
+        - Up or Down is pressed (no text-navigation purpose in a single-line
+          QLineEdit, so always commit + navigate)
         - All text is selected
         """
         if self._grid._header_edit_ctx is None:
             return False
+
+        # Up/Down have no text-editing purpose in a single-line QLineEdit,
+        # so they should always trigger commit + navigation.
+        if key in (QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down):
+            return True
 
         text = self._grid._editor.text()
         cursor_pos = self._grid._editor.cursorPosition()

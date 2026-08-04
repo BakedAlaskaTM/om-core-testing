@@ -907,8 +907,11 @@ class ViewWorkspaceController(QtCore.QObject):
                 QtCore.QTimer.singleShot(50, self._deferred_reload_active_view)
                 return
         DEBUG_GUI and print(f"DEBUG _deferred_reload_active_view: executing deferred reload")
-        self.rebuild_tabs()
-        self.connect_table_signals()
+        # Delegate to reload_active_view so we only rebuild tabs when the
+        # view list has actually changed.  Previously this unconditionally
+        # called rebuild_tabs(), which destroyed and recreated the grid
+        # and wiped in-memory selection state after dimension item renames.
+        self.reload_active_view()
 
     def active_view_has_errors(self) -> bool:
         return False
