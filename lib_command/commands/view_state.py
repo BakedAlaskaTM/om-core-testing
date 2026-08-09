@@ -85,6 +85,7 @@ def cmd_set_selection(
     anchor_row: int | None = None,
     anchor_col: int | None = None,
     selected_indices: list[tuple[int, int] | int] | None = None,
+    view_id: str | None = None,
 ) -> dict:
     """Set grid selection to absolute coordinates for this session.
 
@@ -95,15 +96,20 @@ def cmd_set_selection(
         anchor_row: Anchor row for range selection (defaults to row)
         anchor_col: Anchor column for range selection (defaults to col)
         selected_indices: List of selected indices for multi-selection
+        view_id: Optional view ID for bounds validation.  When provided,
+            this is used instead of the session's active_view_id, ensuring
+            bounds are checked against the correct view even when the
+            session's active view is stale or not yet updated.
     """
     session_id = getattr(ctx, "session_id", None)
     engine = getattr(ctx, "engine", None)
 
-    # Validate bounds via engine/view using SessionViewState as source of truth.
-    # Phase 6A: runtime active view fallback removed from Engine.
+    # Validate bounds via engine/view.  Prefer the explicit view_id
+    # parameter (sent by the grid that owns the selection); fall back to
+    # the session's active_view_id for backward compatibility.
     max_row, max_col = 0, 0
-    view_id_for_bounds = None
-    if session_id:
+    view_id_for_bounds = view_id
+    if not view_id_for_bounds and session_id:
         vs = _get_session_store().get_view_state(session_id)
         if vs is not None:
             view_id_for_bounds = vs.active_view_id
@@ -148,12 +154,13 @@ def cmd_set_selection(
     return {"position": (row, col), "success": True}
 
 
-def cmd_move_selection(ctx, direction: str, amount: int = 1) -> dict:
+def cmd_move_selection(ctx, direction: str, amount: int = 1, view_id: str | None = None) -> dict:
     """Move selection in a direction for this session.
 
     Args:
         direction: "up", "down", "left", "right", "first", "last"
         amount: How many steps
+        view_id: Optional view ID for bounds validation.
     """
     session_id = getattr(ctx, "session_id", None)
     engine = getattr(ctx, "engine", None)
@@ -166,11 +173,10 @@ def cmd_move_selection(ctx, direction: str, amount: int = 1) -> dict:
         if vs is not None:
             row, col = vs.cursor_row, vs.cursor_col
 
-    # Validate bounds via engine/view using SessionViewState as source of truth.
-    # Phase 6A: runtime active view fallback removed from Engine.
+    # Validate bounds via engine/view.  Prefer explicit view_id parameter.
     max_row, max_col = 0, 0
-    view_id_for_bounds = None
-    if session_id:
+    view_id_for_bounds = view_id
+    if not view_id_for_bounds and session_id:
         vs = _get_session_store().get_view_state(session_id)
         if vs is not None:
             view_id_for_bounds = vs.active_view_id

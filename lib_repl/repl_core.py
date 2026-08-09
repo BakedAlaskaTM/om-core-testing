@@ -118,6 +118,10 @@ class OpenMREPLCore(cmd.Cmd):
         """Display status message to stderr so it does not corrupt readline."""
         print(f"[status] {msg}", file=sys.stderr)
 
+    def println(self, msg: str = "") -> None:
+        """Print a line to stdout. Used by mixins (e.g. REPLSolverMixin)."""
+        print(msg)
+
     def _load_history(self) -> None:
         """Load command history from file."""
         if readline is None:
@@ -420,10 +424,13 @@ class OpenMREPLCore(cmd.Cmd):
         """Override cmd.Cmd.cmdloop with a prompt_toolkit loop + status bar."""
         from prompt_toolkit import PromptSession
         from prompt_toolkit.completion import Completer, Completion
+        from prompt_toolkit.shortcuts import CompleteStyle
         from prompt_toolkit.formatted_text import HTML
         from prompt_toolkit.styles import Style
         from prompt_toolkit.layout import HSplit, Window, FormattedTextControl, Layout
         from prompt_toolkit.layout.dimension import Dimension
+        from prompt_toolkit.key_binding import KeyBindings
+        from prompt_toolkit.filters import Condition
         from .config import TOOLBAR_FG, TOOLBAR_BG
 
         # TopBarPromptSession — commented out to disable the orange menu bar.
@@ -493,7 +500,8 @@ class OpenMREPLCore(cmd.Cmd):
                     return
                 for match in matches:
                     if match.startswith(text):
-                        yield Completion(match, start_position=-len(text))
+                        display = match.rsplit('/', 1)[-1] if '/' in match else match
+                        yield Completion(match, start_position=-len(text), display=display)
 
         self.preloop()
         if intro is not None:
@@ -509,15 +517,31 @@ class OpenMREPLCore(cmd.Cmd):
             "bottom-toolbar": f"{TOOLBAR_FG} bg:{TOOLBAR_BG}",
             # "top-toolbar":    "fg:#000000 bg:#FFA500",
         })
+        # Key bindings: Enter accepts completion if menu is open, otherwise submits.
+        kb = KeyBindings()
+        _session_ref = [None]
+
+        @kb.add("enter", filter=Condition(lambda: _session_ref[0] is not None and _session_ref[0].app.current_buffer.complete_state is not None))
+        def _accept_completion(event):
+            buf = event.app.current_buffer
+            comp = buf.complete_state.current_completion
+            if comp is not None:
+                buf.apply_completion(comp)
+            buf.complete_state = None
+
         session = PromptSession(
             message=self.prompt,
             completer=CmdCompleter(self),
+            complete_while_typing=True,
+            complete_style=CompleteStyle.COLUMN,
+            key_bindings=kb,
             # top_toolbar='  -= Open Modeling =-      File  Edit  View  Help',
             bottom_toolbar=lambda: HTML(self._repl_state.render()),
             history=self._prompt_history,
             refresh_interval=1,
             style=style,
         )
+        _session_ref[0] = session
 
         stop = None
         while not stop:

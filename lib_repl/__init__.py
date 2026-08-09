@@ -18,12 +18,14 @@ from .repl_navigation import REPLNavigationMixin
 from .repl_scripting import REPLScriptingMixin
 from .repl_controlflow import REPLControlFlowMixin
 from .repl_udf import REPLUDFMixin
+from .repl_solver import REPLSolverMixin
 
 
 class OpenMREPL(
     REPLScriptingMixin,
     REPLControlFlowMixin,
     REPLUDFMixin,
+    REPLSolverMixin,
     REPLNavigationMixin,
     REPLHelpMixin,
     REPLRecordingMixin,

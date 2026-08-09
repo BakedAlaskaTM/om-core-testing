@@ -301,14 +301,34 @@ class SocketTransportServer:
                     status="failed",
                 )
             params = {k: v for k, v in payload.items() if k != "query_id"}
-            result = gateway.query(session_id, query_id, **params)
-            # gateway.query returns the data directly, not an ExecutionResult
-            # Wrap it in a result-like dict
-            return self._make_reply(
-                request,
-                f"reply.query.{session_id}.{correlation_id}",
-                {"status": "succeeded", "data": result},
+            record = session_mgr.get_record(session_id)
+            if record is None:
+                return self._make_reply(
+                    request,
+                    f"reply.error.{correlation_id}",
+                    {"status": "failed", "error": f"Session '{session_id}' not found"},
+                    status="failed",
+                )
+            result = gateway._execute_query_through_bus(
+                session_id=session_id,
+                record=record,
+                ctx=record.context,
+                query_type=query_id,
+                query_params=params,
             )
+            if result.success:
+                return self._make_reply(
+                    request,
+                    f"reply.query.{session_id}.{correlation_id}",
+                    {"status": "succeeded", "data": result.data},
+                )
+            else:
+                return self._make_reply(
+                    request,
+                    f"reply.query.{session_id}.{correlation_id}",
+                    {"status": "failed", "data": None, "error": result.error},
+                    status="failed",
+                )
 
         return self._make_reply(
             request,

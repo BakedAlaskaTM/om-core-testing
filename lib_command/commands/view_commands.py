@@ -57,10 +57,11 @@ def cmd_set_view_layout(
         page=list(layout.get("page", [])),
     )
     used = set(vl.rows) | set(vl.cols) | set(vl.page)
-    for did in cube.dimension_ids:
-        if did not in used:
-            vl.page.append(did)
-            used.add(did)
+    unassigned = [d for d in cube.dimension_ids if d not in used]
+    if unassigned:
+        at_first = [d for d in unassigned if d == "@"]
+        rest = [d for d in unassigned if d != "@"]
+        vl.page = at_first + vl.page + rest
     validate_view_layout_for_cube(cube, vl)
     ctx.engine.set_view_layout(view_id, vl)
     return {"affected": 1, "property": "view_layout", "view_id": view_id}

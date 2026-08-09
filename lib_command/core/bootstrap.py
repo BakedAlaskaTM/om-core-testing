@@ -1222,6 +1222,51 @@ def register_default_commands(registry: CommandRegistry | None = None) -> Comman
     for alias_id, canonical_id in _ALIASES.items():
         executor.add_alias(alias_id, canonical_id)
 
+    # === Solver Commands ===
+    if not registry.is_registered("run_solver"):
+        from ..commands.solver_commands import cmd_run_solver
+        registry.register(
+            "run_solver",
+            "Run Solver",
+            CommandCategory.CALCULATION,
+            cmd_run_solver,
+            description="Run a solver optimization job asynchronously",
+            params={"problem_spec": dict},
+        )
+
+    if not registry.is_registered("cancel_solver"):
+        from ..commands.solver_commands import cmd_cancel_solver
+        registry.register(
+            "cancel_solver",
+            "Cancel Solver",
+            CommandCategory.CALCULATION,
+            cmd_cancel_solver,
+            description="Cancel a running solver job",
+            params={"job_id": str},
+        )
+
+    if not registry.is_registered("apply_solver_result"):
+        from ..commands.solver_commands import cmd_apply_solver_result
+        registry.register(
+            "apply_solver_result",
+            "Apply Solver Result",
+            CommandCategory.CALCULATION,
+            cmd_apply_solver_result,
+            description="Apply solver result values to the workspace",
+            params={"job_id": str},
+        )
+
+    if not registry.is_registered("export_solver"):
+        from ..commands.solver_commands import cmd_export_solver
+        registry.register(
+            "export_solver",
+            "Export Solver Report",
+            CommandCategory.CALCULATION,
+            cmd_export_solver,
+            description="Export a solver job diagnostic report as JSON",
+            params={"job_id": str, "file_path": str},
+        )
+
     return registry
 
 

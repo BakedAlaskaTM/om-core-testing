@@ -237,13 +237,19 @@ def cmd_create_view(
         )
         if not view_layout.page:
             assigned = set(view_layout.rows) | set(view_layout.cols)
-            view_layout.page = [d for d in cube.dimension_ids if d not in assigned]
+            unassigned = [d for d in cube.dimension_ids if d not in assigned]
+            at_first = [d for d in unassigned if d == "@"]
+            rest = [d for d in unassigned if d != "@"]
+            view_layout.page = at_first + rest
     else:
         row_dims = row_dims or []
         col_dims = col_dims or []
         if page_dim_ids is None:
             assigned = set(row_dims) | set(col_dims)
-            page_dim_ids = [d for d in cube.dimension_ids if d not in assigned]
+            unassigned = [d for d in cube.dimension_ids if d not in assigned]
+            at_first = [d for d in unassigned if d == "@"]
+            rest = [d for d in unassigned if d != "@"]
+            page_dim_ids = at_first + rest
         view_layout = ViewLayout(
             rows=list(row_dims),
             cols=list(col_dims),

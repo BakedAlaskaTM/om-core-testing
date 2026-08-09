@@ -51,6 +51,13 @@ from lib_openm.model import view_layout_from_legacy
 from lib_command.dto.timeline import TimelineSnapshotDTO
 from .udf_commands import query_udf_list, query_udf_detail
 from .profiler_register import query_profiler_list
+from ..queries.solver_queries import (
+    query_solver_status,
+    query_solver_result,
+    query_solver_backend_list,
+    query_solver_algorithm_list,
+    query_solver_job_list,
+)
 from .grid_helpers import (
     make_viewport_cell_key,
     parse_viewport_cell_key,
@@ -573,6 +580,30 @@ def _cmd_query(
     if type == "profiler_list":
         return query_profiler_list(ctx)
 
+    # ---- Solver query handlers ----
+
+    if type == "solver_status":
+        job_id = kwargs.get("job_id")
+        if not job_id:
+            raise ValueError("solver_status query requires job_id parameter")
+        return query_solver_status(ctx, job_id=job_id)
+
+    if type == "solver_result":
+        job_id = kwargs.get("job_id")
+        if not job_id:
+            raise ValueError("solver_result query requires job_id parameter")
+        return query_solver_result(ctx, job_id=job_id)
+
+    if type == "solver_backend_list":
+        return query_solver_backend_list(ctx, **kwargs)
+
+    if type == "solver_job_list":
+        return query_solver_job_list(ctx, **kwargs)
+
+    if type == "solver_algorithm_list":
+        backend_id = kwargs.pop("backend_id", "scipy")
+        return query_solver_algorithm_list(ctx, backend_id=backend_id, **kwargs)
+
     raise ValueError(
         f"Unknown query type: {type}. "
         "Valid types: current_view, view_list, current_cube, cube_list, "
@@ -586,7 +617,8 @@ def _cmd_query(
         "diagnostics_calculation_flow, diagnostics_circular_references, diagnostics_dependency_tracking_state, "
         "diagnostics_engine_backend, diagnostics_dependency_metrics, diagnostics_rule_eval_profile, diagnostics_multithread_config, diagnostics_dirty_count, "
         "grid_viewport_snapshot, cell_channel_values, selection_stats, workspace_rules, "
-        "udf_list, udf_detail, profiler_list"
+        "udf_list, udf_detail, profiler_list, "
+        "solver_status, solver_result, solver_backend_list, solver_algorithm_list, solver_job_list"
     )
 
 

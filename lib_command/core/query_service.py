@@ -77,6 +77,12 @@ QUERY_TYPE_TO_TOPIC: dict[str, str] = {
     "diagnostics_multithread_config": "query.diagnostics.multithread_config",
     "diagnostics_rule_eval_profile": "query.diagnostics.rule_eval_profile",
     "diagnostics_engine_backend": "query.diagnostics.engine_backend",
+    # Solver domain
+    "solver_status": "query.solver.status",
+    "solver_result": "query.solver.result",
+    "solver_backend_list": "query.solver.backend_list",
+    "solver_algorithm_list": "query.solver.algorithm_list",
+    "solver_job_list": "query.solver.job_list",
 }
 
 # Reverse lookup used by the service when a topic arrives with a payload.

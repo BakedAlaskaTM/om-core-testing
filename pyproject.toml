@@ -34,6 +34,9 @@ dependencies = [
     "radon==6.0.1",
     "py-spy==0.4.2",
     "gmpy2==2.3.1",
+    "scipy==1.18.0",
+    "prima>=0.0",
+    "pymoo>=0.6",
 ]
 
 [project.urls]

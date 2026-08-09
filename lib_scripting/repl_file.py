@@ -535,22 +535,35 @@ class REPLFileMixin:
                 hval_batch.clear()
 
             def _try_batch_hval(line_str: str) -> bool:
-                """If line is `hval Cube::Dim.Item:Dim.Item = value`, queue it."""
+                """If line is `hval Cube::Dim.Item:Dim.Item = value` or `hval $Cube::... value=X`, queue it."""
                 parts = line_str.split(None, 2)
                 if not parts or parts[0].lower() != "hval":
                     return False
                 rest = line_str[4:].strip()
                 if "::" not in rest:
                     return False
-                if "=" not in rest:
+                # Parse value: support both "= value" and "value=value" syntax
+                value = None
+                addr_part = rest
+                # Try "value=" syntax first
+                import shlex as _shlex
+                try:
+                    _tokens = _shlex.split(rest)
+                except ValueError:
+                    _tokens = rest.split()
+                if len(_tokens) >= 2 and _tokens[-1].startswith("value="):
+                    value_str = _tokens[-1][len("value="):]
+                    addr_part = " ".join(_tokens[:-1])
+                elif "=" in rest:
+                    addr_part, value_str = rest.rsplit("=", 1)
+                    addr_part = addr_part.strip()
+                    value_str = value_str.strip()
+                else:
                     return False
-                addr_part, value_part = rest.rsplit("=", 1)
-                addr_part = addr_part.strip()
-                value_str = value_part.strip()
                 if "::" not in addr_part:
                     return False
                 cube_name, dims_part = addr_part.split("::", 1)
-                cube_name = cube_name.strip()
+                cube_name = cube_name.strip().lstrip("$")
                 dim_specs = [s.strip() for s in dims_part.split(":") if s.strip()]
                 if not dim_specs:
                     return False
@@ -679,10 +692,9 @@ class REPLFileMixin:
 
     def complete_source(self: OpenMREPLCore, text: str, line: str, begidx: int, endidx: int):
         """Tab completion for source command - file paths."""
-        import glob
         from pathlib import Path
 
-        typed = line[7:]  # len('source ') == 7
+        typed = text
 
         if typed.startswith('~'):
             typed = str(Path.home()) + typed[1:]
@@ -693,12 +705,15 @@ class REPLFileMixin:
                 if not dir_path:
                     dir_path = '.'
                 file_pattern = ''
+                prefix = typed
             else:
                 dir_path = str(Path(typed).parent) if typed else '.'
                 file_pattern = str(Path(typed).name)
+                prefix = str(Path(typed).parent) + '/' if str(Path(typed).parent) != '.' else ''
         else:
             dir_path = '.'
             file_pattern = typed
+            prefix = ''
 
         try:
             results = []
@@ -707,19 +722,20 @@ class REPLFileMixin:
             if not file_pattern:
                 if base_path.exists():
                     for item in base_path.iterdir():
-                        if item.is_dir() and not item.name.startswith('.'):
-                            results.append(item.name + '/')
-
-                for om_file in base_path.glob('*.openm'):
-                    results.append(om_file.name)
+                        if item.name.startswith('.'):
+                            continue
+                        results.append(prefix + item.name)
+                        if len(results) >= 1000:
+                            break
             else:
                 for match in base_path.glob(file_pattern + '*'):
-                    if match.is_dir():
-                        results.append(match.name + '/')
-                    else:
-                        results.append(match.name)
+                    if match.name.startswith('.'):
+                        continue
+                    results.append(prefix + match.name)
+                    if len(results) >= 1000:
+                        break
 
-            results.sort(key=lambda x: (not x.endswith('/'), x.lower()))
+            results.sort(key=lambda x: x.lower())
             return results
         except Exception:
             return []

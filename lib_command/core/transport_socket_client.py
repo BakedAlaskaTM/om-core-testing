@@ -276,6 +276,9 @@ class SocketTransportClient:
         )
         reply = self._get_main_conn().send_and_wait(request, timeout=timeout)
         payload = reply.payload or {}
+        if reply.status == "failed":
+            error = payload.get("error", "Unknown query error")
+            raise RuntimeError(f"Query '{query_id}' failed: {error}")
         return payload.get("data")
 
     def subscribe(self, session_id: str, topic: str, callback: Any) -> None:

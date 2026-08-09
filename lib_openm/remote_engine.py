@@ -271,6 +271,16 @@ class RemoteEngine:
             # copy may have more accurate targets (e.g. for newly created rules).
             if self._local_ws is not None:
                 self._restore_rule_targets(ws_from_server, self._local_ws)
+            # Merge user_override_addrs from the local copy. The server DTO
+            # may not include hardcoded cell data in GET_WORKSPACE responses,
+            # so user_override_addrs reconstructed by _dto_to_cube can be
+            # incomplete. The local copy is kept in sync by
+            # set_cell_hardvalue_by_addr / batch_set_cell_hardvalues_by_addr.
+            if self._local_ws is not None:
+                for cube_id, local_cube in self._local_ws.cubes.items():
+                    server_cube = ws_from_server.cubes.get(cube_id)
+                    if server_cube is not None and local_cube.user_override_addrs:
+                        server_cube.user_override_addrs |= local_cube.user_override_addrs
             self._cached_workspace = ws_from_server
             return self._cached_workspace
 
@@ -330,6 +340,28 @@ class RemoteEngine:
         if self._batch_invalidation_pending:
             return
         self._cached_workspace = None
+
+    def _normalize_override_addr(self, cube_id: str, addr: tuple[str, ...]) -> tuple[str, ...]:
+        """Normalize an address to a full N-tuple aligned to cube.dimension_ids.
+
+        Short addresses (without @ dimension) get ``at_value`` prepended
+        so they match the format produced by ``resolve_addr`` in snapshot
+        queries.
+        """
+        ws = self._local_ws or self._cached_workspace
+        if ws is None:
+            return addr
+        cube = ws.cubes.get(cube_id)
+        if cube is None:
+            return addr
+        if "@" not in cube.dimension_ids:
+            return addr
+        expected = len(cube.dimension_ids)
+        if len(addr) == expected:
+            return addr
+        if len(addr) == expected - 1:
+            return (CHANNEL_TO_AT_ID["value"],) + addr
+        return addr
 
     def _sync_dim_to_local_ws(self, dim) -> None:
         if self._local_ws is not None:
@@ -965,12 +997,17 @@ class RemoteEngine:
             value=value,
         )
         publish_events(self, result.get("events", []))
-        # Sync local user_override_addrs so snapshot queries render the hardvalue indicator.
+        # Sync user_override_addrs on both _local_ws and _cached_workspace.
         addr_tuple = tuple(addr_key.split("|"))
-        if value is not None:
-            cube.user_override_addrs.add(addr_tuple)
-        else:
-            cube.user_override_addrs.discard(addr_tuple)
+        for lws in (self._local_ws, self._cached_workspace):
+            if lws is None:
+                continue
+            lcube = lws.cubes.get(view.cube_id)
+            if lcube is not None:
+                if value is not None:
+                    lcube.user_override_addrs.add(addr_tuple)
+                else:
+                    lcube.user_override_addrs.discard(addr_tuple)
 
     def set_cell_hardvalue_by_addr(
         self, cube_id: str, addr: tuple, value: Any
@@ -982,13 +1019,18 @@ class RemoteEngine:
             value=value,
         )
         publish_events(self, result.get("events", []))
-        # Sync local user_override_addrs so snapshot queries render the hardvalue indicator.
-        cube = self.workspace.cubes.get(cube_id)
-        if cube is not None:
-            if value is not None:
-                cube.user_override_addrs.add(tuple(addr))
-            else:
-                cube.user_override_addrs.discard(tuple(addr))
+        # Normalize addr to full N-tuple (with @ dimension) so it matches
+        # the format used by resolve_addr in snapshot queries.
+        addr_tuple = self._normalize_override_addr(cube_id, tuple(addr))
+        for ws in (self._local_ws, self._cached_workspace):
+            if ws is None:
+                continue
+            cube = ws.cubes.get(cube_id)
+            if cube is not None:
+                if value is not None:
+                    cube.user_override_addrs.add(addr_tuple)
+                else:
+                    cube.user_override_addrs.discard(addr_tuple)
 
     def batch_set_cell_hardvalues_by_addr(
         self, cube_id: str, entries: list
@@ -1003,14 +1045,18 @@ class RemoteEngine:
                 cube_id=cube_id, entries=wire_entries,
             )
             publish_events(self, result.get("events", []))
-            # Sync local user_override_addrs for all entries.
-            cube = self.workspace.cubes.get(cube_id)
-            if cube is not None:
-                for addr, val in entries:
-                    if val is not None:
-                        cube.user_override_addrs.add(tuple(addr))
-                    else:
-                        cube.user_override_addrs.discard(tuple(addr))
+            # Sync user_override_addrs on both _local_ws and _cached_workspace.
+            for ws in (self._local_ws, self._cached_workspace):
+                if ws is None:
+                    continue
+                cube = ws.cubes.get(cube_id)
+                if cube is not None:
+                    for addr, val in entries:
+                        norm = self._normalize_override_addr(cube_id, tuple(addr))
+                        if val is not None:
+                            cube.user_override_addrs.add(norm)
+                        else:
+                            cube.user_override_addrs.discard(norm)
             return int(result.get("count", len(entries)))
         except RemoteEngineError as exc:
             if "unknown method" not in str(exc).lower():
@@ -1032,14 +1078,18 @@ class RemoteEngine:
         finally:
             self._suppress_events = was_suppressed
         publish_events(self, [])
-        # Sync local user_override_addrs for fallback path.
-        cube = self.workspace.cubes.get(cube_id)
-        if cube is not None:
-            for addr, val in entries:
-                if val is not None:
-                    cube.user_override_addrs.add(tuple(addr))
-                else:
-                    cube.user_override_addrs.discard(tuple(addr))
+        # Sync user_override_addrs on both _local_ws and _cached_workspace.
+        for ws in (self._local_ws, self._cached_workspace):
+            if ws is None:
+                continue
+            cube = ws.cubes.get(cube_id)
+            if cube is not None:
+                for addr, val in entries:
+                    norm = self._normalize_override_addr(cube_id, tuple(addr))
+                    if val is not None:
+                        cube.user_override_addrs.add(norm)
+                    else:
+                        cube.user_override_addrs.discard(norm)
         return count
 
     def clear_cell_hardvalue_by_addr(
@@ -1051,10 +1101,14 @@ class RemoteEngine:
             cube_id, addr_key,
         )
         publish_events(self, result.get("events", []))
-        # Sync local user_override_addrs so snapshot queries drop the hardvalue indicator.
-        cube = self.workspace.cubes.get(cube_id)
-        if cube is not None:
-            cube.user_override_addrs.discard(tuple(addr))
+        # Sync user_override_addrs on both _local_ws and _cached_workspace.
+        addr_tuple = self._normalize_override_addr(cube_id, tuple(addr))
+        for ws in (self._local_ws, self._cached_workspace):
+            if ws is None:
+                continue
+            cube = ws.cubes.get(cube_id)
+            if cube is not None:
+                cube.user_override_addrs.discard(addr_tuple)
 
     def clear_cell_hardvalue(self, view_id: str, cell_ref: dict) -> None:
         ws = self.workspace
@@ -1070,9 +1124,14 @@ class RemoteEngine:
             view.cube_id, addr_key,
         )
         publish_events(self, result.get("events", []))
-        # Sync local user_override_addrs so snapshot queries drop the hardvalue indicator.
+        # Sync user_override_addrs on both _local_ws and _cached_workspace.
         addr_tuple = tuple(addr_key.split("|"))
-        cube.user_override_addrs.discard(addr_tuple)
+        for lws in (self._local_ws, self._cached_workspace):
+            if lws is None:
+                continue
+            lcube = lws.cubes.get(view.cube_id)
+            if lcube is not None:
+                lcube.user_override_addrs.discard(addr_tuple)
         # Cell value changes don't affect workspace structure.
 
     def get_cell_value(self, view_id: str, cell_ref: dict) -> Any:

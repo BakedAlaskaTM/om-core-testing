@@ -576,9 +576,10 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         x = pos.x()
         y = pos.y()
         header_h = self._m.col_header_h * max(1, self._col_header_levels)
-        
+        row_header_w = self._row_header_width()
+
         # Only allow resizing in row header area (left side, below column headers)
-        if y < header_h:
+        if y < header_h or x >= row_header_w:
             return None
         
         # Check if near right edge of any row header level (within 6 pixels)
@@ -6270,7 +6271,7 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
         if hit is None:
             return
         r, c = hit
-        
+
         # Clear header drag variables since we're clicking on a cell, not a header
         self._drag_item_id = None
         self._drag_group_path = None
@@ -7996,6 +7997,7 @@ class MatrixGrid(QtWidgets.QAbstractScrollArea):
                     anchor_row=self._anchor_row,
                     anchor_col=self._anchor_col,
                     selected_indices=indices,
+                    view_id=self._view_id,
                 )
         except Exception:
             # TEMP BRIDGE: failures are non-fatal; local cache remains valid.

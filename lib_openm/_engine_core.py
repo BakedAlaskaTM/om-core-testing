@@ -815,6 +815,14 @@ class _EngineCore:
         """Drop cached cell values so subsequent reads recompute from rules."""
         self._cell_cache.clear()
 
+    def clear_cell_cache(self) -> None:
+        """Public API to drop cached cell values."""
+        self._cell_cache.clear()
+
+    def invalidate_cell(self, cube_id: str, addr: tuple[str, ...]) -> None:
+        """Public API to invalidate a cell node and all its dependents."""
+        self._invalidate_cell_node(cube_id, addr)
+
     def _clear_cache(self) -> None:
         """Alias for clear_cell_cache() - clears all cached cell values."""
         self._cell_cache.clear()
@@ -3330,6 +3338,11 @@ class _EngineCore:
         REPL/CLI/GUI callers must continue to use `session.execute(...)` / command
         payloads rather than direct `engine.create_view(..., layout=...)` calls.
         """
+        # Normalize: accept str or list for backward compat
+        if isinstance(row_dim_id, list):
+            row_dim_id = row_dim_id[0] if row_dim_id else ""
+        if isinstance(col_dim_id, list):
+            col_dim_id = col_dim_id[0] if col_dim_id else ""
         # Check for duplicate view names (case-insensitive, trimmed)
         name_clean = name.strip().casefold()
         for existing_view in self._ws.views.values():
@@ -3346,6 +3359,15 @@ class _EngineCore:
             view.col_dim_ids = []
         if layout is not None:
             apply_layout_to_view(view, layout)
+        # Ensure every cube dimension is assigned to an axis.
+        # Unassigned non-technical dims go to page. @ is handled implicitly.
+        cube = self.require_cube_by_id(cube_id)
+        used = set(view.row_dim_ids) | set(view.col_dim_ids) | set(view.page_dim_ids)
+        unassigned = [d for d in cube.dimension_ids if d not in used and d != "@"]
+        if unassigned:
+            at_first = [d for d in unassigned if d == "@"]
+            rest = [d for d in unassigned if d != "@"]
+            view.page_dim_ids = at_first + view.page_dim_ids + rest
         self._ws.add_view(view)
         self._publish_event(EVENT_VIEW_CREATED, {
             "view_id": view.id,
@@ -5115,6 +5137,13 @@ class _EngineCore:
         _remove(view.col_dim_ids)
         _remove(view.page_dim_ids)
 
+        # Clean up stale page_selections entry for the moved dimension.
+        # When a dimension moves out of the page axis, its page_selection
+        # entry is no longer valid and can cause _get_page_item_id to return
+        # a stale item for a dimension that is now on row/col.
+        if dest != "page":
+            view.page_selections.pop(dim_id, None)
+
         target = view.row_dim_ids if dest == "row" else view.col_dim_ids if dest == "col" else view.page_dim_ids
         if index is None or index < 0 or index > len(target):
             target.append(dim_id)
@@ -5122,9 +5151,11 @@ class _EngineCore:
             target.insert(index, dim_id)
 
         used = set(view.row_dim_ids) | set(view.col_dim_ids) | set(view.page_dim_ids)
-        for did in cube.dimension_ids:
-            if did not in used:
-                view.page_dim_ids.append(did)
+        unassigned = [d for d in cube.dimension_ids if d not in used and d != "@"]
+        if unassigned:
+            at_first = [d for d in unassigned if d == "@"]
+            rest = [d for d in unassigned if d != "@"]
+            view.page_dim_ids = at_first + view.page_dim_ids + rest
 
         self._publish_event(EVENT_VIEW_LAYOUT_CHANGED, {
             "view_id": view_id,
@@ -8985,8 +9016,21 @@ class _EngineCore:
         full_addr = _normalize_addr_for_cube(cube, addr)
         view_id = self._find_or_create_default_view(cube_id)
         view = self.require_view_by_id(view_id)
-        row_dim_count = len(view.row_dim_ids)
-        body = tuple(item_id for dim_id, item_id in zip(cube.dimension_ids, full_addr) if dim_id != "@")
+        row_dim_set = set(view.row_dim_ids)
+        col_dim_set = set(view.col_dim_ids)
+        # Build row_key, col_key, and set page_selections for page dims.
+        row_key: list[str] = []
+        col_key: list[str] = []
+        for dim_id, item_id in zip(cube.dimension_ids, full_addr):
+            if dim_id == "@":
+                continue
+            if dim_id in row_dim_set:
+                row_key.append(item_id)
+            elif dim_id in col_dim_set:
+                col_key.append(item_id)
+            else:
+                # Page dimension — set selection so _addr_for_view_ids uses it.
+                view.page_selections[dim_id] = item_id
         channel = next(
             (full_addr[i] for i, dim_id in enumerate(cube.dimension_ids) if dim_id == "@"),
             None,
@@ -8995,8 +9039,8 @@ class _EngineCore:
             channel = channel.replace("at_", "")
         cell_ref = {
             "kind": "ids",
-            "row_key": body[:row_dim_count],
-            "col_key": body[row_dim_count:],
+            "row_key": tuple(row_key),
+            "col_key": tuple(col_key),
             "channel": channel,
         }
         if value is None:
@@ -9028,19 +9072,26 @@ class _EngineCore:
     def create_default_view_for_cube(self, cube_id: str) -> str:
         """Create a default view for the cube and return its ID.
 
-        Default layout: first dimension as rows, remaining as columns.
+        Default layout: first user dimension as rows, second as columns,
+        remaining user dimensions and the ``@`` channel dimension as page.
+        The ``@`` dimension is always placed first in the page axis.
         """
         cube = self.require_cube_by_id(cube_id)
         dim_ids = [d for d in cube.dimension_ids if d != "@"]
         if not dim_ids:
             raise ValueError(f"Cube {cube_id} has no dimensions; cannot create a default view")
 
+        page_dims: list[str] = []
+        if "@" in cube.dimension_ids:
+            page_dims.append("@")
+        page_dims.extend(dim_ids[2:] if len(dim_ids) > 2 else [])
+
         view = self.create_view(
             name=f"default_view_{cube_id[:12]}",
             cube_id=cube_id,
             row_dim_id=dim_ids[0],
             col_dim_id=dim_ids[1] if len(dim_ids) > 1 else None,
-            page_dim_ids=dim_ids[2:] if len(dim_ids) > 2 else [],
+            page_dim_ids=page_dims,
         )
         return view.id
 

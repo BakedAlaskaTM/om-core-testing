@@ -224,6 +224,12 @@ class REPLHelpMixin:
                         for name, typ in cmd_def.params.items():
                             print(f"    - {name}: {typ.__name__}")
                     return
+            # Try multi-word help topics (e.g. "solver run" → help_solver_run)
+            help_func_name = 'help_' + arg.replace(' ', '_')
+            help_func = getattr(self, help_func_name, None)
+            if help_func is not None:
+                help_func()
+                return
             super().do_help(arg)
 
     def _help_dollar(self: OpenMREPLCore):

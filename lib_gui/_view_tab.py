@@ -521,6 +521,13 @@ class ViewTab(QtWidgets.QWidget):
         )
         if not result.success:
             return
+        # Synchronously refresh the cached view snapshot so _rebuild_bars()
+        # reads the new layout instead of stale data from before the move.
+        gvm = getattr(self._workspace_read_model, "_gui_view_model", None) if self._workspace_read_model else None
+        if gvm is not None:
+            fresh = self._session.query("view_detail", view_id=self._view_id)
+            if fresh:
+                gvm.update_view_snapshot(self._view_id, fresh)
 
     @QtCore.Slot(str)
     def _on_move_to_topleft(self, dim_id: str) -> None:

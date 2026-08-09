@@ -44,6 +44,7 @@ class RuntimeServices:
     """Runtime-wired services accessible to command handlers via ctx.services."""
 
     timeline: Any = None  # lib_runtime.timeline_service.TimelineService
+    solver_service: Any = None  # lib_runtime.solver.solver_service.SolverService
 
 
 @dataclass
@@ -110,6 +111,19 @@ def create_runtime_context(
     _current_session_id = command_session.context.session_id
 
     ctx = command_session.context
+    from lib_runtime.solver.solver_service import SolverService
+    from lib_runtime.solver.solver_types import SolverRuntimePolicy
+    from lib_runtime.solver_adapters.engine_solver_evaluation import EngineSolverEvaluationAdapter
+    from lib_runtime.solver_adapters.engine_solver_apply import EngineSolverApplyAdapter
+    from lib_runtime.solver_adapters.runtime_event_publisher import RuntimeEventPublisher
+
+    solver_service = SolverService(
+        evaluation_port=EngineSolverEvaluationAdapter(engine),
+        apply_port=EngineSolverApplyAdapter(engine),
+        event_port=RuntimeEventPublisher(event_publisher=None),
+        policy=SolverRuntimePolicy(),
+    )
+
     services = RuntimeServices(
         timeline=TimelineService(
             snapshot_adapter=snapshot_adapter,
@@ -118,7 +132,8 @@ def create_runtime_context(
                 ctx.engine.replace_workspace(ws),
                 setattr(ctx, "workspace", ws),
             )[0],
-        )
+        ),
+        solver_service=solver_service,
     )
     command_session.context.services = services
 

@@ -179,6 +179,13 @@ class RemoteCommandSession:
             if DEBUG_SESSION:
                 print(f"[SESSION-QUERY] ERROR {query_id} exc={exc}", flush=True)
             return None
+        except RuntimeError as exc:
+            # Server-side query failure (e.g., entity not found).
+            try:
+                logger.warning("Query %s failed: %s", query_id, exc)
+            except ValueError:
+                pass
+            return None
 
     def subscribe(self, topic: str, callback: Any) -> None:
         """Subscribe to a bus topic through the transport."""

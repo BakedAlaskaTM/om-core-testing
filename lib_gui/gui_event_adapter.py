@@ -98,6 +98,7 @@ class GUIEventAdapter:
         "run_",
         "save_",
         "load_",
+        "apply_",
     )
 
     # View-state commands that must NOT trigger full grid reload
