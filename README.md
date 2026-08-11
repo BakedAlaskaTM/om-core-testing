@@ -1,3 +1,63 @@
+<!-- ALL_TIME_REPO_STATS_START -->
+<table>
+<tr>
+<td><b>📈 All-time tracked views</b><br>0</td>
+<td><b>📥 All-time tracked clones</b><br>0</td>
+<td><b>⭐ Current stars</b><br>17</td>
+<td><b>🍴 Current forks</b><br>5</td>
+</tr>
+<tr>
+<td><b>🧬 All-time commits</b><br>63</td>
+<td><b>⬇️ Tracked release downloads</b><br>0</td>
+<td><b>👀 Watchers</b><br>1</td>
+<td><b>🩺 Traffic history</b><br>complete</td>
+</tr>
+</table>
+
+<sub>
+Repository created: <b>2026-06-29</b> ·
+Traffic retained from: <b>2026-07-29</b> ·
+Updated: <b>2026-08-11T06:48:22Z</b>
+</sub>
+
+> **Traffic retention:** GitHub itself exposes only its most recent 14 days of repository views/clones. This repository permanently retains every daily bucket collected from **2026-07-29** onward, so these cumulative traffic totals keep growing and never roll off.
+
+### All-time tracked traffic
+
+![All-time tracked traffic](stats/charts/traffic-all-time.svg)
+
+### Daily traffic
+
+![Daily repository traffic](stats/charts/traffic-daily.svg)
+
+### Repository history
+
+![Stars](stats/charts/stars-all-time.svg)
+
+![Forks](stats/charts/forks-all-time.svg)
+
+![Commits](stats/charts/commits-daily.svg)
+
+### Referral sources
+
+![Top referral sources](stats/charts/referrers-latest.svg)
+
+<sub>
+GitHub exposes only the top 10 referral sources for its rolling 14-day window.
+Every returned source/window is permanently archived. Overlapping windows are
+not summed because that would double-count visits.
+</sub>
+
+<sub>
+Data: <code>stats/daily.csv</code> ·
+Sources now: <code>stats/referrers-latest.csv</code> ·
+All sources ever observed: <code>stats/referrers-ever.csv</code> ·
+Source-window archive: <code>stats/referrers-windows.csv</code> ·
+Release-asset ledger: <code>stats/release-assets.json</code> ·
+Raw polls: <code>stats/polls.jsonl</code>
+</sub>
+<!-- ALL_TIME_REPO_STATS_END -->
+
 # OM Core
 
 OM Core is an open-source reference implementation of a multidimensional
