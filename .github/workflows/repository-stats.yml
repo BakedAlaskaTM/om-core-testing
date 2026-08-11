@@ -31,7 +31,11 @@ jobs:
 
       - name: Commit generated statistics
         run: |
-          if git diff --quiet -- README.md stats/; then
+          # Stage first so newly-created/untracked stats files are included in
+          # change detection. `git diff` alone does not see untracked files.
+          git add README.md stats/
+
+          if git diff --cached --quiet; then
             echo "No statistics changed."
             exit 0
           fi
@@ -39,6 +43,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add README.md stats/
           git commit -m "chore(stats): update repository statistics [skip ci]"
           git push

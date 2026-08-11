@@ -541,8 +541,28 @@ def write_referrers(
 
 
 def render_referrer_chart(referrers: list[dict[str, Any]] | None) -> None:
-    """Render latest GitHub 14-day top-referrer counts as a dependency-free SVG."""
+    """
+    Always create the README referrer SVG.
+
+    GitHub can legitimately return an empty referrer list (for example on a new
+    repository or when no qualifying referrers exist in the rolling window).
+    The README always references this path, so the file must always exist.
+    """
+    CHARTS.mkdir(parents=True, exist_ok=True)
+    path = CHARTS / "referrers-latest.svg"
+
     if not referrers:
+        width, height = 1100, 180
+        out = [
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Top referral sources">',
+            '<rect width="100%" height="100%" fill="#0d1117" rx="10"/>',
+            '<text x="25" y="32" fill="#f0f6fc" font-family="system-ui,sans-serif" font-size="18" font-weight="600">Top referral sources</text>',
+            '<text x="25" y="56" fill="#8b949e" font-family="system-ui,sans-serif" font-size="12">GitHub rolling 14-day top 10 · visits and unique visitors</text>',
+            '<text x="25" y="112" fill="#c9d1d9" font-family="system-ui,sans-serif" font-size="14">No referrer data currently available from GitHub.</text>',
+            '<text x="25" y="136" fill="#8b949e" font-family="system-ui,sans-serif" font-size="11">The collector will populate this chart automatically when GitHub returns referral-source data.</text>',
+            '</svg>',
+        ]
+        path.write_text("\n".join(out) + "\n", encoding="utf-8")
         return
 
     items = list(referrers)[:10]
@@ -599,8 +619,7 @@ def render_referrer_chart(referrers: list[dict[str, Any]] | None) -> None:
         f'<text x="{left+115}" y="{legend_y}" fill="#c9d1d9" font-family="system-ui,sans-serif" font-size="10">Unique visitors</text>',
         "</svg>",
     ]
-    CHARTS.mkdir(parents=True, exist_ok=True)
-    (CHARTS / "referrers-latest.svg").write_text("\n".join(out) + "\n", encoding="utf-8")
+    path.write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
 def write_daily(rows: dict[str, dict[str, str]]) -> None:
