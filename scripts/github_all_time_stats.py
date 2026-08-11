@@ -51,6 +51,9 @@ STATE = Path("stats/state.json")
 DAILY = Path("stats/daily.csv")
 POLL_LOG = Path("stats/polls.jsonl")
 ASSET_LEDGER = Path("stats/release-assets.json")
+REFERRERS_LATEST = Path("stats/referrers-latest.csv")
+REFERRERS_WINDOWS = Path("stats/referrers-windows.csv")
+REFERRERS_EVER = Path("stats/referrers-ever.csv")
 CHARTS = Path("stats/charts")
 
 README_START = "<!-- ALL_TIME_REPO_STATS_START -->"
@@ -385,6 +388,221 @@ def set_release_download_point(rows: dict[str, dict[str, str]], day: str, value:
         rows.setdefault(day, empty_row(day))["release_downloads_tracked_cumulative"] = str(value)
 
 
+
+def write_referrers(
+    referrers: list[dict[str, Any]] | None,
+    *,
+    observed_at: dt.datetime,
+    error: str | None,
+) -> dict[str, dict[str, Any]]:
+    """
+    Persist GitHub referral-source data without inventing all-time counts.
+
+    GitHub's endpoint returns only the top 10 referrers over the last 14 days.
+    It does not expose a daily breakdown per referrer. Therefore overlapping
+    windows MUST NOT be summed: doing so would double-count the same visits.
+
+    Files:
+      referrers-latest.csv
+          Exact latest 14-day top-referrer response.
+
+      referrers-windows.csv
+          Append-only audit/history. One row per source per poll/window.
+
+      referrers-ever.csv
+          One row per source ever observed, retaining first/last seen,
+          latest 14-day values, maxima ever observed, and observation count.
+          These are NOT represented as all-time source totals.
+    """
+    REFERRERS_LATEST.parent.mkdir(parents=True, exist_ok=True)
+    observed = zulu(observed_at)
+
+    latest_fields = [
+        "observed_at_utc",
+        "window",
+        "rank",
+        "referrer",
+        "visits_14d",
+        "unique_visitors_14d",
+    ]
+
+    # If the API failed, do not overwrite the last known exact latest CSV.
+    if error is None and referrers is not None:
+        with REFERRERS_LATEST.open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=latest_fields)
+            w.writeheader()
+            for rank, item in enumerate(referrers, start=1):
+                w.writerow({
+                    "observed_at_utc": observed,
+                    "window": "rolling_14d",
+                    "rank": rank,
+                    "referrer": item.get("referrer", ""),
+                    "visits_14d": int(item.get("count", 0)),
+                    "unique_visitors_14d": int(item.get("uniques", 0)),
+                })
+
+        windows_exists = REFERRERS_WINDOWS.exists()
+        with REFERRERS_WINDOWS.open("a", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=latest_fields)
+            if not windows_exists:
+                w.writeheader()
+            for rank, item in enumerate(referrers, start=1):
+                w.writerow({
+                    "observed_at_utc": observed,
+                    "window": "rolling_14d",
+                    "rank": rank,
+                    "referrer": item.get("referrer", ""),
+                    "visits_14d": int(item.get("count", 0)),
+                    "unique_visitors_14d": int(item.get("uniques", 0)),
+                })
+
+    # Load the "ever observed" index.
+    ever: dict[str, dict[str, Any]] = {}
+    ever_fields = [
+        "referrer",
+        "first_seen_utc",
+        "last_seen_utc",
+        "observations",
+        "latest_14d_visits",
+        "latest_14d_unique_visitors",
+        "max_observed_14d_visits",
+        "max_observed_14d_unique_visitors",
+        "currently_in_top_10",
+    ]
+
+    if REFERRERS_EVER.exists():
+        with REFERRERS_EVER.open(newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                ever[row["referrer"]] = {
+                    "referrer": row["referrer"],
+                    "first_seen_utc": row["first_seen_utc"],
+                    "last_seen_utc": row["last_seen_utc"],
+                    "observations": int(row["observations"] or 0),
+                    "latest_14d_visits": int(row["latest_14d_visits"] or 0),
+                    "latest_14d_unique_visitors": int(row["latest_14d_unique_visitors"] or 0),
+                    "max_observed_14d_visits": int(row["max_observed_14d_visits"] or 0),
+                    "max_observed_14d_unique_visitors": int(row["max_observed_14d_unique_visitors"] or 0),
+                    "currently_in_top_10": row["currently_in_top_10"].lower() == "true",
+                }
+
+    if error is None and referrers is not None:
+        for rec in ever.values():
+            rec["currently_in_top_10"] = False
+
+        for item in referrers:
+            source = str(item.get("referrer", "")).strip()
+            if not source:
+                continue
+            visits = int(item.get("count", 0))
+            uniques = int(item.get("uniques", 0))
+            rec = ever.get(source)
+            if rec is None:
+                rec = {
+                    "referrer": source,
+                    "first_seen_utc": observed,
+                    "last_seen_utc": observed,
+                    "observations": 0,
+                    "latest_14d_visits": 0,
+                    "latest_14d_unique_visitors": 0,
+                    "max_observed_14d_visits": 0,
+                    "max_observed_14d_unique_visitors": 0,
+                    "currently_in_top_10": True,
+                }
+                ever[source] = rec
+
+            rec["last_seen_utc"] = observed
+            rec["observations"] += 1
+            rec["latest_14d_visits"] = visits
+            rec["latest_14d_unique_visitors"] = uniques
+            rec["max_observed_14d_visits"] = max(rec["max_observed_14d_visits"], visits)
+            rec["max_observed_14d_unique_visitors"] = max(
+                rec["max_observed_14d_unique_visitors"], uniques
+            )
+            rec["currently_in_top_10"] = True
+
+        with REFERRERS_EVER.open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=ever_fields)
+            w.writeheader()
+            for source in sorted(ever, key=str.casefold):
+                rec = ever[source]
+                w.writerow({
+                    "referrer": rec["referrer"],
+                    "first_seen_utc": rec["first_seen_utc"],
+                    "last_seen_utc": rec["last_seen_utc"],
+                    "observations": rec["observations"],
+                    "latest_14d_visits": rec["latest_14d_visits"],
+                    "latest_14d_unique_visitors": rec["latest_14d_unique_visitors"],
+                    "max_observed_14d_visits": rec["max_observed_14d_visits"],
+                    "max_observed_14d_unique_visitors": rec["max_observed_14d_unique_visitors"],
+                    "currently_in_top_10": str(bool(rec["currently_in_top_10"])).lower(),
+                })
+
+    return ever
+
+
+def render_referrer_chart(referrers: list[dict[str, Any]] | None) -> None:
+    """Render latest GitHub 14-day top-referrer counts as a dependency-free SVG."""
+    if not referrers:
+        return
+
+    items = list(referrers)[:10]
+    width = 1100
+    row_h = 34
+    top = 65
+    bottom = 45
+    left = 210
+    right = 40
+    height = top + bottom + row_h * len(items)
+    plot_w = width - left - right
+
+    max_count = max([int(x.get("count", 0)) for x in items] + [1])
+
+    out = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Top referral sources">',
+        '<rect width="100%" height="100%" fill="#0d1117" rx="10"/>',
+        '<text x="25" y="28" fill="#f0f6fc" font-family="system-ui,sans-serif" font-size="18" font-weight="600">Top referral sources</text>',
+        '<text x="25" y="48" fill="#8b949e" font-family="system-ui,sans-serif" font-size="12">GitHub rolling 14-day top 10 · visits and unique visitors</text>',
+    ]
+
+    for i, item in enumerate(items):
+        source = html.escape(str(item.get("referrer", "")))
+        count = int(item.get("count", 0))
+        uniques = int(item.get("uniques", 0))
+        y = top + i * row_h
+        bar_w = (count / max_count) * plot_w
+        uniq_w = (uniques / max_count) * plot_w
+
+        out.append(
+            f'<text x="{left-12}" y="{y+19}" text-anchor="end" fill="#c9d1d9" '
+            f'font-family="system-ui,sans-serif" font-size="12">{source}</text>'
+        )
+        out.append(
+            f'<rect x="{left}" y="{y+4}" width="{bar_w:.1f}" height="10" rx="2" fill="#2f81f7"/>'
+        )
+        out.append(
+            f'<rect x="{left}" y="{y+17}" width="{uniq_w:.1f}" height="7" rx="2" fill="#3fb950"/>'
+        )
+        out.append(
+            f'<text x="{left+bar_w+8:.1f}" y="{y+13}" fill="#8b949e" '
+            f'font-family="system-ui,sans-serif" font-size="10">{count:,}</text>'
+        )
+        out.append(
+            f'<text x="{left+uniq_w+8:.1f}" y="{y+24}" fill="#8b949e" '
+            f'font-family="system-ui,sans-serif" font-size="10">{uniques:,}</text>'
+        )
+
+    legend_y = height - 14
+    out += [
+        f'<rect x="{left}" y="{legend_y-8}" width="18" height="7" rx="2" fill="#2f81f7"/>',
+        f'<text x="{left+25}" y="{legend_y}" fill="#c9d1d9" font-family="system-ui,sans-serif" font-size="10">Visits</text>',
+        f'<rect x="{left+90}" y="{legend_y-8}" width="18" height="7" rx="2" fill="#3fb950"/>',
+        f'<text x="{left+115}" y="{legend_y}" fill="#c9d1d9" font-family="system-ui,sans-serif" font-size="10">Unique visitors</text>',
+        "</svg>",
+    ]
+    CHARTS.mkdir(parents=True, exist_ok=True)
+    (CHARTS / "referrers-latest.svg").write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
 def write_daily(rows: dict[str, dict[str, str]]) -> None:
     DAILY.parent.mkdir(parents=True, exist_ok=True)
     with DAILY.open("w", newline="", encoding="utf-8") as f:
@@ -604,6 +822,7 @@ def update_readme(
     forks: int | None,
     tracked_downloads: int | None,
     current_asset_downloads: int | None,
+    referrers: list[dict[str, Any]] | None,
 ) -> None:
     views_total = known_sum(rows, "views", traffic_start)
     clones_total = known_sum(rows, "clones", traffic_start)
@@ -659,8 +878,21 @@ Updated: <b>{zulu(now)}</b>
 
 ![Commits](stats/charts/commits-daily.svg)
 
+### Referral sources
+
+![Top referral sources](stats/charts/referrers-latest.svg)
+
+<sub>
+GitHub exposes only the top 10 referral sources for its rolling 14-day window.
+Every returned source/window is permanently archived. Overlapping windows are
+not summed because that would double-count visits.
+</sub>
+
 <sub>
 Data: <code>stats/daily.csv</code> ·
+Sources now: <code>stats/referrers-latest.csv</code> ·
+All sources ever observed: <code>stats/referrers-ever.csv</code> ·
+Source-window archive: <code>stats/referrers-windows.csv</code> ·
 Release-asset ledger: <code>stats/release-assets.json</code> ·
 Raw polls: <code>stats/polls.jsonl</code>
 </sub>
@@ -688,6 +920,10 @@ def main() -> None:
     repo, repo_err = try_api(base)
     views, views_err = try_api(f"{base}/traffic/views?per=day")
     clones, clones_err = try_api(f"{base}/traffic/clones?per=day")
+    referrers, referrers_err = try_api(f"{base}/traffic/popular/referrers")
+    if referrers is not None and not isinstance(referrers, list):
+        referrers_err = "Unexpected non-list response from popular/referrers"
+        referrers = None
 
     seen_views = merge_traffic(
         rows, views,
@@ -719,6 +955,13 @@ def main() -> None:
     ledger, tracked_downloads, current_asset_downloads, downloads_err = update_release_asset_ledger(base)
     set_release_download_point(rows, today.isoformat(), tracked_downloads)
 
+    referrers_ever = write_referrers(
+        referrers,
+        observed_at=now,
+        error=referrers_err,
+    )
+    render_referrer_chart(referrers)
+
     write_daily(rows)
     render_charts(rows, traffic_start)
     save_json(STATE, state)
@@ -730,6 +973,7 @@ def main() -> None:
             "repository": repo_err,
             "views": views_err,
             "clones": clones_err,
+            "referrers": referrers_err,
             "stars": stars_err,
             "forks": forks_err,
             "release_downloads": downloads_err,
@@ -746,6 +990,7 @@ def main() -> None:
         "raw_traffic": {
             "views": views,
             "clones": clones,
+            "referrers": referrers,
         },
     }
     POLL_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -762,6 +1007,7 @@ def main() -> None:
         forks=forks,
         tracked_downloads=tracked_downloads,
         current_asset_downloads=current_asset_downloads,
+        referrers=referrers,
     )
 
     print(json.dumps(poll, indent=2))
