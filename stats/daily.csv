@@ -30,7 +30,7 @@ date,views,unique_visitors_daily,views_status,clones,unique_cloners_daily,clones
 2026-07-27,,,not_tracked,,,not_tracked,,,,,,
 2026-07-28,,,not_tracked,,,not_tracked,,,,,,
 2026-07-29,,,unrecoverable,,,unrecoverable,,,,,,
-2026-07-30,,,pending,,,pending,1,,,,,
+2026-07-30,,,unrecoverable,,,unrecoverable,1,,,,,
 2026-07-31,,,pending,,,pending,,,,,,
 2026-08-01,,,pending,,,pending,,,,,,
 2026-08-02,,,pending,,,pending,4,,,,,
@@ -44,3 +44,4 @@ date,views,unique_visitors_daily,views_status,clones,unique_cloners_daily,clones
 2026-08-10,,,pending,,,pending,2,,,,,
 2026-08-11,,,pending,,,pending,4,,,,,0
 2026-08-12,,,pending,,,pending,,,,,,0
+2026-08-13,,,pending,,,pending,,,,,,0
