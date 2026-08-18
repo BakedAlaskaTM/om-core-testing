@@ -19,6 +19,7 @@ import sys
 import textwrap
 import threading
 import time
+from pathlib import Path
 from typing import TextIO, TYPE_CHECKING
 
 from datetime import datetime
@@ -52,6 +53,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_SCRIPT_LOG_DIR = Path(__file__).resolve().parents[1] / "tests" / "logs"
+
 
 def _strip_html(text: str) -> str:
     return re.sub(r"<[^>]+>", "", text)
@@ -78,6 +81,51 @@ class _StdoutProxy:
 
     def isatty(self) -> bool:
         return False
+
+
+def _script_file_arg(command: str) -> str | None:
+    """Return the filename argument for a TUI ``source`` or ``run`` command."""
+    parts = command.strip().split(None, 1)
+    if len(parts) < 2 or parts[0].lower() not in {"source", "run"}:
+        return None
+    argument = parts[1].strip()
+    if len(argument) >= 2 and argument[0] == argument[-1] and argument[0] in {'"', "'"}:
+        argument = argument[1:-1]
+    return argument or None
+
+
+class _ScriptTranscript:
+    """Thread-safe, line-oriented transcript for one TUI source command."""
+
+    def __init__(self, script_arg: str, log_dir: Path = _SCRIPT_LOG_DIR) -> None:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        stem = Path(script_arg.strip().strip('"\'')).stem or "openm-script"
+        safe_stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", stem).strip("._") or "openm-script"
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+        self.path = log_dir / f"{safe_stem}_{timestamp}.log"
+        self._stream = self.path.open("x", encoding="utf-8", newline="\n")
+        self._lock = threading.Lock()
+        self._closed = False
+        self._stream.write(f"TUI OpenM script: {script_arg}\n")
+        self._stream.write(f"Started: {datetime.now().astimezone().isoformat()}\n")
+        self._stream.write("=" * 80 + "\n")
+        self._stream.flush()
+
+    def write_line(self, text: str) -> None:
+        with self._lock:
+            if self._closed:
+                return
+            self._stream.write(text + "\n")
+            self._stream.flush()
+
+    def close(self) -> Path:
+        with self._lock:
+            if not self._closed:
+                self._stream.write("=" * 80 + "\n")
+                self._stream.write(f"Finished: {datetime.now().astimezone().isoformat()}\n")
+                self._stream.close()
+                self._closed = True
+        return self.path
 
 
 class _CmdCompleter(Completer):
@@ -135,6 +183,7 @@ class PromptToolkitTUI:
         self._running = True
         self._busy = False
         self._busy_command: str | None = None
+        self._script_transcript: _ScriptTranscript | None = None
         self._loop = None
 
         # -- output pane --------------------------------------------------
@@ -595,6 +644,12 @@ class PromptToolkitTUI:
 
             try:
                 processed = self.repl.precmd(line)
+                script_arg = _script_file_arg(processed)
+                if script_arg is not None:
+                    try:
+                        self._script_transcript = _ScriptTranscript(script_arg)
+                    except OSError as exc:
+                        self._append_text(f"Warning: unable to create TUI script log: {exc}")
                 stop = self.repl.onecmd(processed)
                 proxy.flush()
                 stop = self.repl.postcmd(stop, processed)
@@ -618,6 +673,14 @@ class PromptToolkitTUI:
             finally:
                 sys.stdout = old_stdout
                 self.repl.stdout = old_repl_stdout
+                transcript = self._script_transcript
+                self._script_transcript = None
+                if transcript is not None:
+                    try:
+                        log_path = transcript.close()
+                        self._append_text(f"TUI script log saved to {log_path}")
+                    except OSError as exc:
+                        self._append_text(f"Warning: unable to finish TUI script log: {exc}")
                 self._busy = False
                 self._busy_command = None
 
@@ -704,6 +767,13 @@ class PromptToolkitTUI:
 
     def _append_text(self, text: str) -> None:
         """Append a line to the output pane. Safe from any thread."""
+        transcript = self._script_transcript
+        if transcript is not None:
+            try:
+                transcript.write_line(text)
+            except OSError:
+                logger.exception("Unable to write TUI script transcript")
+
         def _wrap_line(line: str, width: int) -> str:
             if len(line) <= width:
                 return line

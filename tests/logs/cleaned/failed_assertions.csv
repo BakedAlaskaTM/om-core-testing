@@ -1,0 +1,46 @@
+﻿Log,Function,Category,TestCaseID,Formula,Assertion,Expected,Tolerance,Description,FailureMessage
+test_suite_unified_20260812-084344-496774.log,COUNTIF,Aggregate,Happy_1,"COUNTIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching numeric criterion,Counts a matching numeric criterion
+test_suite_unified_20260812-084344-496774.log,COUNTIFS,Aggregate,Happy_1,"COUNTIFS(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching criteria pair,Counts a matching criteria pair
+test_suite_unified_20260812-084344-496774.log,SUMIF,Aggregate,Happy_1,"SUMIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"",MockCube::Mock_Row.R3:Mock_Col.C1)",Exact,7,,Sums a value meeting the criterion,Sums a value meeting the criterion
+test_suite_unified_20260812-084344-496774.log,SUMIFS,Aggregate,Happy_1,"SUMIFS(MockCube::Mock_Row.R3:Mock_Col.C1,MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,7,,Sums a value meeting a criteria pair,Sums a value meeting a criteria pair
+test_suite_unified_20260812-084344-496774.log,INT,Math,Edge_1,INT(-3.1),Exact,-4,,Boundary input for INT,Boundary input for INT
+test_suite_unified_20260812-084344-496774.log,REPT,String,Edge_1,"LEN(REPT(""x"",32767))",Exact,32767,,Meets the OpenFormula basic string-length limit,Meets the OpenFormula basic string-length limit
+test_suite_unified_20260812-084344-496774.log,CHAR,String,Edge_1,CHAR(127),Exact,,,Handles the highest required ASCII code,Handles the highest required ASCII code
+test_suite_unified_20260812-084344-496774.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows lower bound
+test_suite_unified_20260812-084344-496774.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows upper bound
+test_suite_unified_20260812-084344-496774.log,NPV,Financial,Edge_1,"NPV(0,10,20)",Exact,30,,Handles a zero discount rate,Handles a zero discount rate
+test_suite_unified_20260812-084344-496774.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return lower bound
+test_suite_unified_20260812-084344-496774.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return upper bound
+test_suite_unified_20260812-084344-496774.log,IRR,Financial,Edge_1,"IRR(-100,100)",Exact,0,,Handles a zero-return series,Handles a zero-return series
+test_suite_unified_20260812-084344-496774.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return lower bound
+test_suite_unified_20260812-084344-496774.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return upper bound
+test_suite_unified_20260812-084344-496774.log,XIRR,Financial,Edge_1,"XIRR(-100,100,DATE(2024,1,1),DATE(2025,1,1))",Exact,0,,Handles a zero dated return,Handles a zero dated return
+test_suite_unified_20260812-084344-496774.log,INDEX,Lookup,Happy_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Returns the first value from a reference,Returns the first value from a reference
+test_suite_unified_20260812-084344-496774.log,INDEX,Lookup,Edge_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Handles a single-cell reference,Handles a single-cell reference
+test_suite_unified_20260812-084344-496774.log,OFFSET,Lookup,Happy_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,0)",Exact,10,,Returns an unshifted reference,Returns an unshifted reference
+test_suite_unified_20260812-084344-496774.log,OFFSET,Lookup,Edge_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,1)",Exact,20,,Offsets by one column,Offsets by one column
+test_suite_unified_20260812-084344-496774.log,MATCH,Lookup,Happy_1,"MATCH(10,MockCube::Mock_Row.R1:Mock_Col.C1,0)",Exact,1,,Finds an exact match,Finds an exact match
+test_suite_unified_20260812-084344-496774.log,LOOKUP,Lookup,Happy_1,"LOOKUP(10,MockCube::Mock_Row.R1:Mock_Col.C1)",Exact,10,,Finds a value in a reference,Finds a value in a reference
+test_suite_unified_20260812-085916-203248.log,COUNTIF,Aggregate,Happy_1,"COUNTIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching numeric criterion,Counts a matching numeric criterion
+test_suite_unified_20260812-085916-203248.log,COUNTIFS,Aggregate,Happy_1,"COUNTIFS(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching criteria pair,Counts a matching criteria pair
+test_suite_unified_20260812-085916-203248.log,SUMIF,Aggregate,Happy_1,"SUMIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"",MockCube::Mock_Row.R3:Mock_Col.C1)",Exact,7,,Sums a value meeting the criterion,Sums a value meeting the criterion
+test_suite_unified_20260812-085916-203248.log,SUMIFS,Aggregate,Happy_1,"SUMIFS(MockCube::Mock_Row.R3:Mock_Col.C1,MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,7,,Sums a value meeting a criteria pair,Sums a value meeting a criteria pair
+test_suite_unified_20260812-085916-203248.log,INT,Math,Edge_1,INT(-3.1),Exact,-4,,Boundary input for INT,Boundary input for INT
+test_suite_unified_20260812-085916-203248.log,REPT,String,Edge_1,"LEN(REPT(""x"",32767))",Exact,32767,,Meets the OpenFormula basic string-length limit,Meets the OpenFormula basic string-length limit
+test_suite_unified_20260812-085916-203248.log,CHAR,String,Edge_1,CHAR(127),Exact,,,Handles the highest required ASCII code,Handles the highest required ASCII code
+test_suite_unified_20260812-085916-203248.log,MONTH,Date,Happy_1,"MONTH(DATE(2024,12,1))",Exact,12,,Extracts the month from a date,Extracts the month from a date
+test_suite_unified_20260812-085916-203248.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows lower bound
+test_suite_unified_20260812-085916-203248.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows upper bound
+test_suite_unified_20260812-085916-203248.log,NPV,Financial,Edge_1,"NPV(0,10,20)",Exact,30,,Handles a zero discount rate,Handles a zero discount rate
+test_suite_unified_20260812-085916-203248.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return lower bound
+test_suite_unified_20260812-085916-203248.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return upper bound
+test_suite_unified_20260812-085916-203248.log,IRR,Financial,Edge_1,"IRR(-100,100)",Exact,0,,Handles a zero-return series,Handles a zero-return series
+test_suite_unified_20260812-085916-203248.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return lower bound
+test_suite_unified_20260812-085916-203248.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return upper bound
+test_suite_unified_20260812-085916-203248.log,XIRR,Financial,Edge_1,"XIRR(-100,100,DATE(2024,1,1),DATE(2025,1,1))",Exact,0,,Handles a zero dated return,Handles a zero dated return
+test_suite_unified_20260812-085916-203248.log,INDEX,Lookup,Happy_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Returns the first value from a reference,Returns the first value from a reference
+test_suite_unified_20260812-085916-203248.log,INDEX,Lookup,Edge_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Handles a single-cell reference,Handles a single-cell reference
+test_suite_unified_20260812-085916-203248.log,OFFSET,Lookup,Happy_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,0)",Exact,10,,Returns an unshifted reference,Returns an unshifted reference
+test_suite_unified_20260812-085916-203248.log,OFFSET,Lookup,Edge_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,1)",Exact,20,,Offsets by one column,Offsets by one column
+test_suite_unified_20260812-085916-203248.log,MATCH,Lookup,Happy_1,"MATCH(10,MockCube::Mock_Row.R1:Mock_Col.C1,0)",Exact,1,,Finds an exact match,Finds an exact match
+test_suite_unified_20260812-085916-203248.log,LOOKUP,Lookup,Happy_1,"LOOKUP(10,MockCube::Mock_Row.R1:Mock_Col.C1)",Exact,10,,Finds a value in a reference,Finds a value in a reference

@@ -1,0 +1,857 @@
+# ==============================================================================
+# OPENFORMULA 1.4 FUNCTION-LEVEL CONFORMANCE DASHBOARD
+# Generated from tests/test-matrix.csv; formulas use OM Core comma syntax.
+# Error rows retain raw errors and require typed-harness verification.
+# ==============================================================================
+
+dim Mock_Row R1 R2 R3
+dim Mock_Col C1 C2 C3
+cube MockCube Mock_Row Mock_Col
+view MockView = MockCube rows: Mock_Row cols: Mock_Col
+hval view_id=MockView row=0 col=0 value=10
+hval view_id=MockView row=0 col=1 value=20
+hval view_id=MockView row=0 col=2 value=50
+hval view_id=MockView row=1 col=0 value=30
+hval view_id=MockView row=1 col=1 value=40
+hval view_id=MockView row=1 col=2 value=100
+hval view_id=MockView row=2 col=0 value="Alpha"
+hval view_id=MockView row=2 col=1 value="Beta"
+hval view_id=MockView row=2 col=2 value="Gamma"
+
+dim Case Edge_1 Happy_1 Invalid_1 PassFail
+dim Function_Aggregate FN_AVERAGE FN_COUNT FN_COUNTA FN_COUNTIF FN_COUNTIFS FN_MAX FN_MIN FN_SUM FN_SUMIF FN_SUMIFS
+cube TestCube_Aggregate Function_Aggregate Case
+view TestRunner_Aggregate = TestCube_Aggregate rows: Function_Aggregate cols: Case
+dim Function_Date FN_DATE FN_DAY FN_EOMONTH FN_MONTH FN_NOW FN_TODAY FN_WEEKDAY FN_WEEKNUM FN_YEAR
+cube TestCube_Date Function_Date Case
+view TestRunner_Date = TestCube_Date rows: Function_Date cols: Case
+dim Function_Financial FN_IRR FN_NPV FN_XIRR
+cube TestCube_Financial Function_Financial Case
+view TestRunner_Financial = TestCube_Financial rows: Function_Financial cols: Case
+dim Function_Logical FN_AND FN_FALSE FN_IF FN_IFERROR FN_NOT FN_OR FN_TRUE FN_XOR
+cube TestCube_Logical Function_Logical Case
+view TestRunner_Logical = TestCube_Logical rows: Function_Logical cols: Case
+dim Function_Lookup FN_INDEX FN_LOOKUP FN_MATCH FN_OFFSET
+cube TestCube_Lookup Function_Lookup Case
+view TestRunner_Lookup = TestCube_Lookup rows: Function_Lookup cols: Case
+dim Function_Math FN_ABS FN_ACOS FN_ASIN FN_ATAN FN_ATAN2 FN_CEILING FN_COS FN_DEGREES FN_EXP FN_FLOOR FN_INT FN_LN FN_LOG FN_LOG10 FN_MOD FN_PI FN_POWER FN_QUOTIENT FN_RADIANS FN_ROUND FN_ROUNDDOWN FN_ROUNDUP FN_SIGN FN_SIN FN_SQRT FN_TAN FN_TRUNC
+cube TestCube_Math Function_Math Case
+view TestRunner_Math = TestCube_Math rows: Function_Math cols: Case
+dim Function_Metadata FN_VALUE
+cube TestCube_Metadata Function_Metadata Case
+view TestRunner_Metadata = TestCube_Metadata rows: Function_Metadata cols: Case
+dim Function_String FN_CHAR FN_CODE FN_CONCATENATE FN_FIND FN_LEFT FN_LEN FN_LOWER FN_MID FN_PROPER FN_REPLACE FN_REPT FN_RIGHT FN_SUBSTITUTE FN_TRIM FN_UPPER
+cube TestCube_String Function_String Case
+view TestRunner_String = TestCube_String rows: Function_String cols: Case
+dim Function_Volatile FN_RAND FN_RANDBETWEEN
+cube TestCube_Volatile Function_Volatile Case
+view TestRunner_Volatile = TestCube_Volatile rows: Function_Volatile cols: Case
+
+# RULES UNDER TEST
+# OpenFormula 1.4 section 6.15.4 [Small] Typical valid input for IF
+rule TestCube_Logical::Function_Logical.FN_IF:Case.Happy_1 = IF(1,"yes","no")
+# OpenFormula 1.4 section 6.15.4 [Small] Boundary input for IF
+rule TestCube_Logical::Function_Logical.FN_IF:Case.Edge_1 = IF(0,1,2)
+# OpenFormula 1.4 section 6.15.4 [Small] Invalid or error input for IF
+rule TestCube_Logical::Function_Logical.FN_IF:Case.Invalid_1 = IF()
+# OpenFormula 1.4 section 6.15.2 [Small] Typical valid input for AND
+rule TestCube_Logical::Function_Logical.FN_AND:Case.Happy_1 = AND(1,1)
+# OpenFormula 1.4 section 6.15.2 [Small] Boundary input for AND
+rule TestCube_Logical::Function_Logical.FN_AND:Case.Edge_1 = AND(1,0)
+# OpenFormula 1.4 section 6.15.2 [Small] Invalid or error input for AND
+rule TestCube_Logical::Function_Logical.FN_AND:Case.Invalid_1 = AND()
+# OpenFormula 1.4 section 6.15.8 [Small] Typical valid input for OR
+rule TestCube_Logical::Function_Logical.FN_OR:Case.Happy_1 = OR(0,1)
+# OpenFormula 1.4 section 6.15.8 [Small] Boundary input for OR
+rule TestCube_Logical::Function_Logical.FN_OR:Case.Edge_1 = OR(0,0)
+# OpenFormula 1.4 section 6.15.8 [Small] Invalid or error input for OR
+rule TestCube_Logical::Function_Logical.FN_OR:Case.Invalid_1 = OR()
+# OpenFormula 1.4 section 6.15.7 [Small] Typical valid input for NOT
+rule TestCube_Logical::Function_Logical.FN_NOT:Case.Happy_1 = NOT(0)
+# OpenFormula 1.4 section 6.15.7 [Small] Boundary input for NOT
+rule TestCube_Logical::Function_Logical.FN_NOT:Case.Edge_1 = NOT(1)
+# OpenFormula 1.4 section 6.15.7 [Small] Invalid or error input for NOT
+rule TestCube_Logical::Function_Logical.FN_NOT:Case.Invalid_1 = NOT()
+# OpenFormula 1.4 section 6.15.10 [Large] Typical valid input for XOR
+rule TestCube_Logical::Function_Logical.FN_XOR:Case.Happy_1 = XOR(1,0)
+# OpenFormula 1.4 section 6.15.10 [Large] Boundary input for XOR
+rule TestCube_Logical::Function_Logical.FN_XOR:Case.Edge_1 = XOR(1,1)
+# OpenFormula 1.4 section 6.15.10 [Large] Invalid or error input for XOR
+rule TestCube_Logical::Function_Logical.FN_XOR:Case.Invalid_1 = XOR()
+# OpenFormula 1.4 section 6.15.5 [Large] Typical valid input for IFERROR
+rule TestCube_Logical::Function_Logical.FN_IFERROR:Case.Happy_1 = IFERROR(1/0,42)
+# OpenFormula 1.4 section 6.15.5 [Large] Boundary input for IFERROR
+rule TestCube_Logical::Function_Logical.FN_IFERROR:Case.Edge_1 = IFERROR(7,42)
+# OpenFormula 1.4 section 6.15.5 [Large] Invalid or error input for IFERROR
+rule TestCube_Logical::Function_Logical.FN_IFERROR:Case.Invalid_1 = IFERROR()
+# OpenFormula 1.4 section 6.15.9 [Small] Typical valid input for TRUE
+rule TestCube_Logical::Function_Logical.FN_TRUE:Case.Happy_1 = TRUE()
+# OpenFormula 1.4 section 6.15.9 [Small] Boundary input for TRUE
+rule TestCube_Logical::Function_Logical.FN_TRUE:Case.Edge_1 = TRUE()
+# OpenFormula 1.4 section 6.15.9 [Small] Invalid or error input for TRUE
+rule TestCube_Logical::Function_Logical.FN_TRUE:Case.Invalid_1 = TRUE(1)
+# OpenFormula 1.4 section 6.15.3 [Small] Typical valid input for FALSE
+rule TestCube_Logical::Function_Logical.FN_FALSE:Case.Happy_1 = FALSE()
+# OpenFormula 1.4 section 6.15.3 [Small] Boundary input for FALSE
+rule TestCube_Logical::Function_Logical.FN_FALSE:Case.Edge_1 = FALSE()
+# OpenFormula 1.4 section 6.15.3 [Small] Invalid or error input for FALSE
+rule TestCube_Logical::Function_Logical.FN_FALSE:Case.Invalid_1 = FALSE(1)
+# OpenFormula 1.4 section 6.16.61 [Small] Typical valid input for SUM
+rule TestCube_Aggregate::Function_Aggregate.FN_SUM:Case.Happy_1 = SUM(10,20,30)
+# OpenFormula 1.4 section 6.16.61 [Small] Boundary input for SUM
+rule TestCube_Aggregate::Function_Aggregate.FN_SUM:Case.Edge_1 = SUM(-5,0,5)
+# OpenFormula 1.4 section 6.16.61 [Small] Invalid or error input for SUM
+rule TestCube_Aggregate::Function_Aggregate.FN_SUM:Case.Invalid_1 = SUM()
+# OpenFormula 1.4 section 6.18.48 [Small] Typical valid input for MIN
+rule TestCube_Aggregate::Function_Aggregate.FN_MIN:Case.Happy_1 = MIN(2,-1,9)
+# OpenFormula 1.4 section 6.18.48 [Small] Boundary input for MIN
+rule TestCube_Aggregate::Function_Aggregate.FN_MIN:Case.Edge_1 = MIN(0)
+# OpenFormula 1.4 section 6.18.48 [Small] Invalid or error input for MIN
+rule TestCube_Aggregate::Function_Aggregate.FN_MIN:Case.Invalid_1 = MIN()
+# OpenFormula 1.4 section 6.18.45 [Small] Typical valid input for MAX
+rule TestCube_Aggregate::Function_Aggregate.FN_MAX:Case.Happy_1 = MAX(2,-1,9)
+# OpenFormula 1.4 section 6.18.45 [Small] Boundary input for MAX
+rule TestCube_Aggregate::Function_Aggregate.FN_MAX:Case.Edge_1 = MAX(0)
+# OpenFormula 1.4 section 6.18.45 [Small] Invalid or error input for MAX
+rule TestCube_Aggregate::Function_Aggregate.FN_MAX:Case.Invalid_1 = MAX()
+# OpenFormula 1.4 section 6.18.3 [Small] Typical valid input for AVERAGE
+rule TestCube_Aggregate::Function_Aggregate.FN_AVERAGE:Case.Happy_1 = AVERAGE(10,20)
+# OpenFormula 1.4 section 6.18.3 [Small] Boundary input for AVERAGE
+rule TestCube_Aggregate::Function_Aggregate.FN_AVERAGE:Case.Edge_1 = AVERAGE(0,0)
+# OpenFormula 1.4 section 6.18.3 [Small] Invalid or error input for AVERAGE
+rule TestCube_Aggregate::Function_Aggregate.FN_AVERAGE:Case.Invalid_1 = AVERAGE()
+# OpenFormula 1.4 section 6.13.6 [Small] Typical valid input for COUNT
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNT:Case.Happy_1 = COUNT(1,"x",2)
+# OpenFormula 1.4 section 6.13.6 [Small] Boundary input for COUNT
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNT:Case.Edge_1 = COUNT()
+# OpenFormula 1.4 section 6.13.6 [Small] Invalid or error input for COUNT
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNT:Case.Invalid_1 = COUNT("x")
+# OpenFormula 1.4 section 6.13.7 [Small] Typical valid input for COUNTA
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTA:Case.Happy_1 = COUNTA(1,"x")
+# OpenFormula 1.4 section 6.13.7 [Small] Boundary input for COUNTA
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTA:Case.Edge_1 = COUNTA()
+# OpenFormula 1.4 section 6.13.7 [Small] Invalid or error input for COUNTA
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTA:Case.Invalid_1 = COUNTA()
+# OpenFormula 1.4 section 6.13.9 [Small] Counts a matching numeric criterion
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIF:Case.Happy_1 = COUNTIF(MockCube::Mock_Row.R1:Mock_Col.C1,">5")
+# OpenFormula 1.4 section 6.13.9 [Small] Returns zero when no value matches
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIF:Case.Edge_1 = COUNTIF(MockCube::Mock_Row.R1:Mock_Col.C1,">10")
+# OpenFormula 1.4 section 6.13.9 [Small] Rejects missing range and criterion
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIF:Case.Invalid_1 = COUNTIF()
+# OpenFormula 1.4 section 6.13.10 [Large] Counts a matching criteria pair
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIFS:Case.Happy_1 = COUNTIFS(MockCube::Mock_Row.R1:Mock_Col.C1,">5")
+# OpenFormula 1.4 section 6.13.10 [Large] Returns zero when the criterion does not match
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIFS:Case.Edge_1 = COUNTIFS(MockCube::Mock_Row.R1:Mock_Col.C1,">10")
+# OpenFormula 1.4 section 6.13.10 [Large] Rejects a missing criteria pair
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIFS:Case.Invalid_1 = COUNTIFS()
+# OpenFormula 1.4 section 6.16.62 [Small] Sums a value meeting the criterion
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIF:Case.Happy_1 = SUMIF(MockCube::Mock_Row.R1:Mock_Col.C1,">5",MockCube::Mock_Row.R1:Mock_Col.C1)
+# OpenFormula 1.4 section 6.16.62 [Small] Returns zero when no value meets the criterion
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIF:Case.Edge_1 = SUMIF(MockCube::Mock_Row.R1:Mock_Col.C1,">10",MockCube::Mock_Row.R1:Mock_Col.C1)
+# OpenFormula 1.4 section 6.16.62 [Small] Rejects missing required parameters
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIF:Case.Invalid_1 = SUMIF()
+# OpenFormula 1.4 section 6.16.63 [Large] Sums a value meeting a criteria pair
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIFS:Case.Happy_1 = SUMIFS(MockCube::Mock_Row.R1:Mock_Col.C1,MockCube::Mock_Row.R1:Mock_Col.C1,">5")
+# OpenFormula 1.4 section 6.16.63 [Large] Returns zero when no value meets the criterion
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIFS:Case.Edge_1 = SUMIFS(MockCube::Mock_Row.R1:Mock_Col.C1,MockCube::Mock_Row.R1:Mock_Col.C1,">10")
+# OpenFormula 1.4 section 6.16.63 [Large] Rejects missing required parameters
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIFS:Case.Invalid_1 = SUMIFS()
+# OpenFormula 1.4 section 6.16.2 [Small] Typical valid input for ABS
+rule TestCube_Math::Function_Math.FN_ABS:Case.Happy_1 = ABS(-7)
+# OpenFormula 1.4 section 6.16.2 [Small] Boundary input for ABS
+rule TestCube_Math::Function_Math.FN_ABS:Case.Edge_1 = ABS(0)
+# OpenFormula 1.4 section 6.16.2 [Small] Invalid or error input for ABS
+rule TestCube_Math::Function_Math.FN_ABS:Case.Invalid_1 = ABS("x")
+# OpenFormula 1.4 section 6.17.5 [Small] Typical valid input for ROUND
+rule TestCube_Math::Function_Math.FN_ROUND:Case.Happy_1 = ROUND(2.345,2)
+# OpenFormula 1.4 section 6.17.5 [Small] Boundary input for ROUND
+rule TestCube_Math::Function_Math.FN_ROUND:Case.Edge_1 = ROUND(0,2)
+# OpenFormula 1.4 section 6.17.5 [Small] Invalid or error input for ROUND
+rule TestCube_Math::Function_Math.FN_ROUND:Case.Invalid_1 = ROUND("x",2)
+# OpenFormula 1.4 section 6.17.7 [Medium] Typical valid input for ROUNDUP
+rule TestCube_Math::Function_Math.FN_ROUNDUP:Case.Happy_1 = ROUNDUP(2.341,2)
+# OpenFormula 1.4 section 6.17.7 [Medium] Boundary input for ROUNDUP
+rule TestCube_Math::Function_Math.FN_ROUNDUP:Case.Edge_1 = ROUNDUP(0,2)
+# OpenFormula 1.4 section 6.17.7 [Medium] Invalid or error input for ROUNDUP
+rule TestCube_Math::Function_Math.FN_ROUNDUP:Case.Invalid_1 = ROUNDUP("x",2)
+# OpenFormula 1.4 section 6.17.6 [Medium] Typical valid input for ROUNDDOWN
+rule TestCube_Math::Function_Math.FN_ROUNDDOWN:Case.Happy_1 = ROUNDDOWN(2.349,2)
+# OpenFormula 1.4 section 6.17.6 [Medium] Boundary input for ROUNDDOWN
+rule TestCube_Math::Function_Math.FN_ROUNDDOWN:Case.Edge_1 = ROUNDDOWN(0,2)
+# OpenFormula 1.4 section 6.17.6 [Medium] Invalid or error input for ROUNDDOWN
+rule TestCube_Math::Function_Math.FN_ROUNDDOWN:Case.Invalid_1 = ROUNDDOWN("x",2)
+# OpenFormula 1.4 section 6.16.45 [Small] Typical valid input for PI
+rule TestCube_Math::Function_Math.FN_PI:Case.Happy_1 = PI()
+# OpenFormula 1.4 section 6.16.45 [Small] Boundary input for PI
+rule TestCube_Math::Function_Math.FN_PI:Case.Edge_1 = ROUND(PI(),2)
+# OpenFormula 1.4 section 6.16.45 [Small] Invalid or error input for PI
+rule TestCube_Math::Function_Math.FN_PI:Case.Invalid_1 = PI(1)
+# OpenFormula 1.4 section 6.16.39 [Small] Typical valid input for LN
+rule TestCube_Math::Function_Math.FN_LN:Case.Happy_1 = LN(1)
+# OpenFormula 1.4 section 6.16.39 [Small] Boundary input for LN
+rule TestCube_Math::Function_Math.FN_LN:Case.Edge_1 = LN(EXP(1))
+# OpenFormula 1.4 section 6.16.39 [Small] Invalid or error input for LN
+rule TestCube_Math::Function_Math.FN_LN:Case.Invalid_1 = LN(0)
+# OpenFormula 1.4 section 6.16.40 [Small] Typical valid input for LOG
+rule TestCube_Math::Function_Math.FN_LOG:Case.Happy_1 = LOG(100,10)
+# OpenFormula 1.4 section 6.16.40 [Small] Boundary input for LOG
+rule TestCube_Math::Function_Math.FN_LOG:Case.Edge_1 = LOG(1,10)
+# OpenFormula 1.4 section 6.16.40 [Small] Invalid or error input for LOG
+rule TestCube_Math::Function_Math.FN_LOG:Case.Invalid_1 = LOG(-1,10)
+# OpenFormula 1.4 section 6.16.41 [Small] Typical valid input for LOG10
+rule TestCube_Math::Function_Math.FN_LOG10:Case.Happy_1 = LOG10(1000)
+# OpenFormula 1.4 section 6.16.41 [Small] Boundary input for LOG10
+rule TestCube_Math::Function_Math.FN_LOG10:Case.Edge_1 = LOG10(1)
+# OpenFormula 1.4 section 6.16.41 [Small] Invalid or error input for LOG10
+rule TestCube_Math::Function_Math.FN_LOG10:Case.Invalid_1 = LOG10(0)
+# OpenFormula 1.4 section 6.16.31 [Small] Typical valid input for EXP
+rule TestCube_Math::Function_Math.FN_EXP:Case.Happy_1 = EXP(0)
+# OpenFormula 1.4 section 6.16.31 [Small] Boundary input for EXP
+rule TestCube_Math::Function_Math.FN_EXP:Case.Edge_1 = ROUND(EXP(1),5)
+# OpenFormula 1.4 section 6.16.31 [Small] Invalid or error input for EXP
+rule TestCube_Math::Function_Math.FN_EXP:Case.Invalid_1 = EXP(10000)
+# OpenFormula 1.4 section 6.16.58 [Small] Typical valid input for SQRT
+rule TestCube_Math::Function_Math.FN_SQRT:Case.Happy_1 = SQRT(81)
+# OpenFormula 1.4 section 6.16.58 [Small] Boundary input for SQRT
+rule TestCube_Math::Function_Math.FN_SQRT:Case.Edge_1 = SQRT(0)
+# OpenFormula 1.4 section 6.16.58 [Small] Invalid or error input for SQRT
+rule TestCube_Math::Function_Math.FN_SQRT:Case.Invalid_1 = SQRT(-1)
+# OpenFormula 1.4 section 6.16.46 [Small] Typical valid input for POWER
+rule TestCube_Math::Function_Math.FN_POWER:Case.Happy_1 = POWER(2,8)
+# OpenFormula 1.4 section 6.16.46 [Small] Boundary input for POWER
+rule TestCube_Math::Function_Math.FN_POWER:Case.Edge_1 = POWER(5,0)
+# OpenFormula 1.4 section 6.16.46 [Small] Invalid or error input for POWER
+rule TestCube_Math::Function_Math.FN_POWER:Case.Invalid_1 = POWER(0,-1)
+# OpenFormula 1.4 section 6.16.55 [Small] Typical valid input for SIN
+rule TestCube_Math::Function_Math.FN_SIN:Case.Happy_1 = SIN(0)
+# OpenFormula 1.4 section 6.16.55 [Small] Boundary input for SIN
+rule TestCube_Math::Function_Math.FN_SIN:Case.Edge_1 = SIN(0)
+# OpenFormula 1.4 section 6.16.55 [Small] Invalid or error input for SIN
+rule TestCube_Math::Function_Math.FN_SIN:Case.Invalid_1 = SIN("x")
+# OpenFormula 1.4 section 6.16.19 [Small] Typical valid input for COS
+rule TestCube_Math::Function_Math.FN_COS:Case.Happy_1 = COS(0)
+# OpenFormula 1.4 section 6.16.19 [Small] Boundary input for COS
+rule TestCube_Math::Function_Math.FN_COS:Case.Edge_1 = COS(0)
+# OpenFormula 1.4 section 6.16.19 [Small] Invalid or error input for COS
+rule TestCube_Math::Function_Math.FN_COS:Case.Invalid_1 = COS("x")
+# OpenFormula 1.4 section 6.16.69 [Small] Typical valid input for TAN
+rule TestCube_Math::Function_Math.FN_TAN:Case.Happy_1 = TAN(0)
+# OpenFormula 1.4 section 6.16.69 [Small] Boundary input for TAN
+rule TestCube_Math::Function_Math.FN_TAN:Case.Edge_1 = TAN(0)
+# OpenFormula 1.4 section 6.16.69 [Small] Invalid or error input for TAN
+rule TestCube_Math::Function_Math.FN_TAN:Case.Invalid_1 = TAN("x")
+# OpenFormula 1.4 section 6.16.7 [Small] Typical valid input for ASIN
+rule TestCube_Math::Function_Math.FN_ASIN:Case.Happy_1 = ASIN(0)
+# OpenFormula 1.4 section 6.16.7 [Small] Boundary input for ASIN
+rule TestCube_Math::Function_Math.FN_ASIN:Case.Edge_1 = ASIN(0)
+# OpenFormula 1.4 section 6.16.7 [Small] Invalid or error input for ASIN
+rule TestCube_Math::Function_Math.FN_ASIN:Case.Invalid_1 = ASIN("x")
+# OpenFormula 1.4 section 6.16.3 [Small] Returns the principal arc cosine at the upper domain boundary
+rule TestCube_Math::Function_Math.FN_ACOS:Case.Happy_1 = ACOS(1)
+# OpenFormula 1.4 section 6.16.3 [Small] Returns pi divided by two at zero
+rule TestCube_Math::Function_Math.FN_ACOS:Case.Edge_1 = ACOS(0)
+# OpenFormula 1.4 section 6.16.3 [Small] Invalid or error input for ACOS
+rule TestCube_Math::Function_Math.FN_ACOS:Case.Invalid_1 = ACOS("x")
+# OpenFormula 1.4 section 6.16.9 [Small] Typical valid input for ATAN
+rule TestCube_Math::Function_Math.FN_ATAN:Case.Happy_1 = ATAN(0)
+# OpenFormula 1.4 section 6.16.9 [Small] Boundary input for ATAN
+rule TestCube_Math::Function_Math.FN_ATAN:Case.Edge_1 = ATAN(0)
+# OpenFormula 1.4 section 6.16.9 [Small] Invalid or error input for ATAN
+rule TestCube_Math::Function_Math.FN_ATAN:Case.Invalid_1 = ATAN("x")
+# OpenFormula 1.4 section 6.16.10 [Small] Returns the angle for positive coordinates
+rule TestCube_Math::Function_Math.FN_ATAN2:Case.Happy_1 = ATAN2(1,1)
+# OpenFormula 1.4 section 6.16.10 [Small] Handles a zero ordinate
+rule TestCube_Math::Function_Math.FN_ATAN2:Case.Edge_1 = ATAN2(0,1)
+# OpenFormula 1.4 section 6.16.10 [Small] Rejects the indeterminate origin
+rule TestCube_Math::Function_Math.FN_ATAN2:Case.Invalid_1 = ATAN2(0,0)
+# OpenFormula 1.4 section 6.16.49 [Small] Typical valid input for RADIANS
+rule TestCube_Math::Function_Math.FN_RADIANS:Case.Happy_1 = RADIANS(180)
+# OpenFormula 1.4 section 6.16.49 [Small] Boundary input for RADIANS
+rule TestCube_Math::Function_Math.FN_RADIANS:Case.Edge_1 = RADIANS(0)
+# OpenFormula 1.4 section 6.16.49 [Small] Invalid or error input for RADIANS
+rule TestCube_Math::Function_Math.FN_RADIANS:Case.Invalid_1 = RADIANS("x")
+# OpenFormula 1.4 section 6.16.25 [Small] Typical valid input for DEGREES
+rule TestCube_Math::Function_Math.FN_DEGREES:Case.Happy_1 = DEGREES(PI())
+# OpenFormula 1.4 section 6.16.25 [Small] Boundary input for DEGREES
+rule TestCube_Math::Function_Math.FN_DEGREES:Case.Edge_1 = DEGREES(0)
+# OpenFormula 1.4 section 6.16.25 [Small] Invalid or error input for DEGREES
+rule TestCube_Math::Function_Math.FN_DEGREES:Case.Invalid_1 = DEGREES("x")
+# OpenFormula 1.4 section 6.16.54 [Medium] Typical valid input for SIGN
+rule TestCube_Math::Function_Math.FN_SIGN:Case.Happy_1 = SIGN(-8)
+# OpenFormula 1.4 section 6.16.54 [Medium] Boundary input for SIGN
+rule TestCube_Math::Function_Math.FN_SIGN:Case.Edge_1 = SIGN(0)
+# OpenFormula 1.4 section 6.16.54 [Medium] Invalid or error input for SIGN
+rule TestCube_Math::Function_Math.FN_SIGN:Case.Invalid_1 = SIGN("x")
+# OpenFormula 1.4 section 6.17.2 [Small] Typical valid input for INT
+rule TestCube_Math::Function_Math.FN_INT:Case.Happy_1 = INT(3.9)
+# OpenFormula 1.4 section 6.17.2 [Small] Boundary input for INT
+rule TestCube_Math::Function_Math.FN_INT:Case.Edge_1 = INT(-3.1)
+# OpenFormula 1.4 section 6.17.2 [Small] Invalid or error input for INT
+rule TestCube_Math::Function_Math.FN_INT:Case.Invalid_1 = INT("x")
+# OpenFormula 1.4 section 6.16.42 [Small] Typical valid input for MOD
+rule TestCube_Math::Function_Math.FN_MOD:Case.Happy_1 = MOD(10,3)
+# OpenFormula 1.4 section 6.16.42 [Small] Boundary input for MOD
+rule TestCube_Math::Function_Math.FN_MOD:Case.Edge_1 = MOD(0,3)
+# OpenFormula 1.4 section 6.16.42 [Small] Invalid or error input for MOD
+rule TestCube_Math::Function_Math.FN_MOD:Case.Invalid_1 = MOD(1,0)
+# OpenFormula 1.4 section 6.16.48 [Medium] Typical valid input for QUOTIENT
+rule TestCube_Math::Function_Math.FN_QUOTIENT:Case.Happy_1 = QUOTIENT(10,3)
+# OpenFormula 1.4 section 6.16.48 [Medium] Boundary input for QUOTIENT
+rule TestCube_Math::Function_Math.FN_QUOTIENT:Case.Edge_1 = QUOTIENT(0,3)
+# OpenFormula 1.4 section 6.16.48 [Medium] Invalid or error input for QUOTIENT
+rule TestCube_Math::Function_Math.FN_QUOTIENT:Case.Invalid_1 = QUOTIENT(1,0)
+# OpenFormula 1.4 section 6.17.3 [Medium] Typical valid input for FLOOR
+rule TestCube_Math::Function_Math.FN_FLOOR:Case.Happy_1 = FLOOR(7.5,2)
+# OpenFormula 1.4 section 6.17.3 [Medium] Boundary input for FLOOR
+rule TestCube_Math::Function_Math.FN_FLOOR:Case.Edge_1 = FLOOR(0,2)
+# OpenFormula 1.4 section 6.17.3 [Medium] Invalid or error input for FLOOR
+rule TestCube_Math::Function_Math.FN_FLOOR:Case.Invalid_1 = FLOOR(1,0)
+# OpenFormula 1.4 section 6.17.1 [Medium] Typical valid input for CEILING
+rule TestCube_Math::Function_Math.FN_CEILING:Case.Happy_1 = CEILING(7.5,2)
+# OpenFormula 1.4 section 6.17.1 [Medium] Boundary input for CEILING
+rule TestCube_Math::Function_Math.FN_CEILING:Case.Edge_1 = CEILING(0,2)
+# OpenFormula 1.4 section 6.17.1 [Medium] Invalid or error input for CEILING
+rule TestCube_Math::Function_Math.FN_CEILING:Case.Invalid_1 = CEILING(1,0)
+# OpenFormula 1.4 section 6.17.8 [Small] Typical valid input for TRUNC
+rule TestCube_Math::Function_Math.FN_TRUNC:Case.Happy_1 = TRUNC(3.987,2)
+# OpenFormula 1.4 section 6.17.8 [Small] Boundary input for TRUNC
+rule TestCube_Math::Function_Math.FN_TRUNC:Case.Edge_1 = TRUNC(0,2)
+# OpenFormula 1.4 section 6.17.8 [Small] Invalid or error input for TRUNC
+rule TestCube_Math::Function_Math.FN_TRUNC:Case.Invalid_1 = TRUNC("x",2)
+# OpenFormula 1.4 section 6.20.13 [Small] Typical valid input for LEN
+rule TestCube_String::Function_String.FN_LEN:Case.Happy_1 = LEN("OpenM")
+# OpenFormula 1.4 section 6.20.13 [Small] Boundary input for LEN
+rule TestCube_String::Function_String.FN_LEN:Case.Edge_1 = LEN("")
+# OpenFormula 1.4 section 6.20.13 [Small] Invalid or error input for LEN
+rule TestCube_String::Function_String.FN_LEN:Case.Invalid_1 = LEN()
+# OpenFormula 1.4 section 6.20.24 [Small] Typical valid input for TRIM
+rule TestCube_String::Function_String.FN_TRIM:Case.Happy_1 = TRIM("  OpenM  Core  ")
+# OpenFormula 1.4 section 6.20.24 [Small] Boundary input for TRIM
+rule TestCube_String::Function_String.FN_TRIM:Case.Edge_1 = TRIM("")
+# OpenFormula 1.4 section 6.20.24 [Small] Invalid or error input for TRIM
+rule TestCube_String::Function_String.FN_TRIM:Case.Invalid_1 = TRIM()
+# OpenFormula 1.4 section 6.20.12 [Small] Typical valid input for LEFT
+rule TestCube_String::Function_String.FN_LEFT:Case.Happy_1 = LEFT("OpenM",2)
+# OpenFormula 1.4 section 6.20.12 [Small] Boundary input for LEFT
+rule TestCube_String::Function_String.FN_LEFT:Case.Edge_1 = LEFT("OpenM",0)
+# OpenFormula 1.4 section 6.20.12 [Small] Invalid or error input for LEFT
+rule TestCube_String::Function_String.FN_LEFT:Case.Invalid_1 = LEFT("x",-1)
+# OpenFormula 1.4 section 6.20.19 [Small] Typical valid input for RIGHT
+rule TestCube_String::Function_String.FN_RIGHT:Case.Happy_1 = RIGHT("OpenM",2)
+# OpenFormula 1.4 section 6.20.19 [Small] Boundary input for RIGHT
+rule TestCube_String::Function_String.FN_RIGHT:Case.Edge_1 = RIGHT("OpenM",0)
+# OpenFormula 1.4 section 6.20.19 [Small] Invalid or error input for RIGHT
+rule TestCube_String::Function_String.FN_RIGHT:Case.Invalid_1 = RIGHT("x",-1)
+# OpenFormula 1.4 section 6.20.18 [Small] Typical valid input for REPT
+rule TestCube_String::Function_String.FN_REPT:Case.Happy_1 = REPT("ab",3)
+# OpenFormula 1.4 section 6.20.18 [Small] Meets the OpenFormula basic string-length limit
+rule TestCube_String::Function_String.FN_REPT:Case.Edge_1 = LEN(REPT("x",32767))
+# OpenFormula 1.4 section 6.20.18 [Small] Invalid or error input for REPT
+rule TestCube_String::Function_String.FN_REPT:Case.Invalid_1 = REPT("x",-1)
+# OpenFormula 1.4 section 6.20.5 [Medium] Typical valid input for CODE
+rule TestCube_String::Function_String.FN_CODE:Case.Happy_1 = CODE("A")
+# OpenFormula 1.4 section 6.20.5 [Medium] Round-trips the lowest interoperable character code
+rule TestCube_String::Function_String.FN_CODE:Case.Edge_1 = CODE(CHAR(1))
+# OpenFormula 1.4 section 6.20.5 [Medium] Invalid or error input for CODE
+rule TestCube_String::Function_String.FN_CODE:Case.Invalid_1 = CODE()
+# OpenFormula 1.4 section 6.20.3 [Medium] Typical valid input for CHAR
+rule TestCube_String::Function_String.FN_CHAR:Case.Happy_1 = CHAR(65)
+# OpenFormula 1.4 section 6.20.3 [Medium] Handles the highest required ASCII code
+rule TestCube_String::Function_String.FN_CHAR:Case.Edge_1 = CHAR(127)
+# OpenFormula 1.4 section 6.20.3 [Medium] Rejects a character code above 255
+rule TestCube_String::Function_String.FN_CHAR:Case.Invalid_1 = CHAR(256)
+# OpenFormula 1.4 section 6.20.6 [Medium] Concatenates two text values
+rule TestCube_String::Function_String.FN_CONCATENATE:Case.Happy_1 = CONCATENATE("Open","Formula")
+# OpenFormula 1.4 section 6.20.6 [Medium] Preserves an empty result
+rule TestCube_String::Function_String.FN_CONCATENATE:Case.Edge_1 = CONCATENATE("","")
+# OpenFormula 1.4 section 6.20.6 [Medium] Rejects an empty parameter list
+rule TestCube_String::Function_String.FN_CONCATENATE:Case.Invalid_1 = CONCATENATE()
+# OpenFormula 1.4 section 6.20.9 [Small] Returns a one-based text position
+rule TestCube_String::Function_String.FN_FIND:Case.Happy_1 = FIND("M","OpenM")
+# OpenFormula 1.4 section 6.20.9 [Small] Finds text at the first position
+rule TestCube_String::Function_String.FN_FIND:Case.Edge_1 = FIND("O","OpenM")
+# OpenFormula 1.4 section 6.20.9 [Small] Errors when the search text is absent
+rule TestCube_String::Function_String.FN_FIND:Case.Invalid_1 = FIND("z","OpenM")
+# OpenFormula 1.4 section 6.20.15 [Small] Returns the requested substring
+rule TestCube_String::Function_String.FN_MID:Case.Happy_1 = MID("OpenM",2,3)
+# OpenFormula 1.4 section 6.20.15 [Small] Returns empty text for zero length
+rule TestCube_String::Function_String.FN_MID:Case.Edge_1 = MID("OpenM",1,0)
+# OpenFormula 1.4 section 6.20.15 [Small] Rejects a start position below one
+rule TestCube_String::Function_String.FN_MID:Case.Invalid_1 = MID("OpenM",0,2)
+# OpenFormula 1.4 section 6.20.27 [Small] Typical valid input for UPPER
+rule TestCube_String::Function_String.FN_UPPER:Case.Happy_1 = UPPER("OpenM")
+# OpenFormula 1.4 section 6.20.27 [Small] Boundary input for UPPER
+rule TestCube_String::Function_String.FN_UPPER:Case.Edge_1 = UPPER("")
+# OpenFormula 1.4 section 6.20.27 [Small] Invalid or error input for UPPER
+rule TestCube_String::Function_String.FN_UPPER:Case.Invalid_1 = UPPER()
+# OpenFormula 1.4 section 6.20.14 [Small] Typical valid input for LOWER
+rule TestCube_String::Function_String.FN_LOWER:Case.Happy_1 = LOWER("open m")
+# OpenFormula 1.4 section 6.20.14 [Small] Boundary input for LOWER
+rule TestCube_String::Function_String.FN_LOWER:Case.Edge_1 = LOWER("")
+# OpenFormula 1.4 section 6.20.14 [Small] Invalid or error input for LOWER
+rule TestCube_String::Function_String.FN_LOWER:Case.Invalid_1 = LOWER()
+# OpenFormula 1.4 section 6.20.16 [Small] Typical valid input for PROPER
+rule TestCube_String::Function_String.FN_PROPER:Case.Happy_1 = PROPER("open m")
+# OpenFormula 1.4 section 6.20.16 [Small] Boundary input for PROPER
+rule TestCube_String::Function_String.FN_PROPER:Case.Edge_1 = PROPER("")
+# OpenFormula 1.4 section 6.20.16 [Small] Invalid or error input for PROPER
+rule TestCube_String::Function_String.FN_PROPER:Case.Invalid_1 = PROPER()
+# OpenFormula 1.4 section 6.20.21 [Small] Replaces every matching occurrence
+rule TestCube_String::Function_String.FN_SUBSTITUTE:Case.Happy_1 = SUBSTITUTE("a-b-a","a","x")
+# OpenFormula 1.4 section 6.20.21 [Small] Leaves text unchanged without a match
+rule TestCube_String::Function_String.FN_SUBSTITUTE:Case.Edge_1 = SUBSTITUTE("abc","z","x")
+# OpenFormula 1.4 section 6.20.21 [Small] Rejects missing required parameters
+rule TestCube_String::Function_String.FN_SUBSTITUTE:Case.Invalid_1 = SUBSTITUTE()
+# OpenFormula 1.4 section 6.20.17 [Small] Replaces text by position and length
+rule TestCube_String::Function_String.FN_REPLACE:Case.Happy_1 = REPLACE("OpenM",2,3,"XX")
+# OpenFormula 1.4 section 6.20.17 [Small] Allows a zero replacement length
+rule TestCube_String::Function_String.FN_REPLACE:Case.Edge_1 = REPLACE("OpenM",1,0,"")
+# OpenFormula 1.4 section 6.20.17 [Small] Rejects missing required parameters
+rule TestCube_String::Function_String.FN_REPLACE:Case.Invalid_1 = REPLACE()
+# OpenFormula 1.4 section 6.10.2 [Small] Constructs a Gregorian date independently of the host epoch
+rule TestCube_Date::Function_Date.FN_DATE:Case.Happy_1 = DAY(DATE(2024,1,1))
+# OpenFormula 1.4 section 6.10.2 [Small] Constructs a valid leap-day date
+rule TestCube_Date::Function_Date.FN_DATE:Case.Edge_1 = DAY(DATE(2000,2,29))
+# OpenFormula 1.4 section 6.10.2 [Small] Invalid or error input for DATE
+rule TestCube_Date::Function_Date.FN_DATE:Case.Invalid_1 = DATE("x",1,1)
+# OpenFormula 1.4 section 6.10.5 [Small] Extracts the day of month from a date
+rule TestCube_Date::Function_Date.FN_DAY:Case.Happy_1 = DAY(DATE(2024,1,31))
+# OpenFormula 1.4 section 6.10.5 [Small] Extracts a leap-day boundary
+rule TestCube_Date::Function_Date.FN_DAY:Case.Edge_1 = DAY(DATE(2000,2,29))
+# OpenFormula 1.4 section 6.10.5 [Small] Invalid or error input for DAY
+rule TestCube_Date::Function_Date.FN_DAY:Case.Invalid_1 = DAY("x")
+# OpenFormula 1.4 section 6.10.14 [Small] Extracts the month from a date
+rule TestCube_Date::Function_Date.FN_MONTH:Case.Happy_1 = MONTH(DATE(2024,12,1))
+# OpenFormula 1.4 section 6.10.14 [Small] Extracts the first month
+rule TestCube_Date::Function_Date.FN_MONTH:Case.Edge_1 = MONTH(DATE(2024,1,1))
+# OpenFormula 1.4 section 6.10.14 [Small] Invalid or error input for MONTH
+rule TestCube_Date::Function_Date.FN_MONTH:Case.Invalid_1 = MONTH("x")
+# OpenFormula 1.4 section 6.10.24 [Small] Extracts the year from a date
+rule TestCube_Date::Function_Date.FN_YEAR:Case.Happy_1 = YEAR(DATE(2024,1,1))
+# OpenFormula 1.4 section 6.10.24 [Small] Handles the minimum conforming DATE year
+rule TestCube_Date::Function_Date.FN_YEAR:Case.Edge_1 = YEAR(DATE(1904,1,1))
+# OpenFormula 1.4 section 6.10.24 [Small] Invalid or error input for YEAR
+rule TestCube_Date::Function_Date.FN_YEAR:Case.Invalid_1 = YEAR("x")
+# OpenFormula 1.4 section 6.10.10 [Medium] Returns the final day of the current month
+rule TestCube_Date::Function_Date.FN_EOMONTH:Case.Happy_1 = DAY(EOMONTH(DATE(2024,1,1),0))
+# OpenFormula 1.4 section 6.10.10 [Medium] Moves to the end of the following month
+rule TestCube_Date::Function_Date.FN_EOMONTH:Case.Edge_1 = MONTH(EOMONTH(DATE(2024,1,1),1))
+# OpenFormula 1.4 section 6.10.10 [Medium] Invalid or error input for EOMONTH
+rule TestCube_Date::Function_Date.FN_EOMONTH:Case.Invalid_1 = EOMONTH("x",0)
+# OpenFormula 1.4 section 6.10.21 [Small] Returns Monday using the default Sunday-first system
+rule TestCube_Date::Function_Date.FN_WEEKDAY:Case.Happy_1 = WEEKDAY(DATE(2024,1,1))
+# OpenFormula 1.4 section 6.10.21 [Small] Handles the OM Core date epoch
+rule TestCube_Date::Function_Date.FN_WEEKDAY:Case.Edge_1 = WEEKDAY(DATE(1899,12,30))
+# OpenFormula 1.4 section 6.10.21 [Small] Rejects non-date text
+rule TestCube_Date::Function_Date.FN_WEEKDAY:Case.Invalid_1 = WEEKDAY("x")
+# OpenFormula 1.4 section 6.10.22 [Medium] Returns the week containing the first day of the year
+rule TestCube_Date::Function_Date.FN_WEEKNUM:Case.Happy_1 = WEEKNUM(DATE(2024,1,1))
+# OpenFormula 1.4 section 6.10.22 [Medium] Handles the year-end boundary
+rule TestCube_Date::Function_Date.FN_WEEKNUM:Case.Edge_1 = WEEKNUM(DATE(2024,12,31))
+# OpenFormula 1.4 section 6.10.22 [Medium] Rejects non-date text
+rule TestCube_Date::Function_Date.FN_WEEKNUM:Case.Invalid_1 = WEEKNUM("x")
+# OpenFormula 1.4 section 6.10.20 [Small] Typical valid input for TODAY
+rule TestCube_Date::Function_Date.FN_TODAY:Case.Happy_1 = TODAY()=TODAY()
+# OpenFormula 1.4 section 6.10.20 [Small] Boundary input for TODAY
+rule TestCube_Date::Function_Date.FN_TODAY:Case.Edge_1 = TODAY()>45000
+# OpenFormula 1.4 section 6.10.20 [Small] Invalid or error input for TODAY
+rule TestCube_Date::Function_Date.FN_TODAY:Case.Invalid_1 = TODAY(1)
+# OpenFormula 1.4 section 6.10.16 [Small] Typical valid input for NOW
+rule TestCube_Date::Function_Date.FN_NOW:Case.Happy_1 = NOW()=NOW()
+# OpenFormula 1.4 section 6.10.16 [Small] Boundary input for NOW
+rule TestCube_Date::Function_Date.FN_NOW:Case.Edge_1 = NOW()>45000
+# OpenFormula 1.4 section 6.10.16 [Small] Invalid or error input for NOW
+rule TestCube_Date::Function_Date.FN_NOW:Case.Invalid_1 = NOW(1)
+# OpenFormula 1.4 section 6.12.30 [Small] Discounts periodic cash flows
+rule TestCube_Financial::Function_Financial.FN_NPV:Case.Happy_1 = NPV(0.1,100,100)
+# OpenFormula 1.4 section 6.12.30 [Small] Handles a zero discount rate
+rule TestCube_Financial::Function_Financial.FN_NPV:Case.Edge_1 = NPV(0,10,20)
+# OpenFormula 1.4 section 6.12.30 [Small] Rejects a rate of negative one
+rule TestCube_Financial::Function_Financial.FN_NPV:Case.Invalid_1 = NPV(-1,10)
+# OpenFormula 1.4 section 6.12.24 [Small] Finds the periodic internal rate of return
+rule TestCube_Financial::Function_Financial.FN_IRR:Case.Happy_1 = ROUND(IRR(-100,60,60),6)
+# OpenFormula 1.4 section 6.12.24 [Small] Handles a zero-return series
+rule TestCube_Financial::Function_Financial.FN_IRR:Case.Edge_1 = IRR(-100,100)
+# OpenFormula 1.4 section 6.12.24 [Small] Fails when no sign-changing solution exists
+rule TestCube_Financial::Function_Financial.FN_IRR:Case.Invalid_1 = IRR(1,2)
+# OpenFormula 1.4 section 6.12.51 [Medium] Finds a dated internal rate of return
+rule TestCube_Financial::Function_Financial.FN_XIRR:Case.Happy_1 = ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)
+# OpenFormula 1.4 section 6.12.51 [Medium] Handles a zero dated return
+rule TestCube_Financial::Function_Financial.FN_XIRR:Case.Edge_1 = XIRR(-100,100,DATE(2024,1,1),DATE(2025,1,1))
+# OpenFormula 1.4 section 6.12.51 [Medium] Fails when no sign-changing solution exists
+rule TestCube_Financial::Function_Financial.FN_XIRR:Case.Invalid_1 = XIRR(1,2,DATE(2024,1,1),DATE(2025,1,1))
+# OpenFormula 1.4 section 6.14.6 [Small] Returns the first value from a reference
+rule TestCube_Lookup::Function_Lookup.FN_INDEX:Case.Happy_1 = INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)
+# OpenFormula 1.4 section 6.14.6 [Small] Handles a single-cell reference
+rule TestCube_Lookup::Function_Lookup.FN_INDEX:Case.Edge_1 = INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)
+# OpenFormula 1.4 section 6.14.6 [Small] Rejects missing parameters
+rule TestCube_Lookup::Function_Lookup.FN_INDEX:Case.Invalid_1 = INDEX()
+# OpenFormula 1.4 section 6.14.11 [Medium] Returns an unshifted reference
+rule TestCube_Lookup::Function_Lookup.FN_OFFSET:Case.Happy_1 = OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,0)
+# OpenFormula 1.4 section 6.14.11 [Medium] Offsets by one column
+rule TestCube_Lookup::Function_Lookup.FN_OFFSET:Case.Edge_1 = OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,1)
+# OpenFormula 1.4 section 6.14.11 [Medium] Rejects missing parameters
+rule TestCube_Lookup::Function_Lookup.FN_OFFSET:Case.Invalid_1 = OFFSET()
+# OpenFormula 1.4 section 6.14.9 [Small] Finds an exact match
+rule TestCube_Lookup::Function_Lookup.FN_MATCH:Case.Happy_1 = MATCH(10,MockCube::Mock_Row.R1:Mock_Col.C1,0)
+# OpenFormula 1.4 section 6.14.9 [Small] Returns not-available when absent
+rule TestCube_Lookup::Function_Lookup.FN_MATCH:Case.Edge_1 = MATCH(999,MockCube::Mock_Row.R1:Mock_Col.C1,0)
+# OpenFormula 1.4 section 6.14.9 [Small] Rejects missing parameters
+rule TestCube_Lookup::Function_Lookup.FN_MATCH:Case.Invalid_1 = MATCH()
+# OpenFormula 1.4 section 6.14.8 [Medium] Finds a value in a reference
+rule TestCube_Lookup::Function_Lookup.FN_LOOKUP:Case.Happy_1 = LOOKUP(10,MockCube::Mock_Row.R1:Mock_Col.C1)
+# OpenFormula 1.4 section 6.14.8 [Medium] Returns not-available below the smallest value
+rule TestCube_Lookup::Function_Lookup.FN_LOOKUP:Case.Edge_1 = LOOKUP(5,MockCube::Mock_Row.R1:Mock_Col.C1)
+# OpenFormula 1.4 section 6.14.8 [Medium] Rejects missing parameters
+rule TestCube_Lookup::Function_Lookup.FN_LOOKUP:Case.Invalid_1 = LOOKUP()
+# OpenFormula 1.4 section 6.13.34 [Small] Converts integer text to a number
+rule TestCube_Metadata::Function_Metadata.FN_VALUE:Case.Happy_1 = VALUE("42")
+# OpenFormula 1.4 section 6.13.34 [Small] Converts decimal text to a number
+rule TestCube_Metadata::Function_Metadata.FN_VALUE:Case.Edge_1 = VALUE("12.5")
+# OpenFormula 1.4 section 6.13.34 [Small] Rejects text without a numeric representation
+rule TestCube_Metadata::Function_Metadata.FN_VALUE:Case.Invalid_1 = VALUE("not-a-number")
+# OpenFormula 1.4 section 6.16.50 [Medium] Typical valid input for RAND
+rule TestCube_Volatile::Function_Volatile.FN_RAND:Case.Happy_1 = AND(RAND()>=0,RAND()<1)
+# OpenFormula 1.4 section 6.16.50 [Medium] Boundary input for RAND
+rule TestCube_Volatile::Function_Volatile.FN_RAND:Case.Edge_1 = AND(RAND()>=0,RAND()<1)
+# OpenFormula 1.4 section 6.16.50 [Medium] Invalid or error input for RAND
+rule TestCube_Volatile::Function_Volatile.FN_RAND:Case.Invalid_1 = RAND(1)
+# OpenFormula 1.4 section 6.16.51 [Medium] Typical valid input for RANDBETWEEN
+rule TestCube_Volatile::Function_Volatile.FN_RANDBETWEEN:Case.Happy_1 = AND(RANDBETWEEN(1,3)>=1,RANDBETWEEN(1,3)<=3)
+# OpenFormula 1.4 section 6.16.51 [Medium] Boundary input for RANDBETWEEN
+rule TestCube_Volatile::Function_Volatile.FN_RANDBETWEEN:Case.Edge_1 = RANDBETWEEN(5,5)
+# OpenFormula 1.4 section 6.16.51 [Medium] Invalid or error input for RANDBETWEEN
+rule TestCube_Volatile::Function_Volatile.FN_RANDBETWEEN:Case.Invalid_1 = RANDBETWEEN(2,1)
+
+# ONE PASS/FAIL VALUE PER TESTED FUNCTION
+rule TestCube_Aggregate::Function_Aggregate.FN_AVERAGE:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_AVERAGE:Case.Happy_1 == 15,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_AVERAGE:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_AVERAGE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNT:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNT:Case.Happy_1 == 2,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNT:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNT:Case.Invalid_1 == 0,FALSE()))
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTA:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTA:Case.Happy_1 == 2,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTA:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTA:Case.Invalid_1 == 0,FALSE()))
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIF:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTIF:Case.Happy_1 == 1,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTIF:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTIF:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Aggregate::Function_Aggregate.FN_COUNTIFS:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTIFS:Case.Happy_1 == 1,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTIFS:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_COUNTIFS:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Aggregate::Function_Aggregate.FN_MAX:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_MAX:Case.Happy_1 == 9,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_MAX:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_MAX:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Aggregate::Function_Aggregate.FN_MIN:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_MIN:Case.Happy_1 == -1,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_MIN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_MIN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Aggregate::Function_Aggregate.FN_SUM:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUM:Case.Happy_1 == 60,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUM:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUM:Case.Invalid_1 == 0,FALSE()))
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIF:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUMIF:Case.Happy_1 == 10,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUMIF:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUMIF:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Aggregate::Function_Aggregate.FN_SUMIFS:Case.PassFail = AND(IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUMIFS:Case.Happy_1 == 10,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUMIFS:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Aggregate::Function_Aggregate.FN_SUMIFS:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_DATE:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_DATE:Case.Happy_1 == 1,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_DATE:Case.Edge_1 == 29,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_DATE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_DAY:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_DAY:Case.Happy_1 == 31,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_DAY:Case.Edge_1 == 29,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_DAY:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_EOMONTH:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_EOMONTH:Case.Happy_1 == 31,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_EOMONTH:Case.Edge_1 == 2,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_EOMONTH:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_MONTH:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_MONTH:Case.Happy_1 == 12,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_MONTH:Case.Edge_1 == 1,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_MONTH:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_NOW:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_NOW:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Date::Function_Date.FN_NOW:Case.Edge_1 == TRUE(),FALSE()),IFERROR(TestCube_Date::Function_Date.FN_NOW:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_TODAY:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_TODAY:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Date::Function_Date.FN_TODAY:Case.Edge_1 == TRUE(),FALSE()),IFERROR(TestCube_Date::Function_Date.FN_TODAY:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_WEEKDAY:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_WEEKDAY:Case.Happy_1 == 2,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_WEEKDAY:Case.Edge_1 == 7,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_WEEKDAY:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_WEEKNUM:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_WEEKNUM:Case.Happy_1 == 1,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_WEEKNUM:Case.Edge_1 == 53,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_WEEKNUM:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Date::Function_Date.FN_YEAR:Case.PassFail = AND(IFERROR(TestCube_Date::Function_Date.FN_YEAR:Case.Happy_1 == 2024,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_YEAR:Case.Edge_1 == 1904,FALSE()),IFERROR(TestCube_Date::Function_Date.FN_YEAR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Financial::Function_Financial.FN_IRR:Case.PassFail = AND(IFERROR(AND(TestCube_Financial::Function_Financial.FN_IRR:Case.Happy_1 >= 0.130661999,TestCube_Financial::Function_Financial.FN_IRR:Case.Happy_1 <= 0.130662001),FALSE()),IFERROR(TestCube_Financial::Function_Financial.FN_IRR:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Financial::Function_Financial.FN_IRR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Financial::Function_Financial.FN_NPV:Case.PassFail = AND(IFERROR(AND(TestCube_Financial::Function_Financial.FN_NPV:Case.Happy_1 >= 173.55371900726448,TestCube_Financial::Function_Financial.FN_NPV:Case.Happy_1 <= 173.55371900926446),FALSE()),IFERROR(TestCube_Financial::Function_Financial.FN_NPV:Case.Edge_1 == 30,FALSE()),IFERROR(TestCube_Financial::Function_Financial.FN_NPV:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Financial::Function_Financial.FN_XIRR:Case.PassFail = AND(IFERROR(AND(TestCube_Financial::Function_Financial.FN_XIRR:Case.Happy_1 >= 0.099999999000000006,TestCube_Financial::Function_Financial.FN_XIRR:Case.Happy_1 <= 0.10000000100000001),FALSE()),IFERROR(TestCube_Financial::Function_Financial.FN_XIRR:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Financial::Function_Financial.FN_XIRR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_AND:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_AND:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_AND:Case.Edge_1 == FALSE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_AND:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_FALSE:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_FALSE:Case.Happy_1 == FALSE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_FALSE:Case.Edge_1 == FALSE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_FALSE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_IF:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_IF:Case.Happy_1 == "yes",FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_IF:Case.Edge_1 == 2,FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_IF:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_IFERROR:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_IFERROR:Case.Happy_1 == 42,FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_IFERROR:Case.Edge_1 == 7,FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_IFERROR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_NOT:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_NOT:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_NOT:Case.Edge_1 == FALSE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_NOT:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_OR:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_OR:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_OR:Case.Edge_1 == FALSE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_OR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_TRUE:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_TRUE:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_TRUE:Case.Edge_1 == TRUE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_TRUE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Logical::Function_Logical.FN_XOR:Case.PassFail = AND(IFERROR(TestCube_Logical::Function_Logical.FN_XOR:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_XOR:Case.Edge_1 == FALSE(),FALSE()),IFERROR(TestCube_Logical::Function_Logical.FN_XOR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Lookup::Function_Lookup.FN_INDEX:Case.PassFail = AND(IFERROR(TestCube_Lookup::Function_Lookup.FN_INDEX:Case.Happy_1 == 10,FALSE()),IFERROR(TestCube_Lookup::Function_Lookup.FN_INDEX:Case.Edge_1 == 10,FALSE()),IFERROR(TestCube_Lookup::Function_Lookup.FN_INDEX:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Lookup::Function_Lookup.FN_LOOKUP:Case.PassFail = AND(IFERROR(TestCube_Lookup::Function_Lookup.FN_LOOKUP:Case.Happy_1 == 10,FALSE()),IFERROR(TestCube_Lookup::Function_Lookup.FN_LOOKUP:Case.Edge_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__",IFERROR(TestCube_Lookup::Function_Lookup.FN_LOOKUP:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Lookup::Function_Lookup.FN_MATCH:Case.PassFail = AND(IFERROR(TestCube_Lookup::Function_Lookup.FN_MATCH:Case.Happy_1 == 1,FALSE()),IFERROR(TestCube_Lookup::Function_Lookup.FN_MATCH:Case.Edge_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__",IFERROR(TestCube_Lookup::Function_Lookup.FN_MATCH:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Lookup::Function_Lookup.FN_OFFSET:Case.PassFail = AND(IFERROR(TestCube_Lookup::Function_Lookup.FN_OFFSET:Case.Happy_1 == 10,FALSE()),IFERROR(TestCube_Lookup::Function_Lookup.FN_OFFSET:Case.Edge_1 == 20,FALSE()),IFERROR(TestCube_Lookup::Function_Lookup.FN_OFFSET:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ABS:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_ABS:Case.Happy_1 == 7,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ABS:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ABS:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ACOS:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_ACOS:Case.Happy_1 == 0,FALSE()),IFERROR(AND(TestCube_Math::Function_Math.FN_ACOS:Case.Edge_1 >= 1.5707963257948965,TestCube_Math::Function_Math.FN_ACOS:Case.Edge_1 <= 1.5707963277948966),FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ACOS:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ASIN:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_ASIN:Case.Happy_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ASIN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ASIN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ATAN:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_ATAN:Case.Happy_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ATAN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ATAN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ATAN2:Case.PassFail = AND(IFERROR(AND(TestCube_Math::Function_Math.FN_ATAN2:Case.Happy_1 >= 0.78539816239744831,TestCube_Math::Function_Math.FN_ATAN2:Case.Happy_1 <= 0.78539816439744825),FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ATAN2:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ATAN2:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_CEILING:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_CEILING:Case.Happy_1 == 8,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_CEILING:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_CEILING:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_COS:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_COS:Case.Happy_1 == 1,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_COS:Case.Edge_1 == 1,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_COS:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_DEGREES:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_DEGREES:Case.Happy_1 == 180,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_DEGREES:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_DEGREES:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_EXP:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_EXP:Case.Happy_1 == 1,FALSE()),IFERROR(AND(TestCube_Math::Function_Math.FN_EXP:Case.Edge_1 >= 2.7182799989999999,TestCube_Math::Function_Math.FN_EXP:Case.Edge_1 <= 2.7182800010000001),FALSE()),IFERROR(TestCube_Math::Function_Math.FN_EXP:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_FLOOR:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_FLOOR:Case.Happy_1 == 6,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_FLOOR:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_FLOOR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_INT:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_INT:Case.Happy_1 == 3,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_INT:Case.Edge_1 == -4,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_INT:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_LN:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_LN:Case.Happy_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_LN:Case.Edge_1 == 1,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_LN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_LOG:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_LOG:Case.Happy_1 == 2,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_LOG:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_LOG:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_LOG10:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_LOG10:Case.Happy_1 == 3,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_LOG10:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_LOG10:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_MOD:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_MOD:Case.Happy_1 == 1,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_MOD:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_MOD:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_PI:Case.PassFail = AND(IFERROR(AND(TestCube_Math::Function_Math.FN_PI:Case.Happy_1 >= 3.141592652589793,TestCube_Math::Function_Math.FN_PI:Case.Happy_1 <= 3.1415926545897932),FALSE()),IFERROR(AND(TestCube_Math::Function_Math.FN_PI:Case.Edge_1 >= 3.139999999,TestCube_Math::Function_Math.FN_PI:Case.Edge_1 <= 3.1400000010000002),FALSE()),IFERROR(TestCube_Math::Function_Math.FN_PI:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_POWER:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_POWER:Case.Happy_1 == 256,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_POWER:Case.Edge_1 == 1,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_POWER:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_QUOTIENT:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_QUOTIENT:Case.Happy_1 == 3,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_QUOTIENT:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_QUOTIENT:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_RADIANS:Case.PassFail = AND(IFERROR(AND(TestCube_Math::Function_Math.FN_RADIANS:Case.Happy_1 >= 3.141592652589793,TestCube_Math::Function_Math.FN_RADIANS:Case.Happy_1 <= 3.1415926545897932),FALSE()),IFERROR(TestCube_Math::Function_Math.FN_RADIANS:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_RADIANS:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ROUND:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_ROUND:Case.Happy_1 == 2.35,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ROUND:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ROUND:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ROUNDDOWN:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_ROUNDDOWN:Case.Happy_1 == 2.34,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ROUNDDOWN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ROUNDDOWN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_ROUNDUP:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_ROUNDUP:Case.Happy_1 == 2.35,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ROUNDUP:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_ROUNDUP:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_SIGN:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_SIGN:Case.Happy_1 == -1,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_SIGN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_SIGN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_SIN:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_SIN:Case.Happy_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_SIN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_SIN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_SQRT:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_SQRT:Case.Happy_1 == 9,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_SQRT:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_SQRT:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_TAN:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_TAN:Case.Happy_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_TAN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_TAN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Math::Function_Math.FN_TRUNC:Case.PassFail = AND(IFERROR(TestCube_Math::Function_Math.FN_TRUNC:Case.Happy_1 == 3.98,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_TRUNC:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_Math::Function_Math.FN_TRUNC:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Metadata::Function_Metadata.FN_VALUE:Case.PassFail = AND(IFERROR(TestCube_Metadata::Function_Metadata.FN_VALUE:Case.Happy_1 == 42,FALSE()),IFERROR(TestCube_Metadata::Function_Metadata.FN_VALUE:Case.Edge_1 == 12.5,FALSE()),IFERROR(TestCube_Metadata::Function_Metadata.FN_VALUE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_CHAR:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_CHAR:Case.Happy_1 == "A",FALSE()),IFERROR(TestCube_String::Function_String.FN_CHAR:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_CHAR:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_CODE:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_CODE:Case.Happy_1 == 65,FALSE()),IFERROR(TestCube_String::Function_String.FN_CODE:Case.Edge_1 == 1,FALSE()),IFERROR(TestCube_String::Function_String.FN_CODE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_CONCATENATE:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_CONCATENATE:Case.Happy_1 == "OpenFormula",FALSE()),IFERROR(TestCube_String::Function_String.FN_CONCATENATE:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_CONCATENATE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_FIND:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_FIND:Case.Happy_1 == 5,FALSE()),IFERROR(TestCube_String::Function_String.FN_FIND:Case.Edge_1 == 1,FALSE()),IFERROR(TestCube_String::Function_String.FN_FIND:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_LEFT:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_LEFT:Case.Happy_1 == "Op",FALSE()),IFERROR(TestCube_String::Function_String.FN_LEFT:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_LEFT:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_LEN:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_LEN:Case.Happy_1 == 5,FALSE()),IFERROR(TestCube_String::Function_String.FN_LEN:Case.Edge_1 == 0,FALSE()),IFERROR(TestCube_String::Function_String.FN_LEN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_LOWER:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_LOWER:Case.Happy_1 == "open m",FALSE()),IFERROR(TestCube_String::Function_String.FN_LOWER:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_LOWER:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_MID:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_MID:Case.Happy_1 == "pen",FALSE()),IFERROR(TestCube_String::Function_String.FN_MID:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_MID:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_PROPER:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_PROPER:Case.Happy_1 == "Open M",FALSE()),IFERROR(TestCube_String::Function_String.FN_PROPER:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_PROPER:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_REPLACE:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_REPLACE:Case.Happy_1 == "OXXM",FALSE()),IFERROR(TestCube_String::Function_String.FN_REPLACE:Case.Edge_1 == "OpenM",FALSE()),IFERROR(TestCube_String::Function_String.FN_REPLACE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_REPT:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_REPT:Case.Happy_1 == "ababab",FALSE()),IFERROR(TestCube_String::Function_String.FN_REPT:Case.Edge_1 == 32767,FALSE()),IFERROR(TestCube_String::Function_String.FN_REPT:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_RIGHT:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_RIGHT:Case.Happy_1 == "nM",FALSE()),IFERROR(TestCube_String::Function_String.FN_RIGHT:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_RIGHT:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_SUBSTITUTE:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_SUBSTITUTE:Case.Happy_1 == "x-b-x",FALSE()),IFERROR(TestCube_String::Function_String.FN_SUBSTITUTE:Case.Edge_1 == "abc",FALSE()),IFERROR(TestCube_String::Function_String.FN_SUBSTITUTE:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_TRIM:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_TRIM:Case.Happy_1 == "OpenM Core",FALSE()),IFERROR(TestCube_String::Function_String.FN_TRIM:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_TRIM:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_String::Function_String.FN_UPPER:Case.PassFail = AND(IFERROR(TestCube_String::Function_String.FN_UPPER:Case.Happy_1 == "OPENM",FALSE()),IFERROR(TestCube_String::Function_String.FN_UPPER:Case.Edge_1 == "",FALSE()),IFERROR(TestCube_String::Function_String.FN_UPPER:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Volatile::Function_Volatile.FN_RAND:Case.PassFail = AND(IFERROR(TestCube_Volatile::Function_Volatile.FN_RAND:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Volatile::Function_Volatile.FN_RAND:Case.Edge_1 == TRUE(),FALSE()),IFERROR(TestCube_Volatile::Function_Volatile.FN_RAND:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+rule TestCube_Volatile::Function_Volatile.FN_RANDBETWEEN:Case.PassFail = AND(IFERROR(TestCube_Volatile::Function_Volatile.FN_RANDBETWEEN:Case.Happy_1 == TRUE(),FALSE()),IFERROR(TestCube_Volatile::Function_Volatile.FN_RANDBETWEEN:Case.Edge_1 == 5,FALSE()),IFERROR(TestCube_Volatile::Function_Volatile.FN_RANDBETWEEN:Case.Invalid_1,"__OPENM_EXPECTED_ERROR__") == "__OPENM_EXPECTED_ERROR__")
+
+calc
+
+# AUTOMATABLE ASSERTIONS
+assert TestCube_Logical::@.value:Function_Logical.FN_IF:Case.Happy_1 == yes "Typical valid input for IF"
+assert TestCube_Logical::@.value:Function_Logical.FN_IF:Case.Edge_1 == 2 "Boundary input for IF"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_IF:Case.Invalid_1 is Error ERROR | Invalid or error input for IF
+assert TestCube_Logical::@.value:Function_Logical.FN_AND:Case.Happy_1 == TRUE "Typical valid input for AND"
+assert TestCube_Logical::@.value:Function_Logical.FN_AND:Case.Edge_1 == FALSE "Boundary input for AND"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_AND:Case.Invalid_1 is Error ERROR | Invalid or error input for AND
+assert TestCube_Logical::@.value:Function_Logical.FN_OR:Case.Happy_1 == TRUE "Typical valid input for OR"
+assert TestCube_Logical::@.value:Function_Logical.FN_OR:Case.Edge_1 == FALSE "Boundary input for OR"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_OR:Case.Invalid_1 is Error ERROR | Invalid or error input for OR
+assert TestCube_Logical::@.value:Function_Logical.FN_NOT:Case.Happy_1 == TRUE "Typical valid input for NOT"
+assert TestCube_Logical::@.value:Function_Logical.FN_NOT:Case.Edge_1 == FALSE "Boundary input for NOT"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_NOT:Case.Invalid_1 is Error ERROR | Invalid or error input for NOT
+assert TestCube_Logical::@.value:Function_Logical.FN_XOR:Case.Happy_1 == TRUE "Typical valid input for XOR"
+assert TestCube_Logical::@.value:Function_Logical.FN_XOR:Case.Edge_1 == FALSE "Boundary input for XOR"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_XOR:Case.Invalid_1 is Error ERROR | Invalid or error input for XOR
+assert TestCube_Logical::@.value:Function_Logical.FN_IFERROR:Case.Happy_1 == 42 "Typical valid input for IFERROR"
+assert TestCube_Logical::@.value:Function_Logical.FN_IFERROR:Case.Edge_1 == 7 "Boundary input for IFERROR"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_IFERROR:Case.Invalid_1 is Error ERROR | Invalid or error input for IFERROR
+assert TestCube_Logical::@.value:Function_Logical.FN_TRUE:Case.Happy_1 == TRUE "Typical valid input for TRUE"
+assert TestCube_Logical::@.value:Function_Logical.FN_TRUE:Case.Edge_1 == TRUE "Boundary input for TRUE"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_TRUE:Case.Invalid_1 is Error ERROR | Invalid or error input for TRUE
+assert TestCube_Logical::@.value:Function_Logical.FN_FALSE:Case.Happy_1 == FALSE "Typical valid input for FALSE"
+assert TestCube_Logical::@.value:Function_Logical.FN_FALSE:Case.Edge_1 == FALSE "Boundary input for FALSE"
+# TYPED_ASSERT TestCube_Logical::@.value:Function_Logical.FN_FALSE:Case.Invalid_1 is Error ERROR | Invalid or error input for FALSE
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_SUM:Case.Happy_1 == 60 "Typical valid input for SUM"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_SUM:Case.Edge_1 == 0 "Boundary input for SUM"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_SUM:Case.Invalid_1 == 0 "Invalid or error input for SUM"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_MIN:Case.Happy_1 == -1 "Typical valid input for MIN"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_MIN:Case.Edge_1 == 0 "Boundary input for MIN"
+# TYPED_ASSERT TestCube_Aggregate::@.value:Function_Aggregate.FN_MIN:Case.Invalid_1 is Error ERROR | Invalid or error input for MIN
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_MAX:Case.Happy_1 == 9 "Typical valid input for MAX"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_MAX:Case.Edge_1 == 0 "Boundary input for MAX"
+# TYPED_ASSERT TestCube_Aggregate::@.value:Function_Aggregate.FN_MAX:Case.Invalid_1 is Error ERROR | Invalid or error input for MAX
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_AVERAGE:Case.Happy_1 == 15 "Typical valid input for AVERAGE"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_AVERAGE:Case.Edge_1 == 0 "Boundary input for AVERAGE"
+# TYPED_ASSERT TestCube_Aggregate::@.value:Function_Aggregate.FN_AVERAGE:Case.Invalid_1 is Error ERROR | Invalid or error input for AVERAGE
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNT:Case.Happy_1 == 2 "Typical valid input for COUNT"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNT:Case.Edge_1 == 0 "Boundary input for COUNT"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNT:Case.Invalid_1 == 0 "Invalid or error input for COUNT"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTA:Case.Happy_1 == 2 "Typical valid input for COUNTA"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTA:Case.Edge_1 == 0 "Boundary input for COUNTA"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTA:Case.Invalid_1 == 0 "Invalid or error input for COUNTA"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTIF:Case.Happy_1 == 1 "Counts a matching numeric criterion"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTIF:Case.Edge_1 == 0 "Returns zero when no value matches"
+# TYPED_ASSERT TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTIF:Case.Invalid_1 is Error ERROR | Rejects missing range and criterion
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTIFS:Case.Happy_1 == 1 "Counts a matching criteria pair"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTIFS:Case.Edge_1 == 0 "Returns zero when the criterion does not match"
+# TYPED_ASSERT TestCube_Aggregate::@.value:Function_Aggregate.FN_COUNTIFS:Case.Invalid_1 is Error ERROR | Rejects a missing criteria pair
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_SUMIF:Case.Happy_1 == 10 "Sums a value meeting the criterion"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_SUMIF:Case.Edge_1 == 0 "Returns zero when no value meets the criterion"
+# TYPED_ASSERT TestCube_Aggregate::@.value:Function_Aggregate.FN_SUMIF:Case.Invalid_1 is Error ERROR | Rejects missing required parameters
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_SUMIFS:Case.Happy_1 == 10 "Sums a value meeting a criteria pair"
+assert TestCube_Aggregate::@.value:Function_Aggregate.FN_SUMIFS:Case.Edge_1 == 0 "Returns zero when no value meets the criterion"
+# TYPED_ASSERT TestCube_Aggregate::@.value:Function_Aggregate.FN_SUMIFS:Case.Invalid_1 is Error ERROR | Rejects missing required parameters
+assert TestCube_Math::@.value:Function_Math.FN_ABS:Case.Happy_1 == 7 "Typical valid input for ABS"
+assert TestCube_Math::@.value:Function_Math.FN_ABS:Case.Edge_1 == 0 "Boundary input for ABS"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ABS:Case.Invalid_1 is Error ERROR | Invalid or error input for ABS
+assert TestCube_Math::@.value:Function_Math.FN_ROUND:Case.Happy_1 == 2.35 "Typical valid input for ROUND"
+assert TestCube_Math::@.value:Function_Math.FN_ROUND:Case.Edge_1 == 0 "Boundary input for ROUND"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ROUND:Case.Invalid_1 is Error ERROR | Invalid or error input for ROUND
+assert TestCube_Math::@.value:Function_Math.FN_ROUNDUP:Case.Happy_1 == 2.35 "Typical valid input for ROUNDUP"
+assert TestCube_Math::@.value:Function_Math.FN_ROUNDUP:Case.Edge_1 == 0 "Boundary input for ROUNDUP"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ROUNDUP:Case.Invalid_1 is Error ERROR | Invalid or error input for ROUNDUP
+assert TestCube_Math::@.value:Function_Math.FN_ROUNDDOWN:Case.Happy_1 == 2.34 "Typical valid input for ROUNDDOWN"
+assert TestCube_Math::@.value:Function_Math.FN_ROUNDDOWN:Case.Edge_1 == 0 "Boundary input for ROUNDDOWN"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ROUNDDOWN:Case.Invalid_1 is Error ERROR | Invalid or error input for ROUNDDOWN
+assert TestCube_Math::@.value:Function_Math.FN_PI:Case.Happy_1 >= 3.141592652589793 "Typical valid input for PI lower bound"
+assert TestCube_Math::@.value:Function_Math.FN_PI:Case.Happy_1 <= 3.1415926545897932 "Typical valid input for PI upper bound"
+assert TestCube_Math::@.value:Function_Math.FN_PI:Case.Edge_1 >= 3.139999999 "Boundary input for PI lower bound"
+assert TestCube_Math::@.value:Function_Math.FN_PI:Case.Edge_1 <= 3.1400000010000002 "Boundary input for PI upper bound"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_PI:Case.Invalid_1 is Error ERROR | Invalid or error input for PI
+assert TestCube_Math::@.value:Function_Math.FN_LN:Case.Happy_1 == 0 "Typical valid input for LN"
+assert TestCube_Math::@.value:Function_Math.FN_LN:Case.Edge_1 == 1 "Boundary input for LN"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_LN:Case.Invalid_1 is Error ERROR | Invalid or error input for LN
+assert TestCube_Math::@.value:Function_Math.FN_LOG:Case.Happy_1 == 2 "Typical valid input for LOG"
+assert TestCube_Math::@.value:Function_Math.FN_LOG:Case.Edge_1 == 0 "Boundary input for LOG"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_LOG:Case.Invalid_1 is Error ERROR | Invalid or error input for LOG
+assert TestCube_Math::@.value:Function_Math.FN_LOG10:Case.Happy_1 == 3 "Typical valid input for LOG10"
+assert TestCube_Math::@.value:Function_Math.FN_LOG10:Case.Edge_1 == 0 "Boundary input for LOG10"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_LOG10:Case.Invalid_1 is Error ERROR | Invalid or error input for LOG10
+assert TestCube_Math::@.value:Function_Math.FN_EXP:Case.Happy_1 == 1 "Typical valid input for EXP"
+assert TestCube_Math::@.value:Function_Math.FN_EXP:Case.Edge_1 >= 2.7182799989999999 "Boundary input for EXP lower bound"
+assert TestCube_Math::@.value:Function_Math.FN_EXP:Case.Edge_1 <= 2.7182800010000001 "Boundary input for EXP upper bound"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_EXP:Case.Invalid_1 is Error ERROR | Invalid or error input for EXP
+assert TestCube_Math::@.value:Function_Math.FN_SQRT:Case.Happy_1 == 9 "Typical valid input for SQRT"
+assert TestCube_Math::@.value:Function_Math.FN_SQRT:Case.Edge_1 == 0 "Boundary input for SQRT"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_SQRT:Case.Invalid_1 is Error ERROR | Invalid or error input for SQRT
+assert TestCube_Math::@.value:Function_Math.FN_POWER:Case.Happy_1 == 256 "Typical valid input for POWER"
+assert TestCube_Math::@.value:Function_Math.FN_POWER:Case.Edge_1 == 1 "Boundary input for POWER"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_POWER:Case.Invalid_1 is Error ERROR | Invalid or error input for POWER
+assert TestCube_Math::@.value:Function_Math.FN_SIN:Case.Happy_1 == 0 "Typical valid input for SIN"
+assert TestCube_Math::@.value:Function_Math.FN_SIN:Case.Edge_1 == 0 "Boundary input for SIN"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_SIN:Case.Invalid_1 is Error ERROR | Invalid or error input for SIN
+assert TestCube_Math::@.value:Function_Math.FN_COS:Case.Happy_1 == 1 "Typical valid input for COS"
+assert TestCube_Math::@.value:Function_Math.FN_COS:Case.Edge_1 == 1 "Boundary input for COS"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_COS:Case.Invalid_1 is Error ERROR | Invalid or error input for COS
+assert TestCube_Math::@.value:Function_Math.FN_TAN:Case.Happy_1 == 0 "Typical valid input for TAN"
+assert TestCube_Math::@.value:Function_Math.FN_TAN:Case.Edge_1 == 0 "Boundary input for TAN"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_TAN:Case.Invalid_1 is Error ERROR | Invalid or error input for TAN
+assert TestCube_Math::@.value:Function_Math.FN_ASIN:Case.Happy_1 == 0 "Typical valid input for ASIN"
+assert TestCube_Math::@.value:Function_Math.FN_ASIN:Case.Edge_1 == 0 "Boundary input for ASIN"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ASIN:Case.Invalid_1 is Error ERROR | Invalid or error input for ASIN
+assert TestCube_Math::@.value:Function_Math.FN_ACOS:Case.Happy_1 == 0 "Returns the principal arc cosine at the upper domain boundary"
+assert TestCube_Math::@.value:Function_Math.FN_ACOS:Case.Edge_1 >= 1.5707963257948965 "Returns pi divided by two at zero lower bound"
+assert TestCube_Math::@.value:Function_Math.FN_ACOS:Case.Edge_1 <= 1.5707963277948966 "Returns pi divided by two at zero upper bound"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ACOS:Case.Invalid_1 is Error ERROR | Invalid or error input for ACOS
+assert TestCube_Math::@.value:Function_Math.FN_ATAN:Case.Happy_1 == 0 "Typical valid input for ATAN"
+assert TestCube_Math::@.value:Function_Math.FN_ATAN:Case.Edge_1 == 0 "Boundary input for ATAN"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ATAN:Case.Invalid_1 is Error ERROR | Invalid or error input for ATAN
+assert TestCube_Math::@.value:Function_Math.FN_ATAN2:Case.Happy_1 >= 0.78539816239744831 "Returns the angle for positive coordinates lower bound"
+assert TestCube_Math::@.value:Function_Math.FN_ATAN2:Case.Happy_1 <= 0.78539816439744825 "Returns the angle for positive coordinates upper bound"
+assert TestCube_Math::@.value:Function_Math.FN_ATAN2:Case.Edge_1 == 0 "Handles a zero ordinate"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_ATAN2:Case.Invalid_1 is Error ERROR | Rejects the indeterminate origin
+assert TestCube_Math::@.value:Function_Math.FN_RADIANS:Case.Happy_1 >= 3.141592652589793 "Typical valid input for RADIANS lower bound"
+assert TestCube_Math::@.value:Function_Math.FN_RADIANS:Case.Happy_1 <= 3.1415926545897932 "Typical valid input for RADIANS upper bound"
+assert TestCube_Math::@.value:Function_Math.FN_RADIANS:Case.Edge_1 == 0 "Boundary input for RADIANS"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_RADIANS:Case.Invalid_1 is Error ERROR | Invalid or error input for RADIANS
+assert TestCube_Math::@.value:Function_Math.FN_DEGREES:Case.Happy_1 == 180 "Typical valid input for DEGREES"
+assert TestCube_Math::@.value:Function_Math.FN_DEGREES:Case.Edge_1 == 0 "Boundary input for DEGREES"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_DEGREES:Case.Invalid_1 is Error ERROR | Invalid or error input for DEGREES
+assert TestCube_Math::@.value:Function_Math.FN_SIGN:Case.Happy_1 == -1 "Typical valid input for SIGN"
+assert TestCube_Math::@.value:Function_Math.FN_SIGN:Case.Edge_1 == 0 "Boundary input for SIGN"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_SIGN:Case.Invalid_1 is Error ERROR | Invalid or error input for SIGN
+assert TestCube_Math::@.value:Function_Math.FN_INT:Case.Happy_1 == 3 "Typical valid input for INT"
+assert TestCube_Math::@.value:Function_Math.FN_INT:Case.Edge_1 == -4 "Boundary input for INT"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_INT:Case.Invalid_1 is Error ERROR | Invalid or error input for INT
+assert TestCube_Math::@.value:Function_Math.FN_MOD:Case.Happy_1 == 1 "Typical valid input for MOD"
+assert TestCube_Math::@.value:Function_Math.FN_MOD:Case.Edge_1 == 0 "Boundary input for MOD"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_MOD:Case.Invalid_1 is Error ERROR | Invalid or error input for MOD
+assert TestCube_Math::@.value:Function_Math.FN_QUOTIENT:Case.Happy_1 == 3 "Typical valid input for QUOTIENT"
+assert TestCube_Math::@.value:Function_Math.FN_QUOTIENT:Case.Edge_1 == 0 "Boundary input for QUOTIENT"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_QUOTIENT:Case.Invalid_1 is Error ERROR | Invalid or error input for QUOTIENT
+assert TestCube_Math::@.value:Function_Math.FN_FLOOR:Case.Happy_1 == 6 "Typical valid input for FLOOR"
+assert TestCube_Math::@.value:Function_Math.FN_FLOOR:Case.Edge_1 == 0 "Boundary input for FLOOR"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_FLOOR:Case.Invalid_1 is Error ERROR | Invalid or error input for FLOOR
+assert TestCube_Math::@.value:Function_Math.FN_CEILING:Case.Happy_1 == 8 "Typical valid input for CEILING"
+assert TestCube_Math::@.value:Function_Math.FN_CEILING:Case.Edge_1 == 0 "Boundary input for CEILING"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_CEILING:Case.Invalid_1 is Error ERROR | Invalid or error input for CEILING
+assert TestCube_Math::@.value:Function_Math.FN_TRUNC:Case.Happy_1 == 3.98 "Typical valid input for TRUNC"
+assert TestCube_Math::@.value:Function_Math.FN_TRUNC:Case.Edge_1 == 0 "Boundary input for TRUNC"
+# TYPED_ASSERT TestCube_Math::@.value:Function_Math.FN_TRUNC:Case.Invalid_1 is Error ERROR | Invalid or error input for TRUNC
+assert TestCube_String::@.value:Function_String.FN_LEN:Case.Happy_1 == 5 "Typical valid input for LEN"
+assert TestCube_String::@.value:Function_String.FN_LEN:Case.Edge_1 == 0 "Boundary input for LEN"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_LEN:Case.Invalid_1 is Error ERROR | Invalid or error input for LEN
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_TRIM:Case.Happy_1 == OpenM Core | Typical valid input for TRIM
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_TRIM:Case.Edge_1 ==  | Boundary input for TRIM
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_TRIM:Case.Invalid_1 is Error ERROR | Invalid or error input for TRIM
+assert TestCube_String::@.value:Function_String.FN_LEFT:Case.Happy_1 == Op "Typical valid input for LEFT"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_LEFT:Case.Edge_1 ==  | Boundary input for LEFT
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_LEFT:Case.Invalid_1 is Error ERROR | Invalid or error input for LEFT
+assert TestCube_String::@.value:Function_String.FN_RIGHT:Case.Happy_1 == nM "Typical valid input for RIGHT"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_RIGHT:Case.Edge_1 ==  | Boundary input for RIGHT
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_RIGHT:Case.Invalid_1 is Error ERROR | Invalid or error input for RIGHT
+assert TestCube_String::@.value:Function_String.FN_REPT:Case.Happy_1 == ababab "Typical valid input for REPT"
+assert TestCube_String::@.value:Function_String.FN_REPT:Case.Edge_1 == 32767 "Meets the OpenFormula basic string-length limit"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_REPT:Case.Invalid_1 is Error ERROR | Invalid or error input for REPT
+assert TestCube_String::@.value:Function_String.FN_CODE:Case.Happy_1 == 65 "Typical valid input for CODE"
+assert TestCube_String::@.value:Function_String.FN_CODE:Case.Edge_1 == 1 "Round-trips the lowest interoperable character code"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_CODE:Case.Invalid_1 is Error ERROR | Invalid or error input for CODE
+assert TestCube_String::@.value:Function_String.FN_CHAR:Case.Happy_1 == A "Typical valid input for CHAR"
+assert TestCube_String::@.value:Function_String.FN_CHAR:Case.Edge_1 ==  "Handles the highest required ASCII code"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_CHAR:Case.Invalid_1 is Error ERROR | Rejects a character code above 255
+assert TestCube_String::@.value:Function_String.FN_CONCATENATE:Case.Happy_1 == OpenFormula "Concatenates two text values"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_CONCATENATE:Case.Edge_1 ==  | Preserves an empty result
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_CONCATENATE:Case.Invalid_1 is Error ERROR | Rejects an empty parameter list
+assert TestCube_String::@.value:Function_String.FN_FIND:Case.Happy_1 == 5 "Returns a one-based text position"
+assert TestCube_String::@.value:Function_String.FN_FIND:Case.Edge_1 == 1 "Finds text at the first position"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_FIND:Case.Invalid_1 is Error ERROR | Errors when the search text is absent
+assert TestCube_String::@.value:Function_String.FN_MID:Case.Happy_1 == pen "Returns the requested substring"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_MID:Case.Edge_1 ==  | Returns empty text for zero length
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_MID:Case.Invalid_1 is Error ERROR | Rejects a start position below one
+assert TestCube_String::@.value:Function_String.FN_UPPER:Case.Happy_1 == OPENM "Typical valid input for UPPER"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_UPPER:Case.Edge_1 ==  | Boundary input for UPPER
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_UPPER:Case.Invalid_1 is Error ERROR | Invalid or error input for UPPER
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_LOWER:Case.Happy_1 == open m | Typical valid input for LOWER
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_LOWER:Case.Edge_1 ==  | Boundary input for LOWER
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_LOWER:Case.Invalid_1 is Error ERROR | Invalid or error input for LOWER
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_PROPER:Case.Happy_1 == Open M | Typical valid input for PROPER
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_PROPER:Case.Edge_1 ==  | Boundary input for PROPER
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_PROPER:Case.Invalid_1 is Error ERROR | Invalid or error input for PROPER
+assert TestCube_String::@.value:Function_String.FN_SUBSTITUTE:Case.Happy_1 == x-b-x "Replaces every matching occurrence"
+assert TestCube_String::@.value:Function_String.FN_SUBSTITUTE:Case.Edge_1 == abc "Leaves text unchanged without a match"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_SUBSTITUTE:Case.Invalid_1 is Error ERROR | Rejects missing required parameters
+assert TestCube_String::@.value:Function_String.FN_REPLACE:Case.Happy_1 == OXXM "Replaces text by position and length"
+assert TestCube_String::@.value:Function_String.FN_REPLACE:Case.Edge_1 == OpenM "Allows a zero replacement length"
+# TYPED_ASSERT TestCube_String::@.value:Function_String.FN_REPLACE:Case.Invalid_1 is Error ERROR | Rejects missing required parameters
+assert TestCube_Date::@.value:Function_Date.FN_DATE:Case.Happy_1 == 1 "Constructs a Gregorian date independently of the host epoch"
+assert TestCube_Date::@.value:Function_Date.FN_DATE:Case.Edge_1 == 29 "Constructs a valid leap-day date"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_DATE:Case.Invalid_1 is Error ERROR | Invalid or error input for DATE
+assert TestCube_Date::@.value:Function_Date.FN_DAY:Case.Happy_1 == 31 "Extracts the day of month from a date"
+assert TestCube_Date::@.value:Function_Date.FN_DAY:Case.Edge_1 == 29 "Extracts a leap-day boundary"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_DAY:Case.Invalid_1 is Error ERROR | Invalid or error input for DAY
+assert TestCube_Date::@.value:Function_Date.FN_MONTH:Case.Happy_1 == 12 "Extracts the month from a date"
+assert TestCube_Date::@.value:Function_Date.FN_MONTH:Case.Edge_1 == 1 "Extracts the first month"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_MONTH:Case.Invalid_1 is Error ERROR | Invalid or error input for MONTH
+assert TestCube_Date::@.value:Function_Date.FN_YEAR:Case.Happy_1 == 2024 "Extracts the year from a date"
+assert TestCube_Date::@.value:Function_Date.FN_YEAR:Case.Edge_1 == 1904 "Handles the minimum conforming DATE year"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_YEAR:Case.Invalid_1 is Error ERROR | Invalid or error input for YEAR
+assert TestCube_Date::@.value:Function_Date.FN_EOMONTH:Case.Happy_1 == 31 "Returns the final day of the current month"
+assert TestCube_Date::@.value:Function_Date.FN_EOMONTH:Case.Edge_1 == 2 "Moves to the end of the following month"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_EOMONTH:Case.Invalid_1 is Error ERROR | Invalid or error input for EOMONTH
+assert TestCube_Date::@.value:Function_Date.FN_WEEKDAY:Case.Happy_1 == 2 "Returns Monday using the default Sunday-first system"
+assert TestCube_Date::@.value:Function_Date.FN_WEEKDAY:Case.Edge_1 == 7 "Handles the OM Core date epoch"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_WEEKDAY:Case.Invalid_1 is Error ERROR | Rejects non-date text
+assert TestCube_Date::@.value:Function_Date.FN_WEEKNUM:Case.Happy_1 == 1 "Returns the week containing the first day of the year"
+assert TestCube_Date::@.value:Function_Date.FN_WEEKNUM:Case.Edge_1 == 53 "Handles the year-end boundary"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_WEEKNUM:Case.Invalid_1 is Error ERROR | Rejects non-date text
+assert TestCube_Date::@.value:Function_Date.FN_TODAY:Case.Happy_1 == TRUE "Typical valid input for TODAY"
+assert TestCube_Date::@.value:Function_Date.FN_TODAY:Case.Edge_1 == TRUE "Boundary input for TODAY"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_TODAY:Case.Invalid_1 is Error ERROR | Invalid or error input for TODAY
+assert TestCube_Date::@.value:Function_Date.FN_NOW:Case.Happy_1 == TRUE "Typical valid input for NOW"
+assert TestCube_Date::@.value:Function_Date.FN_NOW:Case.Edge_1 == TRUE "Boundary input for NOW"
+# TYPED_ASSERT TestCube_Date::@.value:Function_Date.FN_NOW:Case.Invalid_1 is Error ERROR | Invalid or error input for NOW
+assert TestCube_Financial::@.value:Function_Financial.FN_NPV:Case.Happy_1 >= 173.55371900726448 "Discounts periodic cash flows lower bound"
+assert TestCube_Financial::@.value:Function_Financial.FN_NPV:Case.Happy_1 <= 173.55371900926446 "Discounts periodic cash flows upper bound"
+assert TestCube_Financial::@.value:Function_Financial.FN_NPV:Case.Edge_1 == 30 "Handles a zero discount rate"
+# TYPED_ASSERT TestCube_Financial::@.value:Function_Financial.FN_NPV:Case.Invalid_1 is Error ERROR | Rejects a rate of negative one
+assert TestCube_Financial::@.value:Function_Financial.FN_IRR:Case.Happy_1 >= 0.130661999 "Finds the periodic internal rate of return lower bound"
+assert TestCube_Financial::@.value:Function_Financial.FN_IRR:Case.Happy_1 <= 0.130662001 "Finds the periodic internal rate of return upper bound"
+assert TestCube_Financial::@.value:Function_Financial.FN_IRR:Case.Edge_1 == 0 "Handles a zero-return series"
+# TYPED_ASSERT TestCube_Financial::@.value:Function_Financial.FN_IRR:Case.Invalid_1 is Error ERROR | Fails when no sign-changing solution exists
+assert TestCube_Financial::@.value:Function_Financial.FN_XIRR:Case.Happy_1 >= 0.099999999000000006 "Finds a dated internal rate of return lower bound"
+assert TestCube_Financial::@.value:Function_Financial.FN_XIRR:Case.Happy_1 <= 0.10000000100000001 "Finds a dated internal rate of return upper bound"
+assert TestCube_Financial::@.value:Function_Financial.FN_XIRR:Case.Edge_1 == 0 "Handles a zero dated return"
+# TYPED_ASSERT TestCube_Financial::@.value:Function_Financial.FN_XIRR:Case.Invalid_1 is Error ERROR | Fails when no sign-changing solution exists
+assert TestCube_Lookup::@.value:Function_Lookup.FN_INDEX:Case.Happy_1 == 10 "Returns the first value from a reference"
+assert TestCube_Lookup::@.value:Function_Lookup.FN_INDEX:Case.Edge_1 == 10 "Handles a single-cell reference"
+# TYPED_ASSERT TestCube_Lookup::@.value:Function_Lookup.FN_INDEX:Case.Invalid_1 is Error ERROR | Rejects missing parameters
+assert TestCube_Lookup::@.value:Function_Lookup.FN_OFFSET:Case.Happy_1 == 10 "Returns an unshifted reference"
+assert TestCube_Lookup::@.value:Function_Lookup.FN_OFFSET:Case.Edge_1 == 20 "Offsets by one column"
+# TYPED_ASSERT TestCube_Lookup::@.value:Function_Lookup.FN_OFFSET:Case.Invalid_1 is Error ERROR | Rejects missing parameters
+assert TestCube_Lookup::@.value:Function_Lookup.FN_MATCH:Case.Happy_1 == 1 "Finds an exact match"
+# TYPED_ASSERT TestCube_Lookup::@.value:Function_Lookup.FN_MATCH:Case.Edge_1 is Error #N/A | Returns not-available when absent
+# TYPED_ASSERT TestCube_Lookup::@.value:Function_Lookup.FN_MATCH:Case.Invalid_1 is Error ERROR | Rejects missing parameters
+assert TestCube_Lookup::@.value:Function_Lookup.FN_LOOKUP:Case.Happy_1 == 10 "Finds a value in a reference"
+# TYPED_ASSERT TestCube_Lookup::@.value:Function_Lookup.FN_LOOKUP:Case.Edge_1 is Error #N/A | Returns not-available below the smallest value
+# TYPED_ASSERT TestCube_Lookup::@.value:Function_Lookup.FN_LOOKUP:Case.Invalid_1 is Error ERROR | Rejects missing parameters
+assert TestCube_Metadata::@.value:Function_Metadata.FN_VALUE:Case.Happy_1 == 42 "Converts integer text to a number"
+assert TestCube_Metadata::@.value:Function_Metadata.FN_VALUE:Case.Edge_1 == 12.5 "Converts decimal text to a number"
+# TYPED_ASSERT TestCube_Metadata::@.value:Function_Metadata.FN_VALUE:Case.Invalid_1 is Error ERROR | Rejects text without a numeric representation
+assert TestCube_Volatile::@.value:Function_Volatile.FN_RAND:Case.Happy_1 == TRUE "Typical valid input for RAND"
+assert TestCube_Volatile::@.value:Function_Volatile.FN_RAND:Case.Edge_1 == TRUE "Boundary input for RAND"
+# TYPED_ASSERT TestCube_Volatile::@.value:Function_Volatile.FN_RAND:Case.Invalid_1 is Error ERROR | Invalid or error input for RAND
+assert TestCube_Volatile::@.value:Function_Volatile.FN_RANDBETWEEN:Case.Happy_1 == TRUE "Typical valid input for RANDBETWEEN"
+assert TestCube_Volatile::@.value:Function_Volatile.FN_RANDBETWEEN:Case.Edge_1 == 5 "Boundary input for RANDBETWEEN"
+# TYPED_ASSERT TestCube_Volatile::@.value:Function_Volatile.FN_RANDBETWEEN:Case.Invalid_1 is Error ERROR | Invalid or error input for RANDBETWEEN
+
+echo "=== OPENFORMULA DASHBOARD EXECUTED ==="

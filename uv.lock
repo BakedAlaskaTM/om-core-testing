@@ -693,7 +693,6 @@ dependencies = [
     { name = "cython" },
     { name = "gmpy2" },
     { name = "msgpack" },
-    { name = "prima" },
     { name = "prompt-toolkit" },
     { name = "py-spy" },
     { name = "pymoo" },
@@ -715,7 +714,6 @@ requires-dist = [
     { name = "cython", specifier = "==3.2.5" },
     { name = "gmpy2", specifier = "==2.3.1" },
     { name = "msgpack", specifier = "==1.1.2" },
-    { name = "prima", specifier = ">=0.0" },
     { name = "prompt-toolkit", specifier = "==3.0.52" },
     { name = "py-spy", specifier = "==0.4.2" },
     { name = "pymoo", specifier = ">=0.6" },
@@ -738,22 +736,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d7/f1/e7a6dd94a8d4a5626c03e4e99c87f241ba9e350cd9e6d75123f992427270/packaging-26.2.tar.gz", hash = "sha256:ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661", size = 228134, upload-time = "2026-04-24T20:15:23.917Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/df/b2/87e62e8c3e2f4b32e5fe99e0b86d576da1312593b39f47d8ceef365e95ed/packaging-26.2-py3-none-any.whl", hash = "sha256:5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e", size = 100195, upload-time = "2026-04-24T20:15:22.081Z" },
-]
-
-[[package]]
-name = "pdfo"
-version = "2.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-    { name = "scipy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/85/b5/50eedfd281515b0960b7c8684db5efa35fce17a3eedaeae9edf709504634/pdfo-2.2.0.tar.gz", hash = "sha256:0c9b03761274058eb092e3f80cbeaf8ae4f0ff712c40f9213f2e62e9d9a166a9", size = 484538, upload-time = "2024-06-03T19:03:08.051Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d5/9e/907e6a449fbf25f1b2c43ca430f4a367ad2480dafd675e4119f5cfb2d7b1/pdfo-2.2.0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:85ae1231a624939b79dfaa6dd317fd8fecc6cd5a366e9790fdfca5e359ac44d6", size = 1862861, upload-time = "2024-06-03T19:02:48.503Z" },
-    { url = "https://files.pythonhosted.org/packages/48/2a/ddc4f4a463f27cab8d849619c18a9ad48fe671171698c9d9619ef74442fe/pdfo-2.2.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:65d07ec2739d1089309a90a42f13c6c7934dbe70618fccffb14d42d85322d748", size = 1182866, upload-time = "2024-06-03T19:02:50.671Z" },
-    { url = "https://files.pythonhosted.org/packages/cf/e2/edfd64dcd42e96187b20e4d92ee75f090c4b4035b56531a39cd2b227d896/pdfo-2.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:57a8a5c27bfcc80ed25df0f811ff33cffba09f317296fd8de123a44a372cf94b", size = 1539044, upload-time = "2024-06-03T19:02:52.699Z" },
-    { url = "https://files.pythonhosted.org/packages/ab/7a/7874c30d1f323fb8b90367c43afbe8c695c623a36017afd035e717fc6446/pdfo-2.2.0-cp312-cp312-win_amd64.whl", hash = "sha256:d8485a3207110cfe13ce285ec606ecaec3b95ad2e89d26cacd2315af50b8a358", size = 2392676, upload-time = "2024-06-03T19:02:54.527Z" },
 ]
 
 [[package]]
@@ -843,18 +825,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
-]
-
-[[package]]
-name = "prima"
-version = "0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pdfo" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/db/8165f82006f761e7e84930ab0edb6d7e1c11c8a23f3036d3bd8cb60c0d59/prima-0.0.tar.gz", hash = "sha256:ae01398fd35a677612beec33db8158ccee7163730889111dadcd84c44dff4b81", size = 1111, upload-time = "2023-12-21T15:58:18.643Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/f5/126a20f3a1949f82e86834cc135766d8e036489ec4127811f8d9fd948cdd/prima-0.0-py2.py3-none-any.whl", hash = "sha256:cb09835ad054fd44f93c78ccac43464c7dede5df74e371c007595d19619f7c52", size = 1104, upload-time = "2023-12-21T15:58:13.225Z" },
 ]
 
 [[package]]

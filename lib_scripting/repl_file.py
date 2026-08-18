@@ -321,7 +321,14 @@ class REPLFileMixin:
         if not hasattr(self, "_source_stack"):
             self._source_stack: list[str] = []
 
-        filepath = Path(arg).expanduser()
+        source_arg = arg.strip()
+        if (
+            len(source_arg) >= 2
+            and source_arg[0] == source_arg[-1]
+            and source_arg[0] in {'"', "'"}
+        ):
+            source_arg = source_arg[1:-1]
+        filepath = Path(source_arg).expanduser()
         if not filepath.is_absolute():
             if self._source_stack:
                 base_dir = Path(self._source_stack[-1]).parent

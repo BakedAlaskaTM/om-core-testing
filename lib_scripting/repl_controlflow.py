@@ -116,7 +116,14 @@ class REPLControlFlowMixin:
             print("Error: script parser not available")
             return
 
-        filepath = Path(arg.strip())
+        script_arg = arg.strip()
+        if (
+            len(script_arg) >= 2
+            and script_arg[0] == script_arg[-1]
+            and script_arg[0] in {'"', "'"}
+        ):
+            script_arg = script_arg[1:-1]
+        filepath = Path(script_arg)
         if not filepath.exists():
             print(f"File not found: {filepath}")
             return
