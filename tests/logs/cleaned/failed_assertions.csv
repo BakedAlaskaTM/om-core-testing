@@ -1,46 +1,136 @@
 ﻿Log,Function,Category,TestCaseID,Formula,Assertion,Expected,Tolerance,Description,FailureMessage
-test_suite_unified_20260812-084344-496774.log,COUNTIF,Aggregate,Happy_1,"COUNTIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching numeric criterion,Counts a matching numeric criterion
-test_suite_unified_20260812-084344-496774.log,COUNTIFS,Aggregate,Happy_1,"COUNTIFS(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching criteria pair,Counts a matching criteria pair
-test_suite_unified_20260812-084344-496774.log,SUMIF,Aggregate,Happy_1,"SUMIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"",MockCube::Mock_Row.R3:Mock_Col.C1)",Exact,7,,Sums a value meeting the criterion,Sums a value meeting the criterion
-test_suite_unified_20260812-084344-496774.log,SUMIFS,Aggregate,Happy_1,"SUMIFS(MockCube::Mock_Row.R3:Mock_Col.C1,MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,7,,Sums a value meeting a criteria pair,Sums a value meeting a criteria pair
-test_suite_unified_20260812-084344-496774.log,INT,Math,Edge_1,INT(-3.1),Exact,-4,,Boundary input for INT,Boundary input for INT
-test_suite_unified_20260812-084344-496774.log,REPT,String,Edge_1,"LEN(REPT(""x"",32767))",Exact,32767,,Meets the OpenFormula basic string-length limit,Meets the OpenFormula basic string-length limit
-test_suite_unified_20260812-084344-496774.log,CHAR,String,Edge_1,CHAR(127),Exact,,,Handles the highest required ASCII code,Handles the highest required ASCII code
-test_suite_unified_20260812-084344-496774.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows lower bound
-test_suite_unified_20260812-084344-496774.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows upper bound
-test_suite_unified_20260812-084344-496774.log,NPV,Financial,Edge_1,"NPV(0,10,20)",Exact,30,,Handles a zero discount rate,Handles a zero discount rate
-test_suite_unified_20260812-084344-496774.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return lower bound
-test_suite_unified_20260812-084344-496774.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return upper bound
-test_suite_unified_20260812-084344-496774.log,IRR,Financial,Edge_1,"IRR(-100,100)",Exact,0,,Handles a zero-return series,Handles a zero-return series
-test_suite_unified_20260812-084344-496774.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return lower bound
-test_suite_unified_20260812-084344-496774.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return upper bound
-test_suite_unified_20260812-084344-496774.log,XIRR,Financial,Edge_1,"XIRR(-100,100,DATE(2024,1,1),DATE(2025,1,1))",Exact,0,,Handles a zero dated return,Handles a zero dated return
-test_suite_unified_20260812-084344-496774.log,INDEX,Lookup,Happy_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Returns the first value from a reference,Returns the first value from a reference
-test_suite_unified_20260812-084344-496774.log,INDEX,Lookup,Edge_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Handles a single-cell reference,Handles a single-cell reference
-test_suite_unified_20260812-084344-496774.log,OFFSET,Lookup,Happy_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,0)",Exact,10,,Returns an unshifted reference,Returns an unshifted reference
-test_suite_unified_20260812-084344-496774.log,OFFSET,Lookup,Edge_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,1)",Exact,20,,Offsets by one column,Offsets by one column
-test_suite_unified_20260812-084344-496774.log,MATCH,Lookup,Happy_1,"MATCH(10,MockCube::Mock_Row.R1:Mock_Col.C1,0)",Exact,1,,Finds an exact match,Finds an exact match
-test_suite_unified_20260812-084344-496774.log,LOOKUP,Lookup,Happy_1,"LOOKUP(10,MockCube::Mock_Row.R1:Mock_Col.C1)",Exact,10,,Finds a value in a reference,Finds a value in a reference
-test_suite_unified_20260812-085916-203248.log,COUNTIF,Aggregate,Happy_1,"COUNTIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching numeric criterion,Counts a matching numeric criterion
-test_suite_unified_20260812-085916-203248.log,COUNTIFS,Aggregate,Happy_1,"COUNTIFS(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,1,,Counts a matching criteria pair,Counts a matching criteria pair
-test_suite_unified_20260812-085916-203248.log,SUMIF,Aggregate,Happy_1,"SUMIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"",MockCube::Mock_Row.R3:Mock_Col.C1)",Exact,7,,Sums a value meeting the criterion,Sums a value meeting the criterion
-test_suite_unified_20260812-085916-203248.log,SUMIFS,Aggregate,Happy_1,"SUMIFS(MockCube::Mock_Row.R3:Mock_Col.C1,MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Exact,7,,Sums a value meeting a criteria pair,Sums a value meeting a criteria pair
-test_suite_unified_20260812-085916-203248.log,INT,Math,Edge_1,INT(-3.1),Exact,-4,,Boundary input for INT,Boundary input for INT
-test_suite_unified_20260812-085916-203248.log,REPT,String,Edge_1,"LEN(REPT(""x"",32767))",Exact,32767,,Meets the OpenFormula basic string-length limit,Meets the OpenFormula basic string-length limit
-test_suite_unified_20260812-085916-203248.log,CHAR,String,Edge_1,CHAR(127),Exact,,,Handles the highest required ASCII code,Handles the highest required ASCII code
-test_suite_unified_20260812-085916-203248.log,MONTH,Date,Happy_1,"MONTH(DATE(2024,12,1))",Exact,12,,Extracts the month from a date,Extracts the month from a date
-test_suite_unified_20260812-085916-203248.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows lower bound
-test_suite_unified_20260812-085916-203248.log,NPV,Financial,Happy_1,"NPV(0.1,100,100)",Tolerance,173.55371900826447,1e-9,Discounts periodic cash flows,Discounts periodic cash flows upper bound
-test_suite_unified_20260812-085916-203248.log,NPV,Financial,Edge_1,"NPV(0,10,20)",Exact,30,,Handles a zero discount rate,Handles a zero discount rate
-test_suite_unified_20260812-085916-203248.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return lower bound
-test_suite_unified_20260812-085916-203248.log,IRR,Financial,Happy_1,"ROUND(IRR(-100,60,60),6)",Tolerance,0.130662,1e-9,Finds the periodic internal rate of return,Finds the periodic internal rate of return upper bound
-test_suite_unified_20260812-085916-203248.log,IRR,Financial,Edge_1,"IRR(-100,100)",Exact,0,,Handles a zero-return series,Handles a zero-return series
-test_suite_unified_20260812-085916-203248.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return lower bound
-test_suite_unified_20260812-085916-203248.log,XIRR,Financial,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Tolerance,0.1,1e-9,Finds a dated internal rate of return,Finds a dated internal rate of return upper bound
-test_suite_unified_20260812-085916-203248.log,XIRR,Financial,Edge_1,"XIRR(-100,100,DATE(2024,1,1),DATE(2025,1,1))",Exact,0,,Handles a zero dated return,Handles a zero dated return
-test_suite_unified_20260812-085916-203248.log,INDEX,Lookup,Happy_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Returns the first value from a reference,Returns the first value from a reference
-test_suite_unified_20260812-085916-203248.log,INDEX,Lookup,Edge_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Exact,10,,Handles a single-cell reference,Handles a single-cell reference
-test_suite_unified_20260812-085916-203248.log,OFFSET,Lookup,Happy_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,0)",Exact,10,,Returns an unshifted reference,Returns an unshifted reference
-test_suite_unified_20260812-085916-203248.log,OFFSET,Lookup,Edge_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,1)",Exact,20,,Offsets by one column,Offsets by one column
-test_suite_unified_20260812-085916-203248.log,MATCH,Lookup,Happy_1,"MATCH(10,MockCube::Mock_Row.R1:Mock_Col.C1,0)",Exact,1,,Finds an exact match,Finds an exact match
-test_suite_unified_20260812-085916-203248.log,LOOKUP,Lookup,Happy_1,"LOOKUP(10,MockCube::Mock_Row.R1:Mock_Col.C1)",Exact,10,,Finds a value in a reference,Finds a value in a reference
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Counts a matching numeric criterion
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Counts a matching criteria pair
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Sums a value meeting the criterion
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Sums a value meeting a criteria pair
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Boundary input for INT
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Meets the OpenFormula basic string-length limit
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Handles the highest required ASCII code
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Discounts periodic cash flows lower bound
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Discounts periodic cash flows upper bound
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Handles a zero discount rate
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Finds the periodic internal rate of return lower bound
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Finds the periodic internal rate of return upper bound
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Handles a zero-return series
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Finds a dated internal rate of return lower bound
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Finds a dated internal rate of return upper bound
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Handles a zero dated return
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Returns the first value from a reference
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Handles a single-cell reference
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Returns an unshifted reference
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Offsets by one column
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Finds an exact match
+test_suite_unified_20260812-084344-496774.log,,,,,,,,,Finds a value in a reference
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Counts a matching numeric criterion
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Counts a matching criteria pair
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Sums a value meeting the criterion
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Sums a value meeting a criteria pair
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Boundary input for INT
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Meets the OpenFormula basic string-length limit
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Handles the highest required ASCII code
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Extracts the month from a date
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Discounts periodic cash flows lower bound
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Discounts periodic cash flows upper bound
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Handles a zero discount rate
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Finds the periodic internal rate of return lower bound
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Finds the periodic internal rate of return upper bound
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Handles a zero-return series
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Finds a dated internal rate of return lower bound
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Finds a dated internal rate of return upper bound
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Handles a zero dated return
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Returns the first value from a reference
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Handles a single-cell reference
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Returns an unshifted reference
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Offsets by one column
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Finds an exact match
+test_suite_unified_20260812-085916-203248.log,,,,,,,,,Finds a value in a reference
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Counts a matching numeric criterion
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Counts a matching criteria pair
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Sums a value meeting the criterion
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Sums a value meeting a criteria pair
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Boundary input for INT
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Meets the OpenFormula basic string-length limit
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Handles the highest required ASCII code
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Discounts periodic cash flows lower bound
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Discounts periodic cash flows upper bound
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Handles a zero discount rate
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Finds the periodic internal rate of return lower bound
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Finds the periodic internal rate of return upper bound
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Handles a zero-return series
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Finds a dated internal rate of return lower bound
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Finds a dated internal rate of return upper bound
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Handles a zero dated return
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Returns the first value from a reference
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Handles a single-cell reference
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Returns an unshifted reference
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Offsets by one column
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Finds an exact match
+test_suite_unified_20260819-090156-253655.log,,,,,,,,,Finds a value in a reference
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,One false operand.
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,One true operand.
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Boolean negation.
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Odd true parity.
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,True constant.
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,False constant.
+test_suite_unified_20260908-220100-607790.log,LEN,String,TC_STRING_LEN_001,"LEN(""A😀B"")",EQUALS,3,0,Counts Unicode scalar characters.,Counts Unicode scalar characters.
+test_suite_unified_20260908-220100-607790.log,UPPER,String,TC_STRING_UPPER_001,"UPPER(""Straße"")",EQUALS,STRASSE,0,Unicode uppercase expansion.,Unicode uppercase expansion.
+test_suite_unified_20260908-220100-607790.log,LOWER,String,TC_STRING_LOWER_001,"LOWER(""ÉLAN"")",EQUALS,élan,0,Unicode lowercase mapping.,Unicode lowercase mapping.
+test_suite_unified_20260908-220100-607790.log,LABEL,Hierarchy,TC_HIER_LABEL_001,LABEL(Org),EQUALS,North,0,Fixture current coordinate Org.North returns its label.,Fixture current coordinate Org.North returns its label.
+test_suite_unified_20260908-220100-607790.log,POS,Hierarchy,TC_HIER_POS_001,POS(Org),EQUALS,2,0,Fixture Org.North has one-based position two.,Fixture Org.North has one-based position two.
+test_suite_unified_20260908-220100-607790.log,POSMAX,Hierarchy,TC_HIER_POSMAX_001,POSMAX(Org),EQUALS,3,0,Fixture Org contains three items.,Fixture Org contains three items.
+test_suite_unified_20260908-220100-607790.log,ANCE,Hierarchy,TC_HIER_ANCE_001,"JOIN(ANCE(Org.North),"","")",EQUALS,Org.Total,0,Fixture leaf returns ancestor Total.,Fixture leaf returns ancestor Total.
+test_suite_unified_20260908-220100-607790.log,PEER,Hierarchy,TC_HIER_PEER_001,"JOIN(PEER(Org.North),"","")",EQUALS,"Org.North,Org.South",0,Fixture returns same-level peers.,Fixture returns same-level peers.
+test_suite_unified_20260908-220100-607790.log,SIBL,Hierarchy,TC_HIER_SIBL_001,"JOIN(SIBL(Org.North),"","")",EQUALS,Org.South,0,Fixture returns sibling.,Fixture returns sibling.
+test_suite_unified_20260908-220100-607790.log,DESC,Hierarchy,TC_HIER_DESC_001,"JOIN(DESC(Org.Total),"","")",EQUALS,"Org.North,Org.South",0,Fixture parent returns descendant leaves.,Fixture parent returns descendant leaves.
+test_suite_unified_20260908-220100-607790.log,CHIL,Hierarchy,TC_HIER_CHIL_001,"JOIN(CHIL(Org.Total),"","")",EQUALS,"Org.North,Org.South",0,Fixture parent returns immediate children.,Fixture parent returns immediate children.
+test_suite_unified_20260908-220100-607790.log,PARE,Hierarchy,TC_HIER_PARE_001,"JOIN(PARE(Org.North),"","")",EQUALS,Org.Total,0,Fixture leaf returns parent.,Fixture leaf returns parent.
+test_suite_unified_20260908-220100-607790.log,JOIN,Hierarchy,TC_HIER_JOIN_001,"JOIN(CHIL(Org.Total),""|"")",EQUALS,Org.North|Org.South,0,Joins list with delimiter.,Joins list with delimiter.
+test_suite_unified_20260908-220100-607790.log,SLICE,Hierarchy,TC_HIER_SLICE_001,SUM(SLICE(Org.North)),EQUALS,10,0,Fixture slice resolves North value.,Fixture slice resolves North value.
+test_suite_unified_20260908-220100-607790.log,REF,Hierarchy,TC_HIER_REF_001,"JOIN(REF(Org.North),"","")",EQUALS,Org.North,0,Fixture reference exposes coordinate.,Fixture reference exposes coordinate.
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_RGB:Case.TC_COLOR_RGB_001 ==
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_RGB:Case.TC_COLOR_RGB_002 ==
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_HSV2RGB:Case.TC_COLOR_HSV2RGB_001 ==
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_HSV2RGB:Case.TC_COLOR_HSV2RGB_002 ==
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_HSV2RGB:Case.TC_COLOR_HSV2RGB_003 ==
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_COLORMAP:Case.TC_COLOR_COLORMAP_001 ==
+test_suite_unified_20260908-220100-607790.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_COLORMAP:Case.TC_COLOR_COLORMAP_002 ==
+test_suite_unified_20260909-090359-023916.log,LEN,String,TC_STRING_LEN_001,"LEN(""A😀B"")",EQUALS,3,0,Counts Unicode scalar characters.,Counts Unicode scalar characters.
+test_suite_unified_20260909-090359-023916.log,UPPER,String,TC_STRING_UPPER_001,"UPPER(""Straße"")",EQUALS,STRASSE,0,Unicode uppercase expansion.,Unicode uppercase expansion.
+test_suite_unified_20260909-090359-023916.log,LOWER,String,TC_STRING_LOWER_001,"LOWER(""ÉLAN"")",EQUALS,élan,0,Unicode lowercase mapping.,Unicode lowercase mapping.
+test_suite_unified_20260909-090359-023916.log,LABEL,Hierarchy,TC_HIER_LABEL_001,LABEL(Org),EQUALS,North,0,Fixture current coordinate Org.North returns its label.,Fixture current coordinate Org.North returns its label.
+test_suite_unified_20260909-090359-023916.log,POS,Hierarchy,TC_HIER_POS_001,POS(Org),EQUALS,2,0,Fixture Org.North has one-based position two.,Fixture Org.North has one-based position two.
+test_suite_unified_20260909-090359-023916.log,POSMAX,Hierarchy,TC_HIER_POSMAX_001,POSMAX(Org),EQUALS,3,0,Fixture Org contains three items.,Fixture Org contains three items.
+test_suite_unified_20260909-090359-023916.log,ANCE,Hierarchy,TC_HIER_ANCE_001,"JOIN(ANCE(Org.North),"","")",EQUALS,Org.Total,0,Fixture leaf returns ancestor Total.,Fixture leaf returns ancestor Total.
+test_suite_unified_20260909-090359-023916.log,PEER,Hierarchy,TC_HIER_PEER_001,"JOIN(PEER(Org.North),"","")",EQUALS,"Org.North,Org.South",0,Fixture returns same-level peers.,Fixture returns same-level peers.
+test_suite_unified_20260909-090359-023916.log,SIBL,Hierarchy,TC_HIER_SIBL_001,"JOIN(SIBL(Org.North),"","")",EQUALS,Org.South,0,Fixture returns sibling.,Fixture returns sibling.
+test_suite_unified_20260909-090359-023916.log,DESC,Hierarchy,TC_HIER_DESC_001,"JOIN(DESC(Org.Total),"","")",EQUALS,"Org.North,Org.South",0,Fixture parent returns descendant leaves.,Fixture parent returns descendant leaves.
+test_suite_unified_20260909-090359-023916.log,CHIL,Hierarchy,TC_HIER_CHIL_001,"JOIN(CHIL(Org.Total),"","")",EQUALS,"Org.North,Org.South",0,Fixture parent returns immediate children.,Fixture parent returns immediate children.
+test_suite_unified_20260909-090359-023916.log,PARE,Hierarchy,TC_HIER_PARE_001,"JOIN(PARE(Org.North),"","")",EQUALS,Org.Total,0,Fixture leaf returns parent.,Fixture leaf returns parent.
+test_suite_unified_20260909-090359-023916.log,JOIN,Hierarchy,TC_HIER_JOIN_001,"JOIN(CHIL(Org.Total),""|"")",EQUALS,Org.North|Org.South,0,Joins list with delimiter.,Joins list with delimiter.
+test_suite_unified_20260909-090359-023916.log,SLICE,Hierarchy,TC_HIER_SLICE_001,SUM(SLICE(Org.North)),EQUALS,10,0,Fixture slice resolves North value.,Fixture slice resolves North value.
+test_suite_unified_20260909-090359-023916.log,REF,Hierarchy,TC_HIER_REF_001,"JOIN(REF(Org.North),"","")",EQUALS,Org.North,0,Fixture reference exposes coordinate.,Fixture reference exposes coordinate.
+test_suite_unified_20260909-090359-023916.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_RGB:Case.TC_COLOR_RGB_001 ==
+test_suite_unified_20260909-090359-023916.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_RGB:Case.TC_COLOR_RGB_002 ==
+test_suite_unified_20260909-090359-023916.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_HSV2RGB:Case.TC_COLOR_HSV2RGB_001 ==
+test_suite_unified_20260909-090359-023916.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_HSV2RGB:Case.TC_COLOR_HSV2RGB_002 ==
+test_suite_unified_20260909-090359-023916.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_HSV2RGB:Case.TC_COLOR_HSV2RGB_003 ==
+test_suite_unified_20260909-090359-023916.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_COLORMAP:Case.TC_COLOR_COLORMAP_001 ==
+test_suite_unified_20260909-090359-023916.log,,,,,,,,,Assertion failed: TestCube_Color::@.value:Function_Color.FN_COLORMAP:Case.TC_COLOR_COLORMAP_002 ==
+test_suite_unified_20260909-090359-023916.log,INDEX,Lookup,TC_LOOKUP_INDEX_001,"INDEX(MockCube::Row.Data1:Column.C1..C3,1,2)",EQUALS,20,0,Returns the second column from the fixture row.,Returns the second column from the fixture row.
+test_suite_unified_20260909-090359-023916.log,OFFSET,Lookup,TC_LOOKUP_OFFSET_001,"OFFSET(MockCube::Row.Data1:Column.C1,0,1)",EQUALS,20,0,Offsets one column to the right.,Offsets one column to the right.
+test_suite_unified_20260909-090359-023916.log,OFFSET,Lookup,TC_LOOKUP_OFFSET_002,"OFFSET(MockCube::Row.Data1:Column.C1,-1,0)",EQUALS,1,0,Offsets one row upward to the header.,Offsets one row upward to the header.
+test_suite_unified_20260909-090359-023916.log,MATCH,Lookup,TC_LOOKUP_MATCH_001,"MATCH(20,MockCube::Row.Data1:Column.C1..C3,0)",EQUALS,2,0,Exact match returns a one-based position.,Exact match returns a one-based position.
+test_suite_unified_20260909-090359-023916.log,LOOKUP,Lookup,TC_LOOKUP_LOOKUP_001,"LOOKUP(20,MockCube::Row.Data1:Column.C1..C3)",EQUALS,20,0,Finds an exact value in an ordered vector.,Finds an exact value in an ordered vector.
+test_suite_unified_20260909-090359-023916.log,NPV,Financial,TC_FIN_NPV_001,"NPV(0.1,100,100)",ALMOST_EQUALS,173.55371900826447,1e-9,DCF discounts end-of-period cash flows at ten percent.,DCF discounts end-of-period cash flows at ten percent. lower bound
+test_suite_unified_20260909-090359-023916.log,NPV,Financial,TC_FIN_NPV_001,"NPV(0.1,100,100)",ALMOST_EQUALS,173.55371900826447,1e-9,DCF discounts end-of-period cash flows at ten percent.,DCF discounts end-of-period cash flows at ten percent. upper bound
+test_suite_unified_20260909-090359-023916.log,NPV,Financial,TC_FIN_NPV_002,"NPV(0,10,20)",EQUALS,30,0,Zero discount rate preserves nominal cash flows.,Zero discount rate preserves nominal cash flows.
+test_suite_unified_20260909-090359-023916.log,IRR,Financial,TC_FIN_IRR_001,IRR(MockCube::Row.Periodic:Column.C1..C3),ALMOST_EQUALS,0.1306623862918075,1e-9,Newton-Raphson solves periodic cash flows to the zero-NPV rate.,Newton-Raphson solves periodic cash flows to the zero-NPV rate. lower bound
+test_suite_unified_20260909-090359-023916.log,IRR,Financial,TC_FIN_IRR_001,IRR(MockCube::Row.Periodic:Column.C1..C3),ALMOST_EQUALS,0.1306623862918075,1e-9,Newton-Raphson solves periodic cash flows to the zero-NPV rate.,Newton-Raphson solves periodic cash flows to the zero-NPV rate. upper bound
+test_suite_unified_20260909-090359-023916.log,IRR,Financial,TC_FIN_IRR_002,"IRR(MockCube::Row.Periodic:Column.C1..C3,0.5)",ALMOST_EQUALS,0.1306623862918075,1e-9,Alternate admissible guess converges to the same economic root.,Alternate admissible guess converges to the same economic root. lower bound
+test_suite_unified_20260909-090359-023916.log,IRR,Financial,TC_FIN_IRR_002,"IRR(MockCube::Row.Periodic:Column.C1..C3,0.5)",ALMOST_EQUALS,0.1306623862918075,1e-9,Alternate admissible guess converges to the same economic root.,Alternate admissible guess converges to the same economic root. upper bound
+test_suite_unified_20260909-090359-023916.log,XIRR,Financial,TC_FIN_XIRR_001,"XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3)",ALMOST_EQUALS,0.09971358593414137,1e-9,Newton-Raphson uses Actual/365 day-count fractions across leap year 2024.,Newton-Raphson uses Actual/365 day-count fractions across leap year 2024. lower bound
+test_suite_unified_20260909-090359-023916.log,XIRR,Financial,TC_FIN_XIRR_001,"XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3)",ALMOST_EQUALS,0.09971358593414137,1e-9,Newton-Raphson uses Actual/365 day-count fractions across leap year 2024.,Newton-Raphson uses Actual/365 day-count fractions across leap year 2024. upper bound
+test_suite_unified_20260909-090359-023916.log,XIRR,Financial,TC_FIN_XIRR_002,"XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3,0.5)",ALMOST_EQUALS,0.09971358593414137,1e-9,Alternate guess converges to the same dated-cash-flow root.,Alternate guess converges to the same dated-cash-flow root. lower bound
+test_suite_unified_20260909-090359-023916.log,XIRR,Financial,TC_FIN_XIRR_002,"XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3,0.5)",ALMOST_EQUALS,0.09971358593414137,1e-9,Alternate guess converges to the same dated-cash-flow root.,Alternate guess converges to the same dated-cash-flow root. upper bound
+test_suite_unified_20260909-090359-023916.log,XLS_ROUND,Math,TC_MATH_XLS_ROUND_001,"XLS_ROUND(2.5,0)",EQUALS,3,0,OpenFormula midpoint rounds away from zero.,OpenFormula midpoint rounds away from zero.
+test_suite_unified_20260909-090359-023916.log,XLS_UPPER,String,TC_STRING_XLS_UPPER_001,"XLS_UPPER(""Straße"")",EQUALS,STRASSE,0,OpenFormula Unicode uppercase expansion.,OpenFormula Unicode uppercase expansion.

@@ -34,7 +34,7 @@ def load_assertion_lookup(matrix_path: Path) -> dict[str, list[dict[str, str]]]:
         for row in csv.DictReader(matrix_file):
             description = row["Description"].strip()
             messages = [description]
-            if row["Assertion"].strip().lower() == "tolerance":
+            if row["Assertion"].strip().upper() == "ALMOST_EQUALS":
                 messages.extend(
                     (f"{description} lower bound", f"{description} upper bound")
                 )

@@ -24,7 +24,10 @@ def test_generates_one_passfail_rule_per_function(tmp_path: Path):
         line for line in generated.splitlines()
         if line.startswith("rule ") and ":Case.PassFail = " in line
     ]
-    assert "dim Case Edge_1 Happy_1 Invalid_1 PassFail" in generated
+    case_ids = sorted(row["TestCaseID"] for row in rows)
+    assert f"dim Case {' '.join(case_ids)} PassFail" in generated
+    assert "cube MockCube Row Column" in generated
+    assert "rule MockCube::Row.Periodic:Column.C1 = -100" in generated
     assert len(passfail_rules) == len(functions)
 
     for category, function in functions:
@@ -38,29 +41,31 @@ def test_generates_one_passfail_rule_per_function(tmp_path: Path):
             assert f":Case.{row['TestCaseID']}" in matching[0]
 
 
-def test_passfail_rules_handle_exact_tolerance_text_and_error(tmp_path: Path):
+def test_passfail_rules_handle_equals_almost_equals_text_and_error(tmp_path: Path):
     manifest = tmp_path / "matrix.csv"
     manifest.write_text(
         "Standard,Version,Profile,Category,Function,SpecificationSection,TestCaseID,"
         "Formula,ExpectedType,Expected,Tolerance,Assertion,Description\n"
-        'OpenFormula,1.4,Small,Demo,FN,1,Exact_1,1,Number,1,,Exact,exact\n'
-        'OpenFormula,1.4,Small,Demo,FN,1,Text_1,"""a""",Text,a,,Exact,text\n'
-        'OpenFormula,1.4,Small,Demo,FN,1,Tol_1,1,Number,1,0.1,Tolerance,tolerance\n'
-        'OpenFormula,1.4,Small,Demo,FN,1,Error_1,1/0,Error,ERROR,,Error,error\n',
+        'IEEE 754,2019,Core,Demo,FN,§1,TC_DEMO_FN_001,1,NUMBER,1,0,EQUALS,exact\n'
+        'ISO/IEC 10646,2020,Full,Demo,FN,§2,TC_DEMO_FN_002,"""a""",STRING,a,0,EQUALS,text\n'
+        'ISO/IEC 10967-2,2001,Core,Demo,FN,§3,TC_DEMO_FN_003,1,NUMBER,1,0.1,ALMOST_EQUALS,tolerance\n'
+        'IEEE 754,2019,Strict,Demo,FN,§9,TC_DEMO_FN_004,1/0,ERROR,#DIV/0!,0,ERROR_MATCH,error\n',
         encoding="utf-8",
     )
     output = tmp_path / "generated.openm"
     generate_unified_openm(str(manifest), str(output))
+    generated = output.read_text(encoding="utf-8")
+    assert "cube MockCube Row Column" not in generated
     passfail = next(
-        line for line in output.read_text(encoding="utf-8").splitlines()
+        line for line in generated.splitlines()
         if ":Case.PassFail = " in line
     )
 
-    assert "IFERROR(TestCube_Demo::Function_Demo.FN_FN:Case.Exact_1 == 1,FALSE())" in passfail
-    assert 'IFERROR(TestCube_Demo::Function_Demo.FN_FN:Case.Text_1 == "a",FALSE())' in passfail
-    assert "Case.Tol_1 >= 0.90000000000000002" in passfail
-    assert "Case.Tol_1 <= 1.1000000000000001" in passfail
-    assert 'IFERROR(TestCube_Demo::Function_Demo.FN_FN:Case.Error_1,"__OPENM_EXPECTED_ERROR__")' in passfail
+    assert "IFERROR(TestCube_Demo::Function_Demo.FN_FN:Case.TC_DEMO_FN_001 == 1,FALSE())" in passfail
+    assert 'IFERROR(TestCube_Demo::Function_Demo.FN_FN:Case.TC_DEMO_FN_002 == "a",FALSE())' in passfail
+    assert "Case.TC_DEMO_FN_003 >= 0.90000000000000002" in passfail
+    assert "Case.TC_DEMO_FN_003 <= 1.1000000000000001" in passfail
+    assert 'IFERROR(TestCube_Demo::Function_Demo.FN_FN:Case.TC_DEMO_FN_004,"__OPENM_EXPECTED_ERROR__")' in passfail
 
     repl = OpenMREPL(session=_MockSession(executor=get_executor()))
     workspace = demo_workspace()
@@ -87,3 +92,21 @@ def test_passfail_rules_handle_exact_tolerance_text_and_error(tmp_path: Path):
         address[dimension_id] = next(item.id for item in dimension.items if item.name == item_name)
     # Logical cell values are stored numerically by the cube engine.
     assert get_cell_by_dim(engine, cube.id, address) == 1.0
+
+
+def test_converts_ulp_tolerance_to_numeric_bounds(tmp_path: Path):
+    manifest = tmp_path / "matrix.csv"
+    manifest.write_text(
+        "Standard,Version,Profile,Category,Function,SpecificationSection,TestCaseID,"
+        "Formula,ExpectedType,Expected,Tolerance,Assertion,Description\n"
+        "IEEE 754,2019,Strict,Math,PI,§9,TC_MATH_PI_001,PI(),NUMBER,"
+        "3.141592653589793,1.5 ULP,ALMOST_EQUALS,ulp\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "generated.openm"
+    generate_unified_openm(str(manifest), str(output))
+    generated = output.read_text(encoding="utf-8")
+
+    assert "1.5 ULP" not in generated
+    assert "Case.TC_MATH_PI_001 >= " in generated
+    assert "Case.TC_MATH_PI_001 <= " in generated

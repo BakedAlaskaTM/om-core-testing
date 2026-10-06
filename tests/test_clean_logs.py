@@ -25,7 +25,7 @@ def test_cleans_logs_and_enriches_failures(tmp_path: Path):
     matrix = tmp_path / "matrix.csv"
     matrix.write_text(
         MATRIX_HEADER
-        + "OpenFormula,1.4,Small,Math,BROKEN,1,Happy_1,BROKEN(),Number,1,,Exact,expected result\n",
+        + "IEEE 754,2019,Core,Math,BROKEN,§1,TC_MATH_BROKEN_001,BROKEN(),NUMBER,1,0,EQUALS,expected result\n",
         encoding="utf-8",
     )
     output_dir = tmp_path / "cleaned"
@@ -40,7 +40,7 @@ def test_cleans_logs_and_enriches_failures(tmp_path: Path):
     ) as report:
         rows = list(csv.DictReader(report))
     assert rows[0]["Function"] == "BROKEN"
-    assert rows[0]["TestCaseID"] == "Happy_1"
+    assert rows[0]["TestCaseID"] == "TC_MATH_BROKEN_001"
 
 
 def test_maps_both_tolerance_assertions(tmp_path: Path):
@@ -54,7 +54,7 @@ def test_maps_both_tolerance_assertions(tmp_path: Path):
     matrix = tmp_path / "matrix.csv"
     matrix.write_text(
         MATRIX_HEADER
-        + "OpenFormula,1.4,Small,Math,CLOSE,1,Happy_1,CLOSE(),Number,1,0.1,Tolerance,close result\n",
+        + "ISO/IEC 10967-2,2001,Core,Math,CLOSE,§1,TC_MATH_CLOSE_001,CLOSE(),NUMBER,1,0.1,ALMOST_EQUALS,close result\n",
         encoding="utf-8",
     )
 

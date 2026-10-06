@@ -1,239 +1,187 @@
 Standard,Version,Profile,Category,Function,SpecificationSection,TestCaseID,Formula,ExpectedType,Expected,Tolerance,Assertion,Description
-OpenFormula,1.4,Small,Logical,IF,6.15.4,Happy_1,"IF(1,""yes"",""no"")",Text,yes,,Exact,Typical valid input for IF
-OpenFormula,1.4,Small,Logical,IF,6.15.4,Edge_1,"IF(0,1,2)",Number,2,,Exact,Boundary input for IF
-OpenFormula,1.4,Small,Logical,IF,6.15.4,Invalid_1,IF(),Error,ERROR,,Error,Invalid or error input for IF
-OpenFormula,1.4,Small,Logical,AND,6.15.2,Happy_1,"AND(1,1)",Logical,TRUE,,Exact,Typical valid input for AND
-OpenFormula,1.4,Small,Logical,AND,6.15.2,Edge_1,"AND(1,0)",Logical,FALSE,,Exact,Boundary input for AND
-OpenFormula,1.4,Small,Logical,AND,6.15.2,Invalid_1,AND(),Error,ERROR,,Error,Invalid or error input for AND
-OpenFormula,1.4,Small,Logical,OR,6.15.8,Happy_1,"OR(0,1)",Logical,TRUE,,Exact,Typical valid input for OR
-OpenFormula,1.4,Small,Logical,OR,6.15.8,Edge_1,"OR(0,0)",Logical,FALSE,,Exact,Boundary input for OR
-OpenFormula,1.4,Small,Logical,OR,6.15.8,Invalid_1,OR(),Error,ERROR,,Error,Invalid or error input for OR
-OpenFormula,1.4,Small,Logical,NOT,6.15.7,Happy_1,NOT(0),Logical,TRUE,,Exact,Typical valid input for NOT
-OpenFormula,1.4,Small,Logical,NOT,6.15.7,Edge_1,NOT(1),Logical,FALSE,,Exact,Boundary input for NOT
-OpenFormula,1.4,Small,Logical,NOT,6.15.7,Invalid_1,NOT(),Error,ERROR,,Error,Invalid or error input for NOT
-OpenFormula,1.4,Large,Logical,XOR,6.15.10,Happy_1,"XOR(1,0)",Logical,TRUE,,Exact,Typical valid input for XOR
-OpenFormula,1.4,Large,Logical,XOR,6.15.10,Edge_1,"XOR(1,1)",Logical,FALSE,,Exact,Boundary input for XOR
-OpenFormula,1.4,Large,Logical,XOR,6.15.10,Invalid_1,XOR(),Error,ERROR,,Error,Invalid or error input for XOR
-OpenFormula,1.4,Large,Logical,IFERROR,6.15.5,Happy_1,"IFERROR(1/0,42)",Number,42,,Exact,Typical valid input for IFERROR
-OpenFormula,1.4,Large,Logical,IFERROR,6.15.5,Edge_1,"IFERROR(7,42)",Number,7,,Exact,Boundary input for IFERROR
-OpenFormula,1.4,Large,Logical,IFERROR,6.15.5,Invalid_1,IFERROR(),Error,ERROR,,Error,Invalid or error input for IFERROR
-OpenFormula,1.4,Small,Logical,TRUE,6.15.9,Happy_1,TRUE(),Logical,TRUE,,Exact,Typical valid input for TRUE
-OpenFormula,1.4,Small,Logical,TRUE,6.15.9,Edge_1,TRUE(),Logical,TRUE,,Exact,Boundary input for TRUE
-OpenFormula,1.4,Small,Logical,TRUE,6.15.9,Invalid_1,TRUE(1),Error,ERROR,,Error,Invalid or error input for TRUE
-OpenFormula,1.4,Small,Logical,FALSE,6.15.3,Happy_1,FALSE(),Logical,FALSE,,Exact,Typical valid input for FALSE
-OpenFormula,1.4,Small,Logical,FALSE,6.15.3,Edge_1,FALSE(),Logical,FALSE,,Exact,Boundary input for FALSE
-OpenFormula,1.4,Small,Logical,FALSE,6.15.3,Invalid_1,FALSE(1),Error,ERROR,,Error,Invalid or error input for FALSE
-OpenFormula,1.4,Small,Aggregate,SUM,6.16.61,Happy_1,"SUM(10,20,30)",Number,60,,Exact,Typical valid input for SUM
-OpenFormula,1.4,Small,Aggregate,SUM,6.16.61,Edge_1,"SUM(-5,0,5)",Number,0,,Exact,Boundary input for SUM
-OpenFormula,1.4,Small,Aggregate,SUM,6.16.61,Invalid_1,SUM(),Number,0,,Exact,Invalid or error input for SUM
-OpenFormula,1.4,Small,Aggregate,MIN,6.18.48,Happy_1,"MIN(2,-1,9)",Number,-1,,Exact,Typical valid input for MIN
-OpenFormula,1.4,Small,Aggregate,MIN,6.18.48,Edge_1,MIN(0),Number,0,,Exact,Boundary input for MIN
-OpenFormula,1.4,Small,Aggregate,MIN,6.18.48,Invalid_1,MIN(),Error,ERROR,,Error,Invalid or error input for MIN
-OpenFormula,1.4,Small,Aggregate,MAX,6.18.45,Happy_1,"MAX(2,-1,9)",Number,9,,Exact,Typical valid input for MAX
-OpenFormula,1.4,Small,Aggregate,MAX,6.18.45,Edge_1,MAX(0),Number,0,,Exact,Boundary input for MAX
-OpenFormula,1.4,Small,Aggregate,MAX,6.18.45,Invalid_1,MAX(),Error,ERROR,,Error,Invalid or error input for MAX
-OpenFormula,1.4,Small,Aggregate,AVERAGE,6.18.3,Happy_1,"AVERAGE(10,20)",Number,15,,Exact,Typical valid input for AVERAGE
-OpenFormula,1.4,Small,Aggregate,AVERAGE,6.18.3,Edge_1,"AVERAGE(0,0)",Number,0,,Exact,Boundary input for AVERAGE
-OpenFormula,1.4,Small,Aggregate,AVERAGE,6.18.3,Invalid_1,AVERAGE(),Error,ERROR,,Error,Invalid or error input for AVERAGE
-OpenFormula,1.4,Small,Aggregate,COUNT,6.13.6,Happy_1,"COUNT(1,""x"",2)",Number,2,,Exact,Typical valid input for COUNT
-OpenFormula,1.4,Small,Aggregate,COUNT,6.13.6,Edge_1,COUNT(),Number,0,,Exact,Boundary input for COUNT
-OpenFormula,1.4,Small,Aggregate,COUNT,6.13.6,Invalid_1,"COUNT(""x"")",Number,0,,Exact,Invalid or error input for COUNT
-OpenFormula,1.4,Small,Aggregate,COUNTA,6.13.7,Happy_1,"COUNTA(1,""x"")",Number,2,,Exact,Typical valid input for COUNTA
-OpenFormula,1.4,Small,Aggregate,COUNTA,6.13.7,Edge_1,COUNTA(),Number,0,,Exact,Boundary input for COUNTA
-OpenFormula,1.4,Small,Aggregate,COUNTA,6.13.7,Invalid_1,COUNTA(),Number,0,,Exact,Invalid or error input for COUNTA
-OpenFormula,1.4,Small,Aggregate,COUNTIF,6.13.9,Happy_1,"COUNTIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Number,1,,Exact,Counts a matching numeric criterion
-OpenFormula,1.4,Small,Aggregate,COUNTIF,6.13.9,Edge_1,"COUNTIF(MockCube::Mock_Row.R1:Mock_Col.C1,"">10"")",Number,0,,Exact,Returns zero when no value matches
-OpenFormula,1.4,Small,Aggregate,COUNTIF,6.13.9,Invalid_1,COUNTIF(),Error,ERROR,,Error,Rejects missing range and criterion
-OpenFormula,1.4,Large,Aggregate,COUNTIFS,6.13.10,Happy_1,"COUNTIFS(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Number,1,,Exact,Counts a matching criteria pair
-OpenFormula,1.4,Large,Aggregate,COUNTIFS,6.13.10,Edge_1,"COUNTIFS(MockCube::Mock_Row.R1:Mock_Col.C1,"">10"")",Number,0,,Exact,Returns zero when the criterion does not match
-OpenFormula,1.4,Large,Aggregate,COUNTIFS,6.13.10,Invalid_1,COUNTIFS(),Error,ERROR,,Error,Rejects a missing criteria pair
-OpenFormula,1.4,Small,Aggregate,SUMIF,6.16.62,Happy_1,"SUMIF(MockCube::Mock_Row.R3:Mock_Col.C1,"">5"",MockCube::Mock_Row.R3:Mock_Col.C1)",Number,7,,Exact,Sums a value meeting the criterion
-OpenFormula,1.4,Small,Aggregate,SUMIF,6.16.62,Edge_1,"SUMIF(MockCube::Mock_Row.R1:Mock_Col.C1,"">10"",MockCube::Mock_Row.R1:Mock_Col.C1)",Number,0,,Exact,Returns zero when no value meets the criterion
-OpenFormula,1.4,Small,Aggregate,SUMIF,6.16.62,Invalid_1,SUMIF(),Error,ERROR,,Error,Rejects missing required parameters
-OpenFormula,1.4,Large,Aggregate,SUMIFS,6.16.63,Happy_1,"SUMIFS(MockCube::Mock_Row.R3:Mock_Col.C1,MockCube::Mock_Row.R3:Mock_Col.C1,"">5"")",Number,7,,Exact,Sums a value meeting a criteria pair
-OpenFormula,1.4,Large,Aggregate,SUMIFS,6.16.63,Edge_1,"SUMIFS(MockCube::Mock_Row.R1:Mock_Col.C1,MockCube::Mock_Row.R1:Mock_Col.C1,"">10"")",Number,0,,Exact,Returns zero when no value meets the criterion
-OpenFormula,1.4,Large,Aggregate,SUMIFS,6.16.63,Invalid_1,SUMIFS(),Error,ERROR,,Error,Rejects missing required parameters
-OpenFormula,1.4,Small,Math,ABS,6.16.2,Happy_1,ABS(-7),Number,7,,Exact,Typical valid input for ABS
-OpenFormula,1.4,Small,Math,ABS,6.16.2,Edge_1,ABS(0),Number,0,,Exact,Boundary input for ABS
-OpenFormula,1.4,Small,Math,ABS,6.16.2,Invalid_1,"ABS(""x"")",Error,ERROR,,Error,Invalid or error input for ABS
-OpenFormula,1.4,Small,Math,ROUND,6.17.5,Happy_1,"ROUND(2.345,2)",Number,2.35,,Exact,Typical valid input for ROUND
-OpenFormula,1.4,Small,Math,ROUND,6.17.5,Edge_1,"ROUND(0,2)",Number,0,,Exact,Boundary input for ROUND
-OpenFormula,1.4,Small,Math,ROUND,6.17.5,Invalid_1,"ROUND(""x"",2)",Error,ERROR,,Error,Invalid or error input for ROUND
-OpenFormula,1.4,Medium,Math,ROUNDUP,6.17.7,Happy_1,"ROUNDUP(2.341,2)",Number,2.35,,Exact,Typical valid input for ROUNDUP
-OpenFormula,1.4,Medium,Math,ROUNDUP,6.17.7,Edge_1,"ROUNDUP(0,2)",Number,0,,Exact,Boundary input for ROUNDUP
-OpenFormula,1.4,Medium,Math,ROUNDUP,6.17.7,Invalid_1,"ROUNDUP(""x"",2)",Error,ERROR,,Error,Invalid or error input for ROUNDUP
-OpenFormula,1.4,Medium,Math,ROUNDDOWN,6.17.6,Happy_1,"ROUNDDOWN(2.349,2)",Number,2.34,,Exact,Typical valid input for ROUNDDOWN
-OpenFormula,1.4,Medium,Math,ROUNDDOWN,6.17.6,Edge_1,"ROUNDDOWN(0,2)",Number,0,,Exact,Boundary input for ROUNDDOWN
-OpenFormula,1.4,Medium,Math,ROUNDDOWN,6.17.6,Invalid_1,"ROUNDDOWN(""x"",2)",Error,ERROR,,Error,Invalid or error input for ROUNDDOWN
-OpenFormula,1.4,Small,Math,PI,6.16.45,Happy_1,PI(),Number,3.141592653589793,1e-9,Tolerance,Typical valid input for PI
-OpenFormula,1.4,Small,Math,PI,6.16.45,Edge_1,"ROUND(PI(),2)",Number,3.14,1e-9,Tolerance,Boundary input for PI
-OpenFormula,1.4,Small,Math,PI,6.16.45,Invalid_1,PI(1),Error,ERROR,,Error,Invalid or error input for PI
-OpenFormula,1.4,Small,Math,LN,6.16.39,Happy_1,LN(1),Number,0,,Exact,Typical valid input for LN
-OpenFormula,1.4,Small,Math,LN,6.16.39,Edge_1,LN(EXP(1)),Number,1,,Exact,Boundary input for LN
-OpenFormula,1.4,Small,Math,LN,6.16.39,Invalid_1,LN(0),Error,ERROR,,Error,Invalid or error input for LN
-OpenFormula,1.4,Small,Math,LOG,6.16.40,Happy_1,"LOG(100,10)",Number,2,,Exact,Typical valid input for LOG
-OpenFormula,1.4,Small,Math,LOG,6.16.40,Edge_1,"LOG(1,10)",Number,0,,Exact,Boundary input for LOG
-OpenFormula,1.4,Small,Math,LOG,6.16.40,Invalid_1,"LOG(-1,10)",Error,ERROR,,Error,Invalid or error input for LOG
-OpenFormula,1.4,Small,Math,LOG10,6.16.41,Happy_1,LOG10(1000),Number,3,,Exact,Typical valid input for LOG10
-OpenFormula,1.4,Small,Math,LOG10,6.16.41,Edge_1,LOG10(1),Number,0,,Exact,Boundary input for LOG10
-OpenFormula,1.4,Small,Math,LOG10,6.16.41,Invalid_1,LOG10(0),Error,ERROR,,Error,Invalid or error input for LOG10
-OpenFormula,1.4,Small,Math,EXP,6.16.31,Happy_1,EXP(0),Number,1,,Exact,Typical valid input for EXP
-OpenFormula,1.4,Small,Math,EXP,6.16.31,Edge_1,"ROUND(EXP(1),5)",Number,2.71828,1e-9,Tolerance,Boundary input for EXP
-OpenFormula,1.4,Small,Math,EXP,6.16.31,Invalid_1,EXP(10000),Error,ERROR,,Error,Invalid or error input for EXP
-OpenFormula,1.4,Small,Math,SQRT,6.16.58,Happy_1,SQRT(81),Number,9,,Exact,Typical valid input for SQRT
-OpenFormula,1.4,Small,Math,SQRT,6.16.58,Edge_1,SQRT(0),Number,0,,Exact,Boundary input for SQRT
-OpenFormula,1.4,Small,Math,SQRT,6.16.58,Invalid_1,SQRT(-1),Error,ERROR,,Error,Invalid or error input for SQRT
-OpenFormula,1.4,Small,Math,POWER,6.16.46,Happy_1,"POWER(2,8)",Number,256,,Exact,Typical valid input for POWER
-OpenFormula,1.4,Small,Math,POWER,6.16.46,Edge_1,"POWER(5,0)",Number,1,,Exact,Boundary input for POWER
-OpenFormula,1.4,Small,Math,POWER,6.16.46,Invalid_1,"POWER(0,-1)",Error,ERROR,,Error,Invalid or error input for POWER
-OpenFormula,1.4,Small,Math,SIN,6.16.55,Happy_1,SIN(0),Number,0,,Exact,Typical valid input for SIN
-OpenFormula,1.4,Small,Math,SIN,6.16.55,Edge_1,SIN(0),Number,0,,Exact,Boundary input for SIN
-OpenFormula,1.4,Small,Math,SIN,6.16.55,Invalid_1,"SIN(""x"")",Error,ERROR,,Error,Invalid or error input for SIN
-OpenFormula,1.4,Small,Math,COS,6.16.19,Happy_1,COS(0),Number,1,,Exact,Typical valid input for COS
-OpenFormula,1.4,Small,Math,COS,6.16.19,Edge_1,COS(0),Number,1,,Exact,Boundary input for COS
-OpenFormula,1.4,Small,Math,COS,6.16.19,Invalid_1,"COS(""x"")",Error,ERROR,,Error,Invalid or error input for COS
-OpenFormula,1.4,Small,Math,TAN,6.16.69,Happy_1,TAN(0),Number,0,,Exact,Typical valid input for TAN
-OpenFormula,1.4,Small,Math,TAN,6.16.69,Edge_1,TAN(0),Number,0,,Exact,Boundary input for TAN
-OpenFormula,1.4,Small,Math,TAN,6.16.69,Invalid_1,"TAN(""x"")",Error,ERROR,,Error,Invalid or error input for TAN
-OpenFormula,1.4,Small,Math,ASIN,6.16.7,Happy_1,ASIN(0),Number,0,,Exact,Typical valid input for ASIN
-OpenFormula,1.4,Small,Math,ASIN,6.16.7,Edge_1,ASIN(0),Number,0,,Exact,Boundary input for ASIN
-OpenFormula,1.4,Small,Math,ASIN,6.16.7,Invalid_1,"ASIN(""x"")",Error,ERROR,,Error,Invalid or error input for ASIN
-OpenFormula,1.4,Small,Math,ACOS,6.16.3,Happy_1,ACOS(1),Number,0,,Exact,Returns the principal arc cosine at the upper domain boundary
-OpenFormula,1.4,Small,Math,ACOS,6.16.3,Edge_1,ACOS(0),Number,1.5707963267948966,1e-9,Tolerance,Returns pi divided by two at zero
-OpenFormula,1.4,Small,Math,ACOS,6.16.3,Invalid_1,"ACOS(""x"")",Error,ERROR,,Error,Invalid or error input for ACOS
-OpenFormula,1.4,Small,Math,ATAN,6.16.9,Happy_1,ATAN(0),Number,0,,Exact,Typical valid input for ATAN
-OpenFormula,1.4,Small,Math,ATAN,6.16.9,Edge_1,ATAN(0),Number,0,,Exact,Boundary input for ATAN
-OpenFormula,1.4,Small,Math,ATAN,6.16.9,Invalid_1,"ATAN(""x"")",Error,ERROR,,Error,Invalid or error input for ATAN
-OpenFormula,1.4,Small,Math,ATAN2,6.16.10,Happy_1,"ATAN2(1,1)",Number,0.7853981633974483,1e-9,Tolerance,Returns the angle for positive coordinates
-OpenFormula,1.4,Small,Math,ATAN2,6.16.10,Edge_1,"ATAN2(0,1)",Number,0,,Exact,Handles a zero ordinate
-OpenFormula,1.4,Small,Math,ATAN2,6.16.10,Invalid_1,"ATAN2(0,0)",Error,ERROR,,Error,Rejects the indeterminate origin
-OpenFormula,1.4,Small,Math,RADIANS,6.16.49,Happy_1,RADIANS(180),Number,3.141592653589793,1e-9,Tolerance,Typical valid input for RADIANS
-OpenFormula,1.4,Small,Math,RADIANS,6.16.49,Edge_1,RADIANS(0),Number,0,,Exact,Boundary input for RADIANS
-OpenFormula,1.4,Small,Math,RADIANS,6.16.49,Invalid_1,"RADIANS(""x"")",Error,ERROR,,Error,Invalid or error input for RADIANS
-OpenFormula,1.4,Small,Math,DEGREES,6.16.25,Happy_1,DEGREES(PI()),Number,180,,Exact,Typical valid input for DEGREES
-OpenFormula,1.4,Small,Math,DEGREES,6.16.25,Edge_1,DEGREES(0),Number,0,,Exact,Boundary input for DEGREES
-OpenFormula,1.4,Small,Math,DEGREES,6.16.25,Invalid_1,"DEGREES(""x"")",Error,ERROR,,Error,Invalid or error input for DEGREES
-OpenFormula,1.4,Medium,Math,SIGN,6.16.54,Happy_1,SIGN(-8),Number,-1,,Exact,Typical valid input for SIGN
-OpenFormula,1.4,Medium,Math,SIGN,6.16.54,Edge_1,SIGN(0),Number,0,,Exact,Boundary input for SIGN
-OpenFormula,1.4,Medium,Math,SIGN,6.16.54,Invalid_1,"SIGN(""x"")",Error,ERROR,,Error,Invalid or error input for SIGN
-OpenFormula,1.4,Small,Math,INT,6.17.2,Happy_1,INT(3.9),Number,3,,Exact,Typical valid input for INT
-OpenFormula,1.4,Small,Math,INT,6.17.2,Edge_1,INT(-3.1),Number,-4,,Exact,Boundary input for INT
-OpenFormula,1.4,Small,Math,INT,6.17.2,Invalid_1,"INT(""x"")",Error,ERROR,,Error,Invalid or error input for INT
-OpenFormula,1.4,Small,Math,MOD,6.16.42,Happy_1,"MOD(10,3)",Number,1,,Exact,Typical valid input for MOD
-OpenFormula,1.4,Small,Math,MOD,6.16.42,Edge_1,"MOD(0,3)",Number,0,,Exact,Boundary input for MOD
-OpenFormula,1.4,Small,Math,MOD,6.16.42,Invalid_1,"MOD(1,0)",Error,ERROR,,Error,Invalid or error input for MOD
-OpenFormula,1.4,Medium,Math,QUOTIENT,6.16.48,Happy_1,"QUOTIENT(10,3)",Number,3,,Exact,Typical valid input for QUOTIENT
-OpenFormula,1.4,Medium,Math,QUOTIENT,6.16.48,Edge_1,"QUOTIENT(0,3)",Number,0,,Exact,Boundary input for QUOTIENT
-OpenFormula,1.4,Medium,Math,QUOTIENT,6.16.48,Invalid_1,"QUOTIENT(1,0)",Error,ERROR,,Error,Invalid or error input for QUOTIENT
-OpenFormula,1.4,Medium,Math,FLOOR,6.17.3,Happy_1,"FLOOR(7.5,2)",Number,6,,Exact,Typical valid input for FLOOR
-OpenFormula,1.4,Medium,Math,FLOOR,6.17.3,Edge_1,"FLOOR(0,2)",Number,0,,Exact,Boundary input for FLOOR
-OpenFormula,1.4,Medium,Math,FLOOR,6.17.3,Invalid_1,"FLOOR(1,0)",Error,ERROR,,Error,Invalid or error input for FLOOR
-OpenFormula,1.4,Medium,Math,CEILING,6.17.1,Happy_1,"CEILING(7.5,2)",Number,8,,Exact,Typical valid input for CEILING
-OpenFormula,1.4,Medium,Math,CEILING,6.17.1,Edge_1,"CEILING(0,2)",Number,0,,Exact,Boundary input for CEILING
-OpenFormula,1.4,Medium,Math,CEILING,6.17.1,Invalid_1,"CEILING(1,0)",Error,ERROR,,Error,Invalid or error input for CEILING
-OpenFormula,1.4,Small,Math,TRUNC,6.17.8,Happy_1,"TRUNC(3.987,2)",Number,3.98,,Exact,Typical valid input for TRUNC
-OpenFormula,1.4,Small,Math,TRUNC,6.17.8,Edge_1,"TRUNC(0,2)",Number,0,,Exact,Boundary input for TRUNC
-OpenFormula,1.4,Small,Math,TRUNC,6.17.8,Invalid_1,"TRUNC(""x"",2)",Error,ERROR,,Error,Invalid or error input for TRUNC
-OpenFormula,1.4,Small,String,LEN,6.20.13,Happy_1,"LEN(""OpenM"")",Number,5,,Exact,Typical valid input for LEN
-OpenFormula,1.4,Small,String,LEN,6.20.13,Edge_1,"LEN("""")",Number,0,,Exact,Boundary input for LEN
-OpenFormula,1.4,Small,String,LEN,6.20.13,Invalid_1,LEN(),Error,ERROR,,Error,Invalid or error input for LEN
-OpenFormula,1.4,Small,String,TRIM,6.20.24,Happy_1,"TRIM(""  OpenM  Core  "")",Text,OpenM Core,,Exact,Typical valid input for TRIM
-OpenFormula,1.4,Small,String,TRIM,6.20.24,Edge_1,"TRIM("""")",Text,,,Exact,Boundary input for TRIM
-OpenFormula,1.4,Small,String,TRIM,6.20.24,Invalid_1,TRIM(),Error,ERROR,,Error,Invalid or error input for TRIM
-OpenFormula,1.4,Small,String,LEFT,6.20.12,Happy_1,"LEFT(""OpenM"",2)",Text,Op,,Exact,Typical valid input for LEFT
-OpenFormula,1.4,Small,String,LEFT,6.20.12,Edge_1,"LEFT(""OpenM"",0)",Text,,,Exact,Boundary input for LEFT
-OpenFormula,1.4,Small,String,LEFT,6.20.12,Invalid_1,"LEFT(""x"",-1)",Error,ERROR,,Error,Invalid or error input for LEFT
-OpenFormula,1.4,Small,String,RIGHT,6.20.19,Happy_1,"RIGHT(""OpenM"",2)",Text,nM,,Exact,Typical valid input for RIGHT
-OpenFormula,1.4,Small,String,RIGHT,6.20.19,Edge_1,"RIGHT(""OpenM"",0)",Text,,,Exact,Boundary input for RIGHT
-OpenFormula,1.4,Small,String,RIGHT,6.20.19,Invalid_1,"RIGHT(""x"",-1)",Error,ERROR,,Error,Invalid or error input for RIGHT
-OpenFormula,1.4,Small,String,REPT,6.20.18,Happy_1,"REPT(""ab"",3)",Text,ababab,,Exact,Typical valid input for REPT
-OpenFormula,1.4,Small,String,REPT,6.20.18,Edge_1,"LEN(REPT(""x"",32767))",Number,32767,,Exact,Meets the OpenFormula basic string-length limit
-OpenFormula,1.4,Small,String,REPT,6.20.18,Invalid_1,"REPT(""x"",-1)",Error,ERROR,,Error,Invalid or error input for REPT
-OpenFormula,1.4,Medium,String,CODE,6.20.5,Happy_1,"CODE(""A"")",Number,65,,Exact,Typical valid input for CODE
-OpenFormula,1.4,Medium,String,CODE,6.20.5,Edge_1,CODE(CHAR(1)),Number,1,,Exact,Round-trips the lowest interoperable character code
-OpenFormula,1.4,Medium,String,CODE,6.20.5,Invalid_1,CODE(),Error,ERROR,,Error,Invalid or error input for CODE
-OpenFormula,1.4,Medium,String,CHAR,6.20.3,Happy_1,CHAR(65),Text,A,,Exact,Typical valid input for CHAR
-OpenFormula,1.4,Medium,String,CHAR,6.20.3,Edge_1,CHAR(127),Text,,,Exact,Handles the highest required ASCII code
-OpenFormula,1.4,Medium,String,CHAR,6.20.3,Invalid_1,CHAR(256),Error,ERROR,,Error,Rejects a character code above 255
-OpenFormula,1.4,Medium,String,CONCATENATE,6.20.6,Happy_1,"CONCATENATE(""Open"",""Formula"")",Text,OpenFormula,,Exact,Concatenates two text values
-OpenFormula,1.4,Medium,String,CONCATENATE,6.20.6,Edge_1,"CONCATENATE("""","""")",Text,,,Exact,Preserves an empty result
-OpenFormula,1.4,Medium,String,CONCATENATE,6.20.6,Invalid_1,CONCATENATE(),Error,ERROR,,Error,Rejects an empty parameter list
-OpenFormula,1.4,Small,String,FIND,6.20.9,Happy_1,"FIND(""M"",""OpenM"")",Number,5,,Exact,Returns a one-based text position
-OpenFormula,1.4,Small,String,FIND,6.20.9,Edge_1,"FIND(""O"",""OpenM"")",Number,1,,Exact,Finds text at the first position
-OpenFormula,1.4,Small,String,FIND,6.20.9,Invalid_1,"FIND(""z"",""OpenM"")",Error,ERROR,,Error,Errors when the search text is absent
-OpenFormula,1.4,Small,String,MID,6.20.15,Happy_1,"MID(""OpenM"",2,3)",Text,pen,,Exact,Returns the requested substring
-OpenFormula,1.4,Small,String,MID,6.20.15,Edge_1,"MID(""OpenM"",1,0)",Text,,,Exact,Returns empty text for zero length
-OpenFormula,1.4,Small,String,MID,6.20.15,Invalid_1,"MID(""OpenM"",0,2)",Error,ERROR,,Error,Rejects a start position below one
-OpenFormula,1.4,Small,String,UPPER,6.20.27,Happy_1,"UPPER(""OpenM"")",Text,OPENM,,Exact,Typical valid input for UPPER
-OpenFormula,1.4,Small,String,UPPER,6.20.27,Edge_1,"UPPER("""")",Text,,,Exact,Boundary input for UPPER
-OpenFormula,1.4,Small,String,UPPER,6.20.27,Invalid_1,UPPER(),Error,ERROR,,Error,Invalid or error input for UPPER
-OpenFormula,1.4,Small,String,LOWER,6.20.14,Happy_1,"LOWER(""open m"")",Text,open m,,Exact,Typical valid input for LOWER
-OpenFormula,1.4,Small,String,LOWER,6.20.14,Edge_1,"LOWER("""")",Text,,,Exact,Boundary input for LOWER
-OpenFormula,1.4,Small,String,LOWER,6.20.14,Invalid_1,LOWER(),Error,ERROR,,Error,Invalid or error input for LOWER
-OpenFormula,1.4,Small,String,PROPER,6.20.16,Happy_1,"PROPER(""open m"")",Text,Open M,,Exact,Typical valid input for PROPER
-OpenFormula,1.4,Small,String,PROPER,6.20.16,Edge_1,"PROPER("""")",Text,,,Exact,Boundary input for PROPER
-OpenFormula,1.4,Small,String,PROPER,6.20.16,Invalid_1,PROPER(),Error,ERROR,,Error,Invalid or error input for PROPER
-OpenFormula,1.4,Small,String,SUBSTITUTE,6.20.21,Happy_1,"SUBSTITUTE(""a-b-a"",""a"",""x"")",Text,x-b-x,,Exact,Replaces every matching occurrence
-OpenFormula,1.4,Small,String,SUBSTITUTE,6.20.21,Edge_1,"SUBSTITUTE(""abc"",""z"",""x"")",Text,abc,,Exact,Leaves text unchanged without a match
-OpenFormula,1.4,Small,String,SUBSTITUTE,6.20.21,Invalid_1,SUBSTITUTE(),Error,ERROR,,Error,Rejects missing required parameters
-OpenFormula,1.4,Small,String,REPLACE,6.20.17,Happy_1,"REPLACE(""OpenM"",2,3,""XX"")",Text,OXXM,,Exact,Replaces text by position and length
-OpenFormula,1.4,Small,String,REPLACE,6.20.17,Edge_1,"REPLACE(""OpenM"",1,0,"""")",Text,OpenM,,Exact,Allows a zero replacement length
-OpenFormula,1.4,Small,String,REPLACE,6.20.17,Invalid_1,REPLACE(),Error,ERROR,,Error,Rejects missing required parameters
-OpenFormula,1.4,Small,Date,DATE,6.10.2,Happy_1,"DAY(DATE(2024,1,1))",Number,1,,Exact,Constructs a Gregorian date independently of the host epoch
-OpenFormula,1.4,Small,Date,DATE,6.10.2,Edge_1,"DAY(DATE(2000,2,29))",Number,29,,Exact,Constructs a valid leap-day date
-OpenFormula,1.4,Small,Date,DATE,6.10.2,Invalid_1,"DATE(""x"",1,1)",Error,ERROR,,Error,Invalid or error input for DATE
-OpenFormula,1.4,Small,Date,DAY,6.10.5,Happy_1,"DAY(DATE(2024,1,31))",Number,31,,Exact,Extracts the day of month from a date
-OpenFormula,1.4,Small,Date,DAY,6.10.5,Edge_1,"DAY(DATE(2000,2,29))",Number,29,,Exact,Extracts a leap-day boundary
-OpenFormula,1.4,Small,Date,DAY,6.10.5,Invalid_1,"DAY(""x"")",Error,ERROR,,Error,Invalid or error input for DAY
-OpenFormula,1.4,Small,Date,MONTH,6.10.14,Happy_1,"MONTH(DATE(2024,12,1))",Number,12,,Exact,Extracts the month from a date
-OpenFormula,1.4,Small,Date,MONTH,6.10.14,Edge_1,"MONTH(DATE(2024,1,1))",Number,1,,Exact,Extracts the first month
-OpenFormula,1.4,Small,Date,MONTH,6.10.14,Invalid_1,"MONTH(""x"")",Error,ERROR,,Error,Invalid or error input for MONTH
-OpenFormula,1.4,Small,Date,YEAR,6.10.24,Happy_1,"YEAR(DATE(2024,1,1))",Number,2024,,Exact,Extracts the year from a date
-OpenFormula,1.4,Small,Date,YEAR,6.10.24,Edge_1,"YEAR(DATE(1904,1,1))",Number,1904,,Exact,Handles the minimum conforming DATE year
-OpenFormula,1.4,Small,Date,YEAR,6.10.24,Invalid_1,"YEAR(""x"")",Error,ERROR,,Error,Invalid or error input for YEAR
-OpenFormula,1.4,Medium,Date,EOMONTH,6.10.10,Happy_1,"DAY(EOMONTH(DATE(2024,1,1),0))",Number,31,,Exact,Returns the final day of the current month
-OpenFormula,1.4,Medium,Date,EOMONTH,6.10.10,Edge_1,"MONTH(EOMONTH(DATE(2024,1,1),1))",Number,2,,Exact,Moves to the end of the following month
-OpenFormula,1.4,Medium,Date,EOMONTH,6.10.10,Invalid_1,"EOMONTH(""x"",0)",Error,ERROR,,Error,Invalid or error input for EOMONTH
-OpenFormula,1.4,Small,Date,WEEKDAY,6.10.21,Happy_1,"WEEKDAY(DATE(2024,1,1))",Number,2,,Exact,Returns Monday using the default Sunday-first system
-OpenFormula,1.4,Small,Date,WEEKDAY,6.10.21,Edge_1,"WEEKDAY(DATE(1899,12,30))",Number,7,,Exact,Handles the OM Core date epoch
-OpenFormula,1.4,Small,Date,WEEKDAY,6.10.21,Invalid_1,"WEEKDAY(""x"")",Error,ERROR,,Error,Rejects non-date text
-OpenFormula,1.4,Medium,Date,WEEKNUM,6.10.22,Happy_1,"WEEKNUM(DATE(2024,1,1))",Number,1,,Exact,Returns the week containing the first day of the year
-OpenFormula,1.4,Medium,Date,WEEKNUM,6.10.22,Edge_1,"WEEKNUM(DATE(2024,12,31))",Number,53,,Exact,Handles the year-end boundary
-OpenFormula,1.4,Medium,Date,WEEKNUM,6.10.22,Invalid_1,"WEEKNUM(""x"")",Error,ERROR,,Error,Rejects non-date text
-OpenFormula,1.4,Small,Date,TODAY,6.10.20,Happy_1,TODAY()=TODAY(),Logical,TRUE,,Property,Typical valid input for TODAY
-OpenFormula,1.4,Small,Date,TODAY,6.10.20,Edge_1,TODAY()>45000,Logical,TRUE,,Property,Boundary input for TODAY
-OpenFormula,1.4,Small,Date,TODAY,6.10.20,Invalid_1,TODAY(1),Error,ERROR,,Error,Invalid or error input for TODAY
-OpenFormula,1.4,Small,Date,NOW,6.10.16,Happy_1,NOW()=NOW(),Logical,TRUE,,Property,Typical valid input for NOW
-OpenFormula,1.4,Small,Date,NOW,6.10.16,Edge_1,NOW()>45000,Logical,TRUE,,Property,Boundary input for NOW
-OpenFormula,1.4,Small,Date,NOW,6.10.16,Invalid_1,NOW(1),Error,ERROR,,Error,Invalid or error input for NOW
-OpenFormula,1.4,Small,Financial,NPV,6.12.30,Happy_1,"NPV(0.1,100,100)",Number,173.55371900826447,1e-9,Tolerance,Discounts periodic cash flows
-OpenFormula,1.4,Small,Financial,NPV,6.12.30,Edge_1,"NPV(0,10,20)",Number,30,,Exact,Handles a zero discount rate
-OpenFormula,1.4,Small,Financial,NPV,6.12.30,Invalid_1,"NPV(-1,10)",Error,ERROR,,Error,Rejects a rate of negative one
-OpenFormula,1.4,Small,Financial,IRR,6.12.24,Happy_1,"ROUND(IRR(-100,60,60),6)",Number,0.130662,1e-9,Tolerance,Finds the periodic internal rate of return
-OpenFormula,1.4,Small,Financial,IRR,6.12.24,Edge_1,"IRR(-100,100)",Number,0,,Exact,Handles a zero-return series
-OpenFormula,1.4,Small,Financial,IRR,6.12.24,Invalid_1,"IRR(1,2)",Error,ERROR,,Error,Fails when no sign-changing solution exists
-OpenFormula,1.4,Medium,Financial,XIRR,6.12.51,Happy_1,"ROUND(XIRR(-100,110,DATE(2024,1,1),DATE(2025,1,1)),6)",Number,0.1,1e-9,Tolerance,Finds a dated internal rate of return
-OpenFormula,1.4,Medium,Financial,XIRR,6.12.51,Edge_1,"XIRR(-100,100,DATE(2024,1,1),DATE(2025,1,1))",Number,0,,Exact,Handles a zero dated return
-OpenFormula,1.4,Medium,Financial,XIRR,6.12.51,Invalid_1,"XIRR(1,2,DATE(2024,1,1),DATE(2025,1,1))",Error,ERROR,,Error,Fails when no sign-changing solution exists
-OpenFormula,1.4,Small,Lookup,INDEX,6.14.6,Happy_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Number,10,,Exact,Returns the first value from a reference
-OpenFormula,1.4,Small,Lookup,INDEX,6.14.6,Edge_1,"INDEX(MockCube::Mock_Row.R1:Mock_Col.C1,1)",Number,10,,Exact,Handles a single-cell reference
-OpenFormula,1.4,Small,Lookup,INDEX,6.14.6,Invalid_1,INDEX(),Error,ERROR,,Error,Rejects missing parameters
-OpenFormula,1.4,Medium,Lookup,OFFSET,6.14.11,Happy_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,0)",Number,10,,Exact,Returns an unshifted reference
-OpenFormula,1.4,Medium,Lookup,OFFSET,6.14.11,Edge_1,"OFFSET(MockCube::Mock_Row.R1:Mock_Col.C1,0,1)",Number,20,,Exact,Offsets by one column
-OpenFormula,1.4,Medium,Lookup,OFFSET,6.14.11,Invalid_1,OFFSET(),Error,ERROR,,Error,Rejects missing parameters
-OpenFormula,1.4,Small,Lookup,MATCH,6.14.9,Happy_1,"MATCH(10,MockCube::Mock_Row.R1:Mock_Col.C1,0)",Number,1,,Exact,Finds an exact match
-OpenFormula,1.4,Small,Lookup,MATCH,6.14.9,Edge_1,"MATCH(999,MockCube::Mock_Row.R1:Mock_Col.C1,0)",Error,#N/A,,Error,Returns not-available when absent
-OpenFormula,1.4,Small,Lookup,MATCH,6.14.9,Invalid_1,MATCH(),Error,ERROR,,Error,Rejects missing parameters
-OpenFormula,1.4,Medium,Lookup,LOOKUP,6.14.8,Happy_1,"LOOKUP(10,MockCube::Mock_Row.R1:Mock_Col.C1)",Number,10,,Exact,Finds a value in a reference
-OpenFormula,1.4,Medium,Lookup,LOOKUP,6.14.8,Edge_1,"LOOKUP(5,MockCube::Mock_Row.R1:Mock_Col.C1)",Error,#N/A,,Error,Returns not-available below the smallest value
-OpenFormula,1.4,Medium,Lookup,LOOKUP,6.14.8,Invalid_1,LOOKUP(),Error,ERROR,,Error,Rejects missing parameters
-OpenFormula,1.4,Small,Metadata,VALUE,6.13.34,Happy_1,"VALUE(""42"")",Number,42,,Exact,Converts integer text to a number
-OpenFormula,1.4,Small,Metadata,VALUE,6.13.34,Edge_1,"VALUE(""12.5"")",Number,12.5,,Exact,Converts decimal text to a number
-OpenFormula,1.4,Small,Metadata,VALUE,6.13.34,Invalid_1,"VALUE(""not-a-number"")",Error,ERROR,,Error,Rejects text without a numeric representation
-OpenFormula,1.4,Medium,Volatile,RAND,6.16.50,Happy_1,"AND(RAND()>=0,RAND()<1)",Logical,TRUE,,Property,Typical valid input for RAND
-OpenFormula,1.4,Medium,Volatile,RAND,6.16.50,Edge_1,"AND(RAND()>=0,RAND()<1)",Logical,TRUE,,Property,Boundary input for RAND
-OpenFormula,1.4,Medium,Volatile,RAND,6.16.50,Invalid_1,RAND(1),Error,ERROR,,Error,Invalid or error input for RAND
-OpenFormula,1.4,Medium,Volatile,RANDBETWEEN,6.16.51,Happy_1,"AND(RANDBETWEEN(1,3)>=1,RANDBETWEEN(1,3)<=3)",Logical,TRUE,,Property,Typical valid input for RANDBETWEEN
-OpenFormula,1.4,Medium,Volatile,RANDBETWEEN,6.16.51,Edge_1,"RANDBETWEEN(5,5)",Number,5,,Exact,Boundary input for RANDBETWEEN
-OpenFormula,1.4,Medium,Volatile,RANDBETWEEN,6.16.51,Invalid_1,"RANDBETWEEN(2,1)",Error,ERROR,,Error,Invalid or error input for RANDBETWEEN
-
+IEEE 754,2019,Strict,Math,ABS,§6.3,TC_MATH_ABS_001,ABS(-0.0),NUMBER,0.0,0,EQUALS,Negative zero shall be converted to positive zero.
+ISO/IEC 10967-2,2001,Core,Math,ABS,§5.2.1,TC_MATH_ABS_002,ABS(-42.5),NUMBER,42.5,0,EQUALS,Finite negative operand returns its magnitude.
+ISO/IEC 10967-2,2001,Core,Math,ABS,§5.2.1,TC_MATH_ABS_003,ABS(1/0),ERROR,#DIV/0!,0,PROPAGATES_ERROR,Incoming division error is returned unchanged.
+ISO/IEC 26300-4,2015,Full,Math,ROUND,§6.17.5,TC_MATH_ROUND_001,"ROUND(2.675,2)",NUMBER,2.68,0,EQUALS,Binary-sensitive decimal midpoint rounds away from zero.
+ISO/IEC 26300-4,2015,Full,Math,ROUND,§6.17.5,TC_MATH_ROUND_002,"ROUND(-2.5,0)",NUMBER,-3,0,EQUALS,Negative midpoint rounds away from zero.
+ISO/IEC 26300-4,2015,Full,Math,ROUNDUP,§6.17.7,TC_MATH_ROUNDUP_001,"ROUNDUP(-1.231,2)",NUMBER,-1.24,0,EQUALS,Negative value rounds away from zero.
+ISO/IEC 26300-4,2015,Full,Math,ROUNDDOWN,§6.17.6,TC_MATH_ROUNDDOWN_001,"ROUNDDOWN(-1.239,2)",NUMBER,-1.23,0,EQUALS,Negative value rounds toward zero.
+ISO/IEC 10967-2,2001,Core,Math,PI,§5.2.2,TC_MATH_PI_001,PI(),NUMBER,3.141592653589793,1.5 ULP,ALMOST_EQUALS,Returns binary64 pi.
+ISO/IEC 26300-4,2015,Full,Math,PI,§6.16.40,TC_MATH_PI_002,PI(1),ERROR,#EXPRESSION!,0,ERROR_MATCH,Rejects an argument.
+ISO/IEC 10967-2,2001,Core,Math,LN,§5.2.3,TC_MATH_LN_001,LN(1),NUMBER,0,0,EQUALS,Natural logarithm identity.
+ISO/IEC 10967-2,2001,Core,Math,LN,§5.2.3,TC_MATH_LN_002,LN(0),ERROR,#NUM!,0,ERROR_MATCH,Zero is outside the logarithm domain.
+ISO/IEC 10967-2,2001,Core,Math,LOG,§5.2.3,TC_MATH_LOG_001,"LOG(8,2)",NUMBER,3,1e-9,ALMOST_EQUALS,Integer logarithm in base two.
+ISO/IEC 10967-2,2001,Core,Math,LOG,§5.2.3,TC_MATH_LOG_002,"LOG(10,1)",ERROR,#NUM!,0,ERROR_MATCH,Base one is invalid.
+ISO/IEC 10967-2,2001,Core,Math,LOG10,§5.2.3,TC_MATH_LOG10_001,LOG10(1000),NUMBER,3,1e-9,ALMOST_EQUALS,Common logarithm at a power of ten.
+ISO/IEC 10967-2,2001,Core,Math,LOG10,§5.2.3,TC_MATH_LOG10_002,LOG10(-5),ERROR,#NUM!,0,ERROR_MATCH,Negative operand is outside the real domain.
+ISO/IEC 10967-2,2001,Core,Math,EXP,§5.2.4,TC_MATH_EXP_001,EXP(0),NUMBER,1,0,EQUALS,Exponential identity.
+IEEE 754,2019,Strict,Math,EXP,§9.2.1,TC_MATH_EXP_002,EXP(1000),ERROR,#NUM!,0,ERROR_MATCH,Binary64 overflow is a numeric error.
+ISO/IEC 10967-2,2001,Core,Math,SQRT,§5.2.5,TC_MATH_SQRT_001,SQRT(4),NUMBER,2,0,EQUALS,Perfect square.
+ISO/IEC 10967-2,2001,Core,Math,SQRT,§5.2.5,TC_MATH_SQRT_002,SQRT(-1),ERROR,#NUM!,0,ERROR_MATCH,Negative operand is outside the real domain.
+IEEE 754,2019,Strict,Math,SQRT,§9.2.1,TC_MATH_SQRT_003,"SQRT(""#DIV/0!"")",ERROR,#DIV/0!,0,PROPAGATES_ERROR,Typed incoming CellError argument is returned immediately.
+IEEE 754,2019,Strict,Math,SQRT,§9.2.1,TC_MATH_SQRT_004,SQRT(1/0),ERROR,#DIV/0!,0,PROPAGATES_ERROR,Nested error short-circuits domain logic.
+ISO/IEC 10967-2,2001,Core,Math,POWER,§5.2.6,TC_MATH_POWER_001,"POWER(2,10)",NUMBER,1024,0,EQUALS,Exact integer power.
+ISO/IEC 10967-2,2001,Core,Math,POWER,§5.2.6,TC_MATH_POWER_002,"POWER(0,-1)",ERROR,#DIV/0!,0,ERROR_MATCH,Zero to a negative power divides by zero.
+ISO/IEC 26300-4,2015,Full,Math,SIGN,§6.17.9,TC_MATH_SIGN_001,SIGN(-7),NUMBER,-1,0,EQUALS,Negative classification.
+IEEE 754,2019,Strict,Math,SIGN,§6.3,TC_MATH_SIGN_002,SIGN(-0.0),NUMBER,0,0,EQUALS,Signed zero classifies as zero.
+ISO/IEC 26300-4,2015,Full,Math,INT,§6.17.2,TC_MATH_INT_001,INT(-3.9),NUMBER,-3,0,EQUALS,OM Core truncates toward zero.
+ISO/IEC 26300-4,2015,Full,Math,MOD,§6.17.3,TC_MATH_MOD_001,"MOD(-10,3)",NUMBER,2,0,EQUALS,Remainder takes the positive divisor sign.
+ISO/IEC 26300-4,2015,Full,Math,MOD,§6.17.3,TC_MATH_MOD_002,"MOD(10,-3)",NUMBER,-2,0,EQUALS,Remainder takes the negative divisor sign.
+ISO/IEC 26300-4,2015,Full,Math,MOD,§6.17.3,TC_MATH_MOD_003,"MOD(10,0)",ERROR,#DIV/0!,0,ERROR_MATCH,Zero divisor.
+ISO/IEC 26300-4,2015,Full,Math,QUOTIENT,§6.17.4,TC_MATH_QUOTIENT_001,"QUOTIENT(-10,3)",NUMBER,-3,0,EQUALS,Quotient truncates toward zero.
+ISO/IEC 26300-4,2015,Full,Math,FLOOR,§6.17.1,TC_MATH_FLOOR_001,"FLOOR(7.8,2)",NUMBER,6,0,EQUALS,Round down to a significance multiple.
+ISO/IEC 26300-4,2015,Full,Math,FLOOR,§6.17.1,TC_MATH_FLOOR_002,"FLOOR(5,0)",ERROR,#DIV/0!,0,ERROR_MATCH,Zero significance.
+ISO/IEC 26300-4,2015,Full,Math,CEILING,§6.17.10,TC_MATH_CEILING_001,"CEILING(-7.1,2)",NUMBER,-6,0,EQUALS,Round toward positive infinity.
+ISO/IEC 26300-4,2015,Full,Math,TRUNC,§6.17.11,TC_MATH_TRUNC_001,"TRUNC(-12.345,2)",NUMBER,-12.34,1e-9,ALMOST_EQUALS,Truncate at two decimals toward zero.
+ISO/IEC 10967-2,2001,Core,Trigonometric,SIN,§5.3.1,TC_TRIG_SIN_001,SIN(PI()/2),NUMBER,1,1e-9,ALMOST_EQUALS,Sine at pi over two.
+ISO/IEC 10967-2,2001,Core,Trigonometric,COS,§5.3.2,TC_TRIG_COS_001,COS(PI()),NUMBER,-1,1e-9,ALMOST_EQUALS,Cosine at pi.
+ISO/IEC 10967-2,2001,Core,Trigonometric,TAN,§5.3.3,TC_TRIG_TAN_001,TAN(PI()/4),NUMBER,1,1e-9,ALMOST_EQUALS,Tangent at pi over four.
+ISO/IEC 10967-2,2001,Core,Trigonometric,ASIN,§5.3.4,TC_TRIG_ASIN_001,ASIN(1),NUMBER,1.5707963267948966,1.5 ULP,ALMOST_EQUALS,Upper domain endpoint.
+ISO/IEC 10967-2,2001,Core,Trigonometric,ASIN,§5.3.4,TC_TRIG_ASIN_002,ASIN(1.0000001),ERROR,#NUM!,0,ERROR_MATCH,Operand above one.
+ISO/IEC 10967-2,2001,Core,Trigonometric,ACOS,§5.3.5,TC_TRIG_ACOS_001,ACOS(1),NUMBER,0,0,EQUALS,Upper domain endpoint.
+ISO/IEC 10967-2,2001,Core,Trigonometric,ACOS,§5.3.5,TC_TRIG_ACOS_002,ACOS(-1.0000001),ERROR,#NUM!,0,ERROR_MATCH,Operand below minus one.
+ISO/IEC 10967-2,2001,Core,Trigonometric,ATAN,§5.3.6,TC_TRIG_ATAN_001,ATAN(1),NUMBER,0.7853981633974483,1.5 ULP,ALMOST_EQUALS,Arctangent at one.
+IEEE 754,2019,Strict,Trigonometric,ATAN2,§9.2.1,TC_TRIG_ATAN2_001,"ATAN2(+0.0,-1.0)",NUMBER,3.1415926535,1e-9,ALMOST_EQUALS,Positive zero ordinate selects positive pi.
+IEEE 754,2019,Strict,Trigonometric,ATAN2,§9.2.1,TC_TRIG_ATAN2_002,"ATAN2(-0.0,-1.0)",NUMBER,-3.1415926535,1e-9,ALMOST_EQUALS,Negative zero ordinate selects negative pi.
+ISO/IEC 26300-4,2015,Full,Trigonometric,RADIANS,§6.16.44,TC_TRIG_RADIANS_001,RADIANS(180),NUMBER,3.141592653589793,1.5 ULP,ALMOST_EQUALS,Degrees to radians.
+ISO/IEC 26300-4,2015,Full,Trigonometric,DEGREES,§6.16.18,TC_TRIG_DEGREES_001,DEGREES(PI()),NUMBER,180,1e-9,ALMOST_EQUALS,Radians to degrees.
+ISO/IEC 26300-4,2015,Full,Date,DATE,§6.10.2,TC_DATE_DATE_001,"DATE(1899,12,30)",NUMBER,0,0,EQUALS,OpenFormula epoch evaluates to serial zero.
+ISO/IEC 26300-4,2015,Strict,Date,DATE,§6.10.2,TC_DATE_DATE_002,"DATE(1900,2,29)",ERROR,#VALUE!,0,ERROR_MATCH,Gregorian 1900 is not a leap year.
+ISO/IEC 26300-4,2015,Full,Date,DATE,§6.10.2,TC_DATE_DATE_003,"DATE(2000,2,29)",NUMBER,36585,0,EQUALS,Century divisible by 400 accepts leap day.
+ISO/IEC 26300-4,2015,Full,Date,DAY,§6.10.5,TC_DATE_DAY_001,DAY(0),NUMBER,30,0,EQUALS,Epoch day of month.
+ISO/IEC 26300-4,2015,Full,Date,MONTH,§6.10.14,TC_DATE_MONTH_001,MONTH(0),NUMBER,12,0,EQUALS,Epoch month.
+ISO/IEC 26300-4,2015,Full,Date,YEAR,§6.10.24,TC_DATE_YEAR_001,YEAR(0),NUMBER,1899,0,EQUALS,Epoch year.
+ISO/IEC 26300-4,2015,Full,Date,EOMONTH,§6.10.10,TC_DATE_EOMONTH_001,"DAY(EOMONTH(DATE(2024,2,1),0))",NUMBER,29,0,EQUALS,Leap-year February end.
+ISO/IEC 26300-4,2015,Full,Date,WEEKDAY,§6.10.21,TC_DATE_WEEKDAY_001,"WEEKDAY(DATE(2024,1,1),2)",NUMBER,1,0,EQUALS,Monday-first numbering.
+ISO/IEC 26300-4,2015,Full,Date,WEEKDAY,§6.10.21,TC_DATE_WEEKDAY_002,"WEEKDAY(DATE(2024,1,1),99)",ERROR,#NUM!,0,ERROR_MATCH,Unsupported return type.
+ISO/IEC 26300-4,2015,Full,Date,WEEKNUM,§6.10.22,TC_DATE_WEEKNUM_001,"WEEKNUM(DATE(2021,1,4),21)",NUMBER,1,0,EQUALS,ISO week one boundary.
+ISO/IEC 26300-4,2015,Full,Date,WEEKNUM,§6.10.22,TC_DATE_WEEKNUM_002,"WEEKNUM(DATE(2024,1,1),99)",ERROR,#NUM!,0,ERROR_MATCH,Unsupported week mode.
+ISO/IEC 26300-4,2015,Full,Date,TODAY,§6.10.19,TC_DATE_TODAY_001,TODAY()-TODAY(),NUMBER,0,0,EQUALS,Repeated calls use the same day.
+ISO/IEC 26300-4,2015,Full,Date,NOW,§6.10.15,TC_DATE_NOW_001,NOW()-NOW(),NUMBER,0,1e-9,ALMOST_EQUALS,Repeated calls are stable within tolerance.
+ISO/IEC 26300-4,2015,Full,Aggregate,SUM,§6.16.61,TC_AGG_SUM_001,"SUM(10,-4,2.5)",NUMBER,8.5,0,EQUALS,Mixed-sign aggregation.
+ISO/IEC 26300-4,2015,Full,Aggregate,SUM,§6.16.61,TC_AGG_SUM_002,SUM(1/0),ERROR,#DIV/0!,0,PROPAGATES_ERROR,Propagates incoming error.
+ISO/IEC 26300-4,2015,Full,Aggregate,MIN,§6.18.48,TC_AGG_MIN_001,"MIN(0,-5,9)",NUMBER,-5,0,EQUALS,Least signed value.
+ISO/IEC 26300-4,2015,Full,Aggregate,MAX,§6.18.44,TC_AGG_MAX_001,"MAX(0,-5,9)",NUMBER,9,0,EQUALS,Greatest signed value.
+ISO/IEC 26300-4,2015,Full,Aggregate,AVERAGE,§6.18.3,TC_AGG_AVERAGE_001,"AVERAGE(2,4,6)",NUMBER,4,0,EQUALS,Arithmetic mean.
+ISO/IEC 26300-4,2015,Full,Aggregate,AVERAGE,§6.18.3,TC_AGG_AVERAGE_002,AVERAGE(),ERROR,#DIV/0!,0,ERROR_MATCH,Empty mean.
+ISO/IEC 26300-4,2015,Full,Aggregate,AVG,§6.18.3,TC_AGG_AVG_001,"AVG(1,2,6)",NUMBER,3,0,EQUALS,OM Core mean alias.
+ISO/IEC 26300-4,2015,Full,Aggregate,COUNT,§6.18.8,TC_AGG_COUNT_001,"COUNT(1,""x"",2)",NUMBER,2,0,EQUALS,Counts numeric operands only.
+ISO/IEC 26300-4,2015,Full,Aggregate,COUNTA,§6.18.9,TC_AGG_COUNTA_001,"COUNTA(1,""x"",0)",NUMBER,3,0,EQUALS,Counts nonblank operands.
+ISO/IEC 26300-4,2015,Full,Aggregate,COUNTIF,§6.18.10,TC_AGG_COUNTIF_001,"COUNTIF(5,"">3"")",NUMBER,1,0,EQUALS,Scalar criterion match.
+ISO/IEC 26300-4,2015,Full,Aggregate,COUNTIFS,§6.18.11,TC_AGG_COUNTIFS_001,"COUNTIFS(5,"">3"",5,""<10"")",NUMBER,1,0,EQUALS,All criteria match.
+ISO/IEC 26300-4,2015,Full,Aggregate,SUMIF,§6.18.63,TC_AGG_SUMIF_001,"SUMIF(5,"">3"",7)",NUMBER,7,0,EQUALS,Matching criterion contributes value.
+ISO/IEC 26300-4,2015,Full,Aggregate,SUMIFS,§6.18.64,TC_AGG_SUMIFS_001,"SUMIFS(7,5,"">3"",8,""<10"")",NUMBER,7,0,EQUALS,All criteria include sum value.
+ISO/IEC 26300-4,2015,Full,Logical,IF,§6.15.4,TC_LOGIC_IF_001,"IF(TRUE(),""yes"",""no"")",STRING,yes,0,EQUALS,True branch.
+ISO/IEC 26300-4,2015,Strict,Logical,IF,§6.15.4,TC_LOGIC_IF_002,"IF(TRUE(),42,1/0)",NUMBER,42,0,EQUALS,Unselected error branch is not evaluated.
+ISO/IEC 26300-4,2015,Full,Logical,AND,§6.15.2,TC_LOGIC_AND_001,"AND(TRUE(),FALSE())",NUMBER,0.0,0,EQUALS,One false operand returns the numeric logical value 0.0.
+ISO/IEC 26300-4,2015,Full,Logical,OR,§6.15.8,TC_LOGIC_OR_001,"OR(FALSE(),TRUE())",NUMBER,1.0,0,EQUALS,One true operand returns the numeric logical value 1.0.
+ISO/IEC 26300-4,2015,Full,Logical,NOT,§6.15.7,TC_LOGIC_NOT_001,NOT(TRUE()),NUMBER,0.0,0,EQUALS,Negating true returns the numeric logical value 0.0.
+ISO/IEC 26300-4,2015,Full,Logical,NOT,§6.15.7,TC_LOGIC_NOT_002,NOT(1/0),ERROR,#DIV/0!,0,PROPAGATES_ERROR,Propagates incoming error.
+ISO/IEC 26300-4,2015,Full,Logical,XOR,§6.15.10,TC_LOGIC_XOR_001,"XOR(TRUE(),FALSE())",NUMBER,1.0,0,EQUALS,Odd true parity returns the numeric logical value 1.0.
+ISO/IEC 26300-4,2015,Full,Logical,TRUE,§6.15.9,TC_LOGIC_TRUE_001,TRUE(),NUMBER,1.0,0,EQUALS,TRUE returns the numeric logical value 1.0.
+ISO/IEC 26300-4,2015,Full,Logical,FALSE,§6.15.3,TC_LOGIC_FALSE_001,FALSE(),NUMBER,0.0,0,EQUALS,FALSE returns the numeric logical value 0.0.
+ISO/IEC 26300-4,2015,Full,Logical,IFERROR,§6.15.5,TC_LOGIC_IFERROR_001,"IFERROR(1/0,99)",NUMBER,99,0,EQUALS,Fallback for typed error.
+ISO/IEC 26300-4,2015,Strict,Logical,IFERROR,§6.15.5,TC_LOGIC_IFERROR_002,"IFERROR(7,1/0)",NUMBER,7,0,EQUALS,Unused fallback error is short-circuited.
+ISO/IEC 10646,2020,Full,String,LEN,§2.2,TC_STRING_LEN_001,"LEN(""A😀B"")",NUMBER,3,0,EQUALS,Counts Unicode scalar characters.
+ISO/IEC 26300-4,2015,Full,String,TRIM,§6.20.31,TC_STRING_TRIM_001,"TRIM(""  alpha  "")",STRING,alpha,0,EQUALS,Removes boundary spaces.
+ISO/IEC 26300-4,2015,Full,String,LEFT,§6.20.12,TC_STRING_LEFT_001,"LEFT(""OpenM"",4)",STRING,Open,0,EQUALS,Requested prefix.
+ISO/IEC 26300-4,2015,Full,String,RIGHT,§6.20.24,TC_STRING_RIGHT_001,"RIGHT(""OpenM"",2)",STRING,nM,0,EQUALS,Requested suffix.
+ISO/IEC 26300-4,2015,Full,String,REPT,§6.20.23,TC_STRING_REPT_001,"REPT(""ab"",3)",STRING,ababab,0,EQUALS,Repeated text.
+ISO/IEC 26300-4,2015,Full,String,REPT,§6.20.23,TC_STRING_REPT_002,"REPT(""x"",-1)",ERROR,#VALUE!,0,ERROR_MATCH,Negative count.
+ISO/IEC 10646,2020,Full,String,CODE,§2.2,TC_STRING_CODE_001,"CODE(""A"")",NUMBER,65,0,EQUALS,Basic Latin code point.
+ISO/IEC 10646,2020,Full,String,CODE,§2.2,TC_STRING_CODE_002,"CODE("""")",ERROR,#VALUE!,0,ERROR_MATCH,Empty string has no first character.
+ISO/IEC 10646,2020,Full,String,CHAR,§2.2,TC_STRING_CHAR_001,CHAR(65),STRING,A,0,EQUALS,Code 65 maps to A.
+ISO/IEC 10646,2020,Full,String,CHAR,§2.2,TC_STRING_CHAR_002,CHAR(0),ERROR,#VALUE!,0,ERROR_MATCH,Zero code is unsupported.
+ISO/IEC 26300-4,2015,Full,String,CONCAT,§6.20.8,TC_STRING_CONCAT_001,"CONCAT(""Open"",""M"",2026)",STRING,OpenM2026,0,EQUALS,Text and number concatenation.
+ISO/IEC 26300-4,2015,Full,String,CONCATENATE,§6.20.8,TC_STRING_CONCATENATE_001,"CONCATENATE(""a"",""b"",""c"")",STRING,abc,0,EQUALS,Legacy alias concatenation.
+ISO/IEC 26300-4,2015,Full,String,FIND,§6.20.10,TC_STRING_FIND_001,"FIND(""M"",""OpenM"")",NUMBER,5,0,EQUALS,One-based case-sensitive index.
+ISO/IEC 26300-4,2015,Full,String,FIND,§6.20.10,TC_STRING_FIND_002,"FIND(""m"",""OpenM"")",ERROR,#VALUE!,0,ERROR_MATCH,Case mismatch.
+ISO/IEC 26300-4,2015,Full,String,MID,§6.20.17,TC_STRING_MID_001,"MID(""abcdef"",2,3)",STRING,bcd,0,EQUALS,Interior substring.
+ISO/IEC 26300-4,2015,Full,String,MID,§6.20.17,TC_STRING_MID_002,"MID(""abc"",0,1)",ERROR,#VALUE!,0,ERROR_MATCH,Start below one.
+ISO/IEC 10646,2020,Full,String,UPPER,§3.13,TC_STRING_UPPER_001,"UPPER(""Straße"")",STRING,STRASSE,0,EQUALS,Unicode uppercase expansion.
+ISO/IEC 10646,2020,Full,String,LOWER,§3.13,TC_STRING_LOWER_001,"LOWER(""ÉLAN"")",STRING,élan,0,EQUALS,Unicode lowercase mapping.
+ISO/IEC 10646,2020,Full,String,PROPER,§3.13,TC_STRING_PROPER_001,"PROPER(""open model"")",STRING,Open Model,0,EQUALS,Word title casing.
+ISO/IEC 26300-4,2015,Full,String,SUBSTITUTE,§6.20.27,TC_STRING_SUBSTITUTE_001,"SUBSTITUTE(""a-b-a"",""a"",""x"",2)",STRING,a-b-x,0,EQUALS,Selected occurrence replacement.
+ISO/IEC 26300-4,2015,Full,String,REPLACE,§6.20.22,TC_STRING_REPLACE_001,"REPLACE(""abcdef"",2,3,""X"")",STRING,aXef,0,EQUALS,One-based span replacement.
+ISO/IEC 26300-4,2015,Full,String,VALUE,§6.13.34,TC_STRING_VALUE_001,"VALUE(""12.5"")",NUMBER,12.5,0,EQUALS,Decimal text conversion.
+ISO/IEC 26300-4,2015,Full,String,VALUE,§6.13.34,TC_STRING_VALUE_002,"VALUE(""abc"")",ERROR,#VALUE!,0,ERROR_MATCH,Nonnumeric text.
+OM Core,2026,Full,Hierarchy,LABEL,§Metadata.LABEL,TC_HIER_LABEL_001,LABEL(Org),STRING,North,0,EQUALS,Fixture current coordinate Org.North returns its label.
+OM Core,2026,Full,Hierarchy,POS,§Metadata.POS,TC_HIER_POS_001,POS(Org),NUMBER,2,0,EQUALS,Fixture Org.North has one-based position two.
+OM Core,2026,Full,Hierarchy,POSMAX,§Metadata.POSMAX,TC_HIER_POSMAX_001,POSMAX(Org),NUMBER,3,0,EQUALS,Fixture Org contains three items.
+OM Core,2026,Full,Hierarchy,ANCE,§Hierarchy.ANCE,TC_HIER_ANCE_001,"JOIN(ANCE(Org.North),"","")",STRING,Org.Total,0,EQUALS,Fixture leaf returns ancestor Total.
+OM Core,2026,Full,Hierarchy,PEER,§Hierarchy.PEER,TC_HIER_PEER_001,"JOIN(PEER(Org.North),"","")",STRING,"Org.North,Org.South",0,EQUALS,Fixture returns same-level peers.
+OM Core,2026,Full,Hierarchy,SIBL,§Hierarchy.SIBL,TC_HIER_SIBL_001,"JOIN(SIBL(Org.North),"","")",STRING,Org.South,0,EQUALS,Fixture returns sibling.
+OM Core,2026,Full,Hierarchy,DESC,§Hierarchy.DESC,TC_HIER_DESC_001,"JOIN(DESC(Org.Total),"","")",STRING,"Org.North,Org.South",0,EQUALS,Fixture parent returns descendant leaves.
+OM Core,2026,Full,Hierarchy,CHIL,§Hierarchy.CHIL,TC_HIER_CHIL_001,"JOIN(CHIL(Org.Total),"","")",STRING,"Org.North,Org.South",0,EQUALS,Fixture parent returns immediate children.
+OM Core,2026,Full,Hierarchy,PARE,§Hierarchy.PARE,TC_HIER_PARE_001,"JOIN(PARE(Org.North),"","")",STRING,Org.Total,0,EQUALS,Fixture leaf returns parent.
+OM Core,2026,Full,Hierarchy,JOIN,§Array.JOIN,TC_HIER_JOIN_001,"JOIN(CHIL(Org.Total),""|"")",STRING,Org.North|Org.South,0,EQUALS,Joins list with delimiter.
+OM Core,2026,Full,Hierarchy,SLICE,§Array.SLICE,TC_HIER_SLICE_001,SUM(SLICE(Org.North)),NUMBER,10,0,EQUALS,Fixture slice resolves North value.
+OM Core,2026,Full,Hierarchy,REF,§Array.REF,TC_HIER_REF_001,"JOIN(REF(Org.North),"","")",STRING,Org.North,0,EQUALS,Fixture reference exposes coordinate.
+IEC 61966-2-1,1999,Full,Color,RGB,§4.2,TC_COLOR_RGB_001,"RGB(255,0,128)",STRING,#FF0080,0,EQUALS,Channel endpoints encode as uppercase sRGB hex.
+IEC 61966-2-1,1999,Full,Color,RGB,§4.2,TC_COLOR_RGB_002,"RGB(-1,300,12.9)",STRING,#00FF0C,0,EQUALS,Channels clamp and truncate fractions.
+IEC 61966-2-1,1999,Full,Color,RGB,§4.2,TC_COLOR_RGB_003,"RGB(1/0,0,0)",ERROR,#DIV/0!,0,PROPAGATES_ERROR,Propagates incoming error.
+IEC 61966-2-1,1999,Full,Color,HSV2RGB,§4.2,TC_COLOR_HSV2RGB_001,"HSV2RGB(0,100,100)",STRING,#FF0000,0,EQUALS,Full-saturation red.
+IEC 61966-2-1,1999,Full,Color,HSV2RGB,§4.2,TC_COLOR_HSV2RGB_002,"HSV2RGB(120,100,100)",STRING,#00FF00,0,EQUALS,Full-saturation green.
+IEC 61966-2-1,1999,Full,Color,HSV2RGB,§4.2,TC_COLOR_HSV2RGB_003,"HSV2RGB(360,100,100)",STRING,#FF0000,0,EQUALS,Hue wraps modulo 360.
+IEC 61966-2-1,1999,Full,Color,COLORMAP,§4.2,TC_COLOR_COLORMAP_001,"COLORMAP(""viridis"",0)",STRING,#440154,0,EQUALS,Viridis lower endpoint.
+IEC 61966-2-1,1999,Full,Color,COLORMAP,§4.2,TC_COLOR_COLORMAP_002,"COLORMAP(""grayscale"",1)",STRING,#ffffff,0,EQUALS,Grayscale upper endpoint.
+IEC 61966-2-1,1999,Full,Color,COLORMAP,§4.2,TC_COLOR_COLORMAP_003,"COLORMAP(""unknown"",0.5)",ERROR,#VALUE!,0,ERROR_MATCH,Unknown palette.
+ISO/IEC 26300-2,2015,Full,Lookup,INDEX,§6.14.6,TC_LOOKUP_INDEX_001,"INDEX(MockCube::Row.Data1:Column.C1..C3,1,2)",NUMBER,20,0,EQUALS,Returns the second column from the fixture row.
+ISO/IEC 26300-2,2015,Full,Lookup,INDEX,§6.14.6,TC_LOOKUP_INDEX_002,"INDEX(MockCube::Row.Data1:Column.C1..C3,1,4)",ERROR,#VALUE!,0,ERROR_MATCH,Column index beyond the reference is rejected.
+ISO/IEC 26300-2,2015,Full,Lookup,OFFSET,§6.14.11,TC_LOOKUP_OFFSET_001,"OFFSET(MockCube::Row.Data1:Column.C1,0,1)",NUMBER,20,0,EQUALS,Offsets one column to the right.
+ISO/IEC 26300-2,2015,Full,Lookup,OFFSET,§6.14.11,TC_LOOKUP_OFFSET_002,"OFFSET(MockCube::Row.Data1:Column.C1,-1,0)",NUMBER,1,0,EQUALS,Offsets one row upward to the header.
+ISO/IEC 26300-2,2015,Full,Lookup,MATCH,§6.14.9,TC_LOOKUP_MATCH_001,"MATCH(20,MockCube::Row.Data1:Column.C1..C3,0)",NUMBER,2,0,EQUALS,Exact match returns a one-based position.
+ISO/IEC 26300-2,2015,Full,Lookup,MATCH,§6.14.9,TC_LOOKUP_MATCH_002,"MATCH(999,MockCube::Row.Data1:Column.C1..C3,0)",ERROR,#N/A,0,ERROR_MATCH,Missing exact value returns not-available.
+ISO/IEC 26300-2,2015,Full,Lookup,LOOKUP,§6.14.8,TC_LOOKUP_LOOKUP_001,"LOOKUP(20,MockCube::Row.Data1:Column.C1..C3)",NUMBER,20,0,EQUALS,Finds an exact value in an ordered vector.
+ISO/IEC 26300-2,2015,Full,Lookup,LOOKUP,§6.14.8,TC_LOOKUP_LOOKUP_002,"LOOKUP(5,MockCube::Row.Data1:Column.C1..C3)",ERROR,#N/A,0,ERROR_MATCH,Value below the ordered vector minimum is unavailable.
+ISO/IEC 26300-2,2015,Full,Financial,NPV,§6.12.30,TC_FIN_NPV_001,"NPV(0.1,100,100)",NUMBER,173.55371900826447,1e-9,ALMOST_EQUALS,DCF discounts end-of-period cash flows at ten percent.
+ISO/IEC 26300-2,2015,Strict,Financial,NPV,§6.12.30,TC_FIN_NPV_002,"NPV(0,10,20)",NUMBER,30,0,EQUALS,Zero discount rate preserves nominal cash flows.
+ISO/IEC 26300-2,2015,Strict,Financial,NPV,§6.12.30,TC_FIN_NPV_003,"NPV(-1,10)",ERROR,#NUM!,0,ERROR_MATCH,DCF rate at minus one makes the discount denominator invalid.
+ISO/IEC 26300-2,2015,Full,Financial,IRR,§6.12.24,TC_FIN_IRR_001,IRR(MockCube::Row.Periodic:Column.C1..C3),NUMBER,0.1306623862918075,1e-9,ALMOST_EQUALS,Newton-Raphson solves periodic cash flows to the zero-NPV rate.
+ISO/IEC 26300-2,2015,Strict,Financial,IRR,§6.12.24,TC_FIN_IRR_002,"IRR(MockCube::Row.Periodic:Column.C1..C3,0.5)",NUMBER,0.1306623862918075,1e-9,ALMOST_EQUALS,Alternate admissible guess converges to the same economic root.
+ISO/IEC 26300-2,2015,Strict,Financial,IRR,§6.12.24,TC_FIN_IRR_003,IRR(MockCube::Row.Data1:Column.C1..C3),ERROR,#NUM!,0,ERROR_MATCH,Cash flows without a sign change have no internal rate root.
+ISO/IEC 26300-2,2015,Full,Financial,XIRR,§6.12.51,TC_FIN_XIRR_001,"XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3)",NUMBER,0.09971358593414137,1e-9,ALMOST_EQUALS,Newton-Raphson uses Actual/365 day-count fractions across leap year 2024.
+ISO/IEC 26300-2,2015,Strict,Financial,XIRR,§6.12.51,TC_FIN_XIRR_002,"XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3,0.5)",NUMBER,0.09971358593414137,1e-9,ALMOST_EQUALS,Alternate guess converges to the same dated-cash-flow root.
+ISO/IEC 26300-2,2015,Strict,Financial,XIRR,§6.12.51,TC_FIN_XIRR_003,"XIRR(MockCube::Row.Data1:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3)",ERROR,#NUM!,0,ERROR_MATCH,Dated cash flows without a sign change have no root.
+ISO/IEC 26300-2,2015,Full,Volatile,RAND,§6.16.50,TC_VOL_RAND_001,"AND(RAND()>=0,RAND()<1)",NUMBER,1.0,0,EQUALS,Random value remains in the half-open unit interval.
+ISO/IEC 26300-2,2015,Full,Volatile,RANDBETWEEN,§6.16.51,TC_VOL_RANDBETWEEN_001,"RANDBETWEEN(5,5)",NUMBER,5,0,EQUALS,Equal inclusive bounds return that bound deterministically.
+ISO/IEC 26300-2,2015,Full,Volatile,RANDBETWEEN,§6.16.51,TC_VOL_RANDBETWEEN_002,"RANDBETWEEN(2,1)",ERROR,#VALUE!,0,ERROR_MATCH,Reversed bounds are invalid.
+ISO/IEC 26300-2,2015,Full,Math,XLS_ABS,§6.16.2,TC_MATH_XLS_ABS_001,XLS_ABS(-42.5),NUMBER,42.5,0,EQUALS,OpenFormula compatibility absolute value.
+ISO/IEC 26300-2,2015,Strict,Math,XLS_ROUND,§6.17.5,TC_MATH_XLS_ROUND_001,"XLS_ROUND(2.5,0)",NUMBER,3,0,EQUALS,OpenFormula midpoint rounds away from zero.
+ISO/IEC 26300-2,2015,Full,String,XLS_CHAR,§6.20.3,TC_STRING_XLS_CHAR_001,XLS_CHAR(65),STRING,A,0,EQUALS,OpenFormula character code 65 maps to A.
+ISO/IEC 26300-2,2015,Full,String,XLS_CODE,§6.20.5,TC_STRING_XLS_CODE_001,"XLS_CODE(""A"")",NUMBER,65,0,EQUALS,OpenFormula returns the first character code.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_CHOOSE,§6.14.3,TC_LOOKUP_XLS_CHOOSE_001,"XLS_CHOOSE(2,""red"",""green"",""blue"")",STRING,green,0,EQUALS,One-based index selects the second alternative.
+ISO/IEC 26300-2,2015,Strict,Lookup,XLS_CHOOSE,§6.14.3,TC_LOOKUP_XLS_CHOOSE_002,"XLS_CHOOSE(0,""a"",""b"")",ERROR,#VALUE!,0,ERROR_MATCH,Index below one is invalid.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_COLUMNS,§6.13.5,TC_LOOKUP_XLS_COLUMNS_001,XLS_COLUMNS(MockCube::Row.Data1:Column.C1..C3),NUMBER,3,0,EQUALS,Returns the fixture reference column count.
+ISO/IEC 26300-2,2015,Full,String,XLS_CONCATENATE,§6.20.6,TC_STRING_XLS_CONCATENATE_001,"XLS_CONCATENATE(""Open"",""Formula"")",STRING,OpenFormula,0,EQUALS,Concatenates OpenFormula text operands.
+ISO/IEC 26300-2,2015,Full,Aggregate,XLS_COUNT,§6.13.6,TC_AGG_XLS_COUNT_001,"XLS_COUNT(1,2,3)",NUMBER,3,0,EQUALS,Counts three numeric scalar arguments.
+ISO/IEC 26300-2,2015,Full,Date,XLS_DATE,§6.10.2,TC_DATE_XLS_DATE_001,"XLS_DATE(1899,12,30)",NUMBER,0,0,EQUALS,OpenFormula epoch maps to serial zero.
+ISO/IEC 26300-2,2015,Strict,Date,XLS_DATE,§6.10.2,TC_DATE_XLS_DATE_002,"XLS_DATE(1900,2,29)",ERROR,#VALUE!,0,ERROR_MATCH,Gregorian 1900 leap-day invalidity is preserved.
+ISO/IEC 26300-2,2015,Full,Date,XLS_EOMONTH,§6.10.9,TC_DATE_XLS_EOMONTH_001,"DAY(XLS_EOMONTH(XLS_DATE(2024,2,1),0))",NUMBER,29,0,EQUALS,OpenFormula end-of-month handles a leap year.
+ISO/IEC 26300-2,2015,Full,Logical,XLS_FALSE,§6.15.3,TC_LOGIC_XLS_FALSE_001,XLS_FALSE(),NUMBER,0.0,0,EQUALS,OpenFormula false is stored as numeric zero.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_HLOOKUP,§6.14.5,TC_LOOKUP_XLS_HLOOKUP_001,"XLS_HLOOKUP(2,MockCube::Row.Header..Data1:Column.C1..C3,2,FALSE())",NUMBER,20,0,EQUALS,Exact horizontal lookup returns the second-row value.
+ISO/IEC 26300-2,2015,Strict,Logical,XLS_IF,§6.15.4,TC_LOGIC_XLS_IF_001,"XLS_IF(TRUE(),42,1/0)",NUMBER,42,0,EQUALS,OpenFormula IF does not evaluate the unselected error branch.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_INDEX,§6.14.6,TC_LOOKUP_XLS_INDEX_001,"XLS_INDEX(MockCube::Row.Data1:Column.C1..C3,1,2)",NUMBER,20,0,EQUALS,OpenFormula INDEX returns the selected fixture cell.
+ISO/IEC 26300-2,2015,Full,Financial,XLS_IRR,§6.12.24,TC_FIN_XLS_IRR_001,XLS_IRR(MockCube::Row.Periodic:Column.C1..C3),NUMBER,0.1306623862918075,1e-9,ALMOST_EQUALS,OpenFormula Newton-Raphson periodic rate converges within tolerance.
+ISO/IEC 26300-2,2015,Strict,Financial,XLS_IRR,§6.12.24,TC_FIN_XLS_IRR_002,"XLS_IRR(MockCube::Row.Periodic:Column.C1..C3,0.5)",NUMBER,0.1306623862918075,1e-9,ALMOST_EQUALS,OpenFormula alternate guess reaches the same periodic root.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_MATCH,§6.14.9,TC_LOOKUP_XLS_MATCH_001,"XLS_MATCH(20,MockCube::Row.Data1:Column.C1..C3,0)",NUMBER,2,0,EQUALS,OpenFormula exact match returns one-based position.
+ISO/IEC 26300-2,2015,Full,Aggregate,XLS_MAX,§6.18.45,TC_AGG_XLS_MAX_001,"XLS_MAX(-2,7,3)",NUMBER,7,0,EQUALS,OpenFormula maximum selects the greatest value.
+ISO/IEC 26300-2,2015,Full,Aggregate,XLS_MIN,§6.18.48,TC_AGG_XLS_MIN_001,"XLS_MIN(-2,7,3)",NUMBER,-2,0,EQUALS,OpenFormula minimum selects the least value.
+ISO/IEC 26300-2,2015,Full,Date,XLS_NOW,§6.10.15,TC_DATE_XLS_NOW_001,XLS_NOW()-XLS_NOW(),NUMBER,0,1e-9,ALMOST_EQUALS,Repeated OpenFormula time calls are stable within evaluation tolerance.
+ISO/IEC 26300-2,2015,Full,Financial,XLS_NPV,§6.12.30,TC_FIN_XLS_NPV_001,"XLS_NPV(0.1,100,100)",NUMBER,173.55371900826447,1e-9,ALMOST_EQUALS,OpenFormula DCF discounts end-of-period cash flows.
+ISO/IEC 26300-2,2015,Strict,Financial,XLS_NPV,§6.12.30,TC_FIN_XLS_NPV_002,"XLS_NPV(-1,10)",ERROR,#NUM!,0,ERROR_MATCH,OpenFormula rejects a singular discount rate.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_OFFSET,§6.14.11,TC_LOOKUP_XLS_OFFSET_001,"XLS_OFFSET(MockCube::Row.Data1:Column.C1,0,1)",NUMBER,20,0,EQUALS,OpenFormula offset moves one column right.
+ISO/IEC 26300-2,2015,Full,Volatile,XLS_RAND,§6.16.50,TC_VOL_XLS_RAND_001,"AND(XLS_RAND()>=0,XLS_RAND()<1)",NUMBER,1.0,0,EQUALS,OpenFormula random value lies in the half-open unit interval.
+ISO/IEC 26300-2,2015,Full,Volatile,XLS_RANDBETWEEN,§6.16.51,TC_VOL_XLS_RANDBETWEEN_001,"XLS_RANDBETWEEN(5,5)",NUMBER,5,0,EQUALS,Equal OpenFormula bounds return the bound.
+ISO/IEC 26300-2,2015,Full,String,XLS_REPT,§6.20.18,TC_STRING_XLS_REPT_001,"XLS_REPT(""ab"",3)",STRING,ababab,0,EQUALS,OpenFormula repeats text three times.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_ROWS,§6.13.30,TC_LOOKUP_XLS_ROWS_001,XLS_ROWS(MockCube::Row.Header..Data2:Column.C1..C3),NUMBER,3,0,EQUALS,Returns the fixture reference row count.
+ISO/IEC 26300-2,2015,Full,Aggregate,XLS_SUM,§6.16.61,TC_AGG_XLS_SUM_001,"XLS_SUM(1,2,3)",NUMBER,6,0,EQUALS,OpenFormula scalar sum.
+ISO/IEC 26300-2,2015,Full,String,XLS_TEXT,§6.20.23,TC_STRING_XLS_TEXT_001,"XLS_TEXT(1234.5,""0.00"")",STRING,1234.50,0,EQUALS,OpenFormula fixed-decimal formatting retains two places.
+ISO/IEC 26300-2,2015,Full,Date,XLS_TODAY,§6.10.19,TC_DATE_XLS_TODAY_001,XLS_TODAY()-XLS_TODAY(),NUMBER,0,0,EQUALS,Repeated OpenFormula date calls use the same day.
+ISO/IEC 26300-2,2015,Full,Logical,XLS_TRUE,§6.15.9,TC_LOGIC_XLS_TRUE_001,XLS_TRUE(),NUMBER,1.0,0,EQUALS,OpenFormula true is stored as numeric one.
+ISO/IEC 26300-2,2015,Full,String,XLS_UPPER,§6.20.27,TC_STRING_XLS_UPPER_001,"XLS_UPPER(""Straße"")",STRING,STRASSE,0,EQUALS,OpenFormula Unicode uppercase expansion.
+ISO/IEC 26300-2,2015,Full,String,XLS_VALUE,§6.13.34,TC_STRING_XLS_VALUE_001,"XLS_VALUE(""12.5"")",NUMBER,12.5,0,EQUALS,OpenFormula numeric text conversion.
+ISO/IEC 26300-2,2015,Full,Lookup,XLS_VLOOKUP,§6.14.12,TC_LOOKUP_XLS_VLOOKUP_001,"XLS_VLOOKUP(30,MockCube::Row.Data1..Data2:Column.C1..C3,2,FALSE())",NUMBER,40,0,EQUALS,Exact vertical lookup returns the second-column value.
+ISO/IEC 26300-2,2015,Full,Financial,XLS_XIRR,§6.12.51,TC_FIN_XLS_XIRR_001,"XLS_XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3)",NUMBER,0.09971358593414137,1e-9,ALMOST_EQUALS,OpenFormula Newton-Raphson uses Actual/365 day-count fractions.
+ISO/IEC 26300-2,2015,Strict,Financial,XLS_XIRR,§6.12.51,TC_FIN_XLS_XIRR_002,"XLS_XIRR(MockCube::Row.Dated:Column.C1..C3,MockCube::Row.Dates:Column.C1..C3,0.5)",NUMBER,0.09971358593414137,1e-9,ALMOST_EQUALS,OpenFormula alternate guess reaches the same dated root.
+ISO/IEC 26300-2,2015,Full,Date,XLS_YEAR,§6.10.24,TC_DATE_XLS_YEAR_001,"XLS_YEAR(XLS_DATE(2000,2,29))",NUMBER,2000,0,EQUALS,OpenFormula extracts a valid century leap year.
