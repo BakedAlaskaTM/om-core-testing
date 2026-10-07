@@ -13,23 +13,24 @@
 <line x1="72" x2="1075" y1="58.0" y2="58.0" stroke="#21262d"/>
 <text x="64" y="62.0" text-anchor="end" fill="#8b949e" font-family="system-ui,sans-serif" font-size="11">10</text>
 <text x="72.0" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-06-29</text>
-<text x="213.8" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-07-13</text>
-<text x="355.7" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-07-27</text>
-<text x="497.5" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-08-10</text>
-<text x="649.5" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-08-25</text>
-<text x="791.3" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-09-08</text>
-<text x="933.2" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-09-22</text>
-<text x="1075.0" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-10-06</text>
-<polyline points="72.0,253.6 82.1,141.4 92.3,163.9 102.4,96.6 112.5,208.7 122.7,208.7 132.8,74.1 142.9,141.4" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<polyline points="173.3,253.6 183.4,253.6 193.6,163.9" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="224.0" cy="253.6" r="2.5" fill="#2f81f7"/>
-<circle cx="264.5" cy="231.1" r="2.5" fill="#2f81f7"/>
-<circle cx="294.9" cy="253.6" r="2.5" fill="#2f81f7"/>
-<circle cx="386.1" cy="253.6" r="2.5" fill="#2f81f7"/>
-<circle cx="416.5" cy="186.3" r="2.5" fill="#2f81f7"/>
-<polyline points="436.7,253.6 446.9,253.6" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<polyline points="497.5,231.1 507.6,186.3" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="588.7" cy="253.6" r="2.5" fill="#2f81f7"/>
+<text x="212.4" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-07-13</text>
+<text x="362.9" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-07-28</text>
+<text x="503.3" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-08-11</text>
+<text x="643.7" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-08-25</text>
+<text x="784.1" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-09-08</text>
+<text x="934.6" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-09-23</text>
+<text x="1075.0" y="306" text-anchor="middle" fill="#8b949e" font-family="system-ui,sans-serif" font-size="10">2026-10-07</text>
+<polyline points="72.0,253.6 82.0,141.4 92.1,163.9 102.1,96.6 112.1,208.7 122.2,208.7 132.2,74.1 142.2,141.4" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="172.3,253.6 182.3,253.6 192.4,163.9" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="222.4" cy="253.6" r="2.5" fill="#2f81f7"/>
+<circle cx="262.6" cy="231.1" r="2.5" fill="#2f81f7"/>
+<circle cx="292.7" cy="253.6" r="2.5" fill="#2f81f7"/>
+<circle cx="382.9" cy="253.6" r="2.5" fill="#2f81f7"/>
+<circle cx="413.0" cy="186.3" r="2.5" fill="#2f81f7"/>
+<polyline points="433.1,253.6 443.1,253.6" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="493.3,231.1 503.3,186.3" fill="none" stroke="#2f81f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="583.5" cy="253.6" r="2.5" fill="#2f81f7"/>
+<circle cx="1075.0" cy="253.6" r="2.5" fill="#2f81f7"/>
 <line x1="72" x2="96" y1="322" y2="322" stroke="#2f81f7" stroke-width="3"/>
 <text x="102" y="326" fill="#c9d1d9" font-family="system-ui,sans-serif" font-size="11">Commits</text>
 </svg>
