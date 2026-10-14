@@ -265,6 +265,23 @@ def get_message_bus() -> MessageBus:
     return _bus_instance
 
 
+def install_message_bus(bus: MessageBus) -> MessageBus:
+    """Install an explicit process-wide bus for runtime composition.
+
+    The command layer still contains legacy global bus lookups. Until those are
+    removed, an injected runtime bus must also be the process-wide bus. Replacing a
+    live, different bus is rejected so subscriptions cannot be silently orphaned.
+    """
+    global _bus_instance
+    if _bus_instance is not None and _bus_instance is not bus:
+        raise RuntimeError(
+            "A different MessageBus is already active; call reset_runtime_state() "
+            "before installing another bus"
+        )
+    _bus_instance = bus
+    return bus
+
+
 def set_bus_debug(enabled: bool) -> None:
     """Enable or disable verbose event bus logging."""
     _BUS_CONFIG["debug"] = enabled
@@ -279,13 +296,17 @@ def set_bus_enabled(enabled: bool) -> None:
     _BUS_CONFIG["enabled"] = enabled
 
 
-def _reset_bus_for_testing() -> None:
-    """Reset bus to clean state for testing.
-
-    Use in test fixtures to ensure isolation between tests.
-    """
+def reset_message_bus() -> None:
+    """Clear all subscriptions and discard the process-wide bus."""
     global _bus_instance
     if _bus_instance is not None:
         _bus_instance._subscribers.clear()
         _bus_instance._publish_hooks.clear()
         _bus_instance = None
+    _BUS_CONFIG["debug"] = False
+    _BUS_CONFIG["enabled"] = True
+
+
+def _reset_bus_for_testing() -> None:
+    """Backward-compatible test helper; prefer runtime lifecycle reset."""
+    reset_message_bus()

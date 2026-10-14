@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +19,16 @@ from lib_storeadapters.json_file_adapter import (
     workspace_from_json_string,
     workspace_to_json_string,
 )
-from lib_storeadapters.ports import WorkspacePersistenceAdapter
+from lib_storeadapters.ports import (
+    BranchId,
+    BranchInfo,
+    SnapshotId,
+    SnapshotInfo,
+    SnapshotStoreAdapter,
+    SnapshotType,
+    WorkspaceId,
+    WorkspacePersistenceAdapter,
+)
 
 
 class InMemoryAdapter(WorkspacePersistenceAdapter):
@@ -89,3 +100,173 @@ class InMemoryJsonAdapter(WorkspacePersistenceAdapter):
             "legacy_ui_state": {},
         }
         return ws, profile
+
+
+class InMemorySnapshotAdapter(SnapshotStoreAdapter):
+    """Process-local snapshot store for isolated runtimes and DST workers."""
+
+    def __init__(self) -> None:
+        self._snapshots: dict[WorkspaceId, dict[SnapshotId, SnapshotInfo]] = {}
+        self._payloads: dict[tuple[WorkspaceId, SnapshotId], Workspace] = {}
+        self._branches: dict[WorkspaceId, dict[BranchId, BranchInfo]] = {}
+        self._current_branches: dict[WorkspaceId, BranchId] = {}
+        self._next_snapshot = 1
+
+    def _ensure_main(self, workspace_id: WorkspaceId) -> BranchId:
+        branches = self._branches.setdefault(workspace_id, {})
+        main = BranchId("main")
+        if main not in branches:
+            branches[main] = BranchInfo(
+                branch_id=main,
+                workspace_id=workspace_id,
+                name="main",
+                head_snapshot_id=None,
+                created_at=datetime.now(timezone.utc),
+            )
+        self._current_branches.setdefault(workspace_id, main)
+        return main
+
+    def list_snapshots(self, workspace_id: WorkspaceId) -> list[SnapshotInfo]:
+        return list(self._snapshots.get(workspace_id, {}).values())
+
+    def create_snapshot(
+        self,
+        workspace_id: WorkspaceId,
+        workspace: Workspace,
+        description: str,
+        snapshot_type: SnapshotType = SnapshotType.MANUAL,
+        branch_id: BranchId | None = None,
+        parent_id: SnapshotId | None = None,
+        content_hash: str | None = None,
+    ) -> SnapshotId:
+        branch_id = branch_id or self._current_branches.get(workspace_id)
+        if branch_id is None:
+            branch_id = self._ensure_main(workspace_id)
+        if branch_id not in self._branches.setdefault(workspace_id, {}):
+            self.create_branch(workspace_id, str(branch_id))
+
+        snapshot_id = SnapshotId(f"memory-{self._next_snapshot}")
+        self._next_snapshot += 1
+        info = SnapshotInfo(
+            snapshot_id=snapshot_id,
+            workspace_id=workspace_id,
+            description=description,
+            snapshot_type=snapshot_type,
+            created_at=datetime.now(timezone.utc),
+            content_hash=content_hash,
+            branch_id=branch_id,
+            parent_id=parent_id,
+        )
+        self._snapshots.setdefault(workspace_id, {})[snapshot_id] = info
+        self._payloads[(workspace_id, snapshot_id)] = deepcopy(workspace)
+        branch = self._branches[workspace_id][branch_id]
+        self._branches[workspace_id][branch_id] = replace(
+            branch, head_snapshot_id=snapshot_id
+        )
+        return snapshot_id
+
+    def restore_snapshot(
+        self, workspace_id: WorkspaceId, snapshot_id: SnapshotId
+    ) -> Workspace:
+        return deepcopy(self._payloads[(workspace_id, snapshot_id)])
+
+    def delete_snapshot(
+        self, workspace_id: WorkspaceId, snapshot_id: SnapshotId
+    ) -> bool:
+        snapshots = self._snapshots.get(workspace_id, {})
+        info = snapshots.pop(snapshot_id, None)
+        if info is None:
+            return False
+        self._payloads.pop((workspace_id, snapshot_id), None)
+        for branch_id, branch in list(self._branches.get(workspace_id, {}).items()):
+            if branch.head_snapshot_id == snapshot_id:
+                self._branches[workspace_id][branch_id] = replace(
+                    branch, head_snapshot_id=None
+                )
+        return True
+
+    def rename_snapshot(
+        self,
+        workspace_id: WorkspaceId,
+        snapshot_id: SnapshotId,
+        new_description: str,
+    ) -> bool:
+        info = self._snapshots.get(workspace_id, {}).get(snapshot_id)
+        if info is None:
+            return False
+        self._snapshots[workspace_id][snapshot_id] = replace(
+            info, description=new_description
+        )
+        return True
+
+    def get_latest_snapshot(
+        self,
+        workspace_id: WorkspaceId,
+        snapshot_type: SnapshotType | None = None,
+    ) -> SnapshotInfo | None:
+        snapshots = self.list_snapshots(workspace_id)
+        if snapshot_type is not None:
+            snapshots = [s for s in snapshots if s.snapshot_type == snapshot_type]
+        return snapshots[-1] if snapshots else None
+
+    def list_branches(self, workspace_id: WorkspaceId) -> list[BranchInfo]:
+        self._ensure_main(workspace_id)
+        return list(self._branches[workspace_id].values())
+
+    def create_branch(
+        self,
+        workspace_id: WorkspaceId,
+        branch_name: str,
+        snapshot_id: SnapshotId | None = None,
+    ) -> BranchId:
+        branch_id = BranchId(branch_name)
+        branches = self._branches.setdefault(workspace_id, {})
+        if branch_id in branches:
+            raise ValueError(f"Branch already exists: {branch_name}")
+        branches[branch_id] = BranchInfo(
+            branch_id=branch_id,
+            workspace_id=workspace_id,
+            name=branch_name,
+            head_snapshot_id=snapshot_id,
+            created_at=datetime.now(timezone.utc),
+        )
+        return branch_id
+
+    def get_current_branch(self, workspace_id: WorkspaceId) -> BranchId | None:
+        return self._current_branches.get(workspace_id) or self._ensure_main(workspace_id)
+
+    def switch_branch(
+        self, workspace_id: WorkspaceId, branch_id: BranchId
+    ) -> bool:
+        if branch_id not in self._branches.get(workspace_id, {}):
+            return False
+        self._current_branches[workspace_id] = branch_id
+        return True
+
+    def update_snapshot_branch(
+        self,
+        workspace_id: WorkspaceId,
+        snapshot_id: SnapshotId,
+        branch_id: BranchId,
+    ) -> bool:
+        info = self._snapshots.get(workspace_id, {}).get(snapshot_id)
+        if info is None or branch_id not in self._branches.get(workspace_id, {}):
+            return False
+        self._snapshots[workspace_id][snapshot_id] = replace(
+            info, branch_id=branch_id
+        )
+        return True
+
+    def update_snapshot_parent(
+        self,
+        workspace_id: WorkspaceId,
+        snapshot_id: SnapshotId,
+        parent_id: SnapshotId | None,
+    ) -> bool:
+        info = self._snapshots.get(workspace_id, {}).get(snapshot_id)
+        if info is None:
+            return False
+        self._snapshots[workspace_id][snapshot_id] = replace(
+            info, parent_id=parent_id
+        )
+        return True

@@ -47,3 +47,8 @@ class SessionManager:
 
 def get_session_manager() -> SessionManager:
     return SessionManager()
+
+
+def _reset_session_manager() -> None:
+    """Discard the process-wide session manager."""
+    SessionManager._instance = None

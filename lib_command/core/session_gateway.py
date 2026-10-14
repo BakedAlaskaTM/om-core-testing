@@ -254,3 +254,8 @@ class SessionGateway:
 
 def get_session_gateway() -> SessionGateway:
     return SessionGateway()
+
+
+def _reset_session_gateway() -> None:
+    """Discard the process-wide gateway after its bus has been quiesced."""
+    SessionGateway._instance = None

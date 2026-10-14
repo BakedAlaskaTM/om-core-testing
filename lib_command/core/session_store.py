@@ -160,3 +160,12 @@ class SessionStore:
 
 def get_session_store() -> SessionStore:
     return SessionStore()
+
+
+def _reset_session_store() -> None:
+    """Discard all process-local sessions and view state."""
+    instance = SessionStore._instance
+    if instance is not None:
+        instance._sessions.clear()
+        instance._view_states.clear()
+    SessionStore._instance = None

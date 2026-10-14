@@ -397,3 +397,8 @@ class CommandExecutor:
 def get_executor() -> CommandExecutor:
     """Get the global command executor."""
     return CommandExecutor()
+
+
+def _reset_executor() -> None:
+    """Discard executor hooks, fallback context, and alias state."""
+    CommandExecutor._instance = None

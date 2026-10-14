@@ -528,6 +528,64 @@ criterion.
 Exit: two clean worker processes can execute the same hand-authored real-engine trace and
 produce identical canonical observations.
 
+#### Phase 0 outcome (completed 2026-10-15)
+
+- Added the determinism inventory at `tech-ref/determinism-inventory.md`.
+- Added runtime provider contracts and system defaults in `lib_runtime/providers.py`.
+  Provider migration and seeded provider implementations remain Phase 1 work.
+- Made `lib_runtime.app_host` the canonical composition root and retained
+  `lib_runtime.runtime_factory.create_runtime` as a backward-compatible delegate.
+- Added keyword-only injection for the bus, runtime providers, workspace adapter,
+  snapshot adapter, optional services, solver enablement, and persistence mode.
+- Added `InMemorySnapshotAdapter` and used it with `InMemoryJsonAdapter` in the Phase 0
+  clean-process probe.
+- Added idempotent context close plus explicit process-global reset through
+  `lib_runtime.lifecycle.reset_runtime_state()`.
+- Added versioned trace, environment, observation-spec, and canonical-observation schemas
+  under `lib_dst`.
+- Added a fixed hand-authored real-engine probe. It executes through `CommandSession` but
+  intentionally contains no generated workloads, deterministic PRNG, oracle, mutation,
+  virtual scheduling, or coverage logic.
+
+Decisions:
+
+- Canonical observations are opt-in projections named by logical dimension and cube
+  names. Generated model, session, and message IDs are excluded.
+- A custom bus is installed process-wide because legacy command paths still call
+  `get_message_bus()`. Installing a different bus into a live runtime is rejected; the
+  caller must reset the runtime first. Removing global bus access remains Phase 3 work.
+- Injected workspace adapters are used directly. Production defaults retain the existing
+  timeline-aware JSON adapter.
+- A supplied `RuntimeServices` object is authoritative. Supplying it together with a
+  separate snapshot adapter is rejected as ambiguous.
+- Runtime context `close()` releases context-owned subscriptions, session state, and the
+  engine. Resetting command-layer singletons is a separate explicit process operation.
+- The command registry remains populated across resets because it contains application
+  definitions rather than scenario state.
+
+Discoveries:
+
+- The runtime factory and application host duplicated nearly identical composition code;
+  Phase 0 consolidated that ownership in the application host.
+- Runtime adapter injection alone is insufficient for a custom bus because executor and
+  publisher paths still contain global lookups. Process-wide installation is the Phase 0
+  compatibility bridge.
+- Additional singleton state exists in configuration, recording, help, profiling, and GUI
+  modules. It is outside the Phase 0 probe and must join lifecycle ownership when those
+  features enter DST scope.
+- The repository's `pytest.ini` collects the top-level `tests/` directory. Nested package
+  test trees require explicit invocation and were not implied by the Phase 0 validation.
+
+Validation performed:
+
+- `python -m pytest tests/test_dst_phase0.py -q`: 7 passed.
+- `python -m pytest tests -q`: 15 passed.
+- `python -m compileall -q lib_runtime lib_command lib_storeadapters lib_dst`: passed.
+- A compatibility smoke run constructed the default solver service, executed a real
+  command, and reset the runtime successfully with injected in-memory persistence.
+- Direct Phase 0 probe runs with `PYTHONHASHSEED=101` and `PYTHONHASHSEED=202` produced
+  byte-identical canonical JSON observations.
+
 ### Phase 1: real-engine deterministic core
 
 - Implement key-derived PRNGs and worker-process isolation.

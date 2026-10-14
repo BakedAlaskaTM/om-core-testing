@@ -1276,6 +1276,7 @@ _command_service_singleton: Optional[CommandService] = None
 
 def init_command_services(
     persistence_adapter: Optional[Any] = None,
+    bus: Optional[Any] = None,
 ) -> CommandService:
     """
     Initialize the command layer: register default commands and start CommandService.
@@ -1291,7 +1292,7 @@ def init_command_services(
     register_default_commands()
 
     from .message_bus import get_message_bus
-    current_bus = get_message_bus()
+    current_bus = bus or get_message_bus()
 
     # If the bus was reset, tear down the old CommandService so it restarts fresh
     if _command_service_singleton is not None and _command_service_singleton.bus is not current_bus:
@@ -1300,7 +1301,12 @@ def init_command_services(
     # Create CommandService once, then re-start it so it re-subscribes if the
     # bus was reset externally.
     if _command_service_singleton is None:
-        _command_service_singleton = CommandService(persistence_adapter=persistence_adapter)
+        _command_service_singleton = CommandService(
+            bus=current_bus,
+            persistence_adapter=persistence_adapter,
+        )
+    elif persistence_adapter is not None:
+        _command_service_singleton.persistence_adapter = persistence_adapter
 
     # If the bus was reset externally (e.g. test fixtures), the subscription may
     # have been dropped. Re-starting re-subscribes when needed.

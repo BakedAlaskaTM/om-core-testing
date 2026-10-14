@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any
 
 from lib_openm.api import Engine
 from lib_openm.model import Workspace
@@ -27,6 +28,7 @@ def create_engine(
     engine_mode: str | None = None,
     server_args: list[str] | None = None,
     operating_mode: str | None = None,
+    event_publisher: Any = None,
 ) -> Engine:
     """Create and configure an Engine instance.
 
@@ -45,7 +47,14 @@ def create_engine(
         operating_mode_resolved = operating_mode or os.environ.get("OMENGINE_OPERATING_MODE")
         return _create_remote_engine(workspace, enable_dependency_tracking, server_args, operating_mode_resolved)
     else:
-        engine = Engine(workspace, event_publisher=BusEventPublisher())
+        engine = Engine(
+            workspace,
+            event_publisher=(
+                event_publisher
+                if event_publisher is not None
+                else BusEventPublisher()
+            ),
+        )
         engine.enable_dependency_tracking(enable_dependency_tracking)
         return engine
 
