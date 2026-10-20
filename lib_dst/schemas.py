@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import platform
 import sys
@@ -138,6 +139,9 @@ class TraceTranscript:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
 
+    def sha256(self) -> str:
+        return hashlib.sha256(self.to_json().encode("utf-8")).hexdigest()
+
 
 @dataclass(frozen=True)
 class CanonicalObservation:
@@ -146,6 +150,29 @@ class CanonicalObservation:
 
     def to_dict(self) -> dict[str, Any]:
         return {"schema_version": self.schema_version, "state": self.state}
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
+
+
+@dataclass(frozen=True)
+class ExecutionReport:
+    trace_sha256: str
+    observation: CanonicalObservation
+    oracle_expected: dict[str, Any]
+    oracle_actual: Any
+    oracle_passed: bool
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "trace_sha256": self.trace_sha256,
+            "observation": self.observation.to_dict(),
+            "oracle": {
+                "expected": self.oracle_expected,
+                "actual": self.oracle_actual,
+                "passed": self.oracle_passed,
+            },
+        }
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))

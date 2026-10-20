@@ -63,7 +63,12 @@ class BusTransport:
         Returns:
             ExecutionResult from the reply, or a timeout error result.
         """
-        correlation_id = _uuid.uuid4().hex
+        providers = getattr(context, "providers", None)
+        ids = getattr(providers, "ids", None)
+        clock = getattr(providers, "clock", None)
+        new_message_id = ids.uuid4 if ids is not None else _uuid.uuid4
+        perf_counter = clock.perf_counter if clock is not None else _time.perf_counter
+        correlation_id = new_message_id().hex
         reply_topic = f"reply.command.{session_id}.{correlation_id}"
 
         # Build workspace_id from context if available
@@ -74,7 +79,7 @@ class BusTransport:
                 workspace_id = getattr(workspace, "id", None)
 
         request = MessageEnvelope(
-            message_id=_uuid.uuid4().hex,
+            message_id=new_message_id().hex,
             message_type="command",
             topic="request.command",
             correlation_id=correlation_id,
@@ -82,7 +87,7 @@ class BusTransport:
             client_type=getattr(context, "client_type", None) if context else None,
             workspace_id=workspace_id,
             actor_id=None,
-            timestamp=_time.perf_counter(),
+            timestamp=perf_counter(),
             payload={
                 "command_id": command_id,
                 **params,

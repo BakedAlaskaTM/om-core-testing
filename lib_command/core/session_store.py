@@ -38,11 +38,17 @@ class SessionStore:
         workspace_id: Optional[str],
         context: Any,
     ) -> str:
-        sid = str(uuid.uuid4())
+        providers = getattr(context, "providers", None)
+        ids = getattr(providers, "ids", None)
+        clock = getattr(providers, "clock", None)
+        sid = str(ids.uuid4()) if ids is not None else str(uuid.uuid4())
+        now = clock.now_utc() if clock is not None else datetime.now(timezone.utc)
         self._sessions[sid] = SessionRecord(
             session_id=sid,
             client_type=client_type,
             workspace_id=workspace_id,
+            created_at=now,
+            last_accessed=now,
             context=context,
         )
         # Initialise per-session view state from the workspace-level saved default.
@@ -63,7 +69,11 @@ class SessionStore:
     def get(self, session_id: str) -> Optional[SessionRecord]:
         record = self._sessions.get(session_id)
         if record:
-            record.last_accessed = datetime.now(timezone.utc)
+            providers = getattr(record.context, "providers", None)
+            clock = getattr(providers, "clock", None)
+            record.last_accessed = (
+                clock.now_utc() if clock is not None else datetime.now(timezone.utc)
+            )
         return record
 
     def get_view_state(self, session_id: str) -> Optional[SessionViewState]:

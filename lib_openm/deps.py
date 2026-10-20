@@ -62,7 +62,7 @@ class DependencyGraph:
                 self.remove_node(key)
 
     def nodes(self) -> Iterator[Node]:
-        return iter(self._nodes.values())
+        return iter(sorted(self._nodes.values(), key=lambda node: node.key))
 
     # -- edge helpers -------------------------------------------------
     def add_edge(self, src_key: str, dst_key: str) -> None:
@@ -93,7 +93,7 @@ class DependencyGraph:
         for precedent in old_precedents - new_precedents:
             self._edges.get(precedent, set()).discard(dst)
             _DEBUG_CORE and print(f"[DEBUG REPLACE_PREC] Removed edge: {precedent.key[:50]}... -> {dst_key[:50]}...")
-        for precedent in new_precedents:
+        for precedent in sorted(new_precedents, key=lambda node: node.key):
             self._edges.setdefault(precedent, set()).add(dst)
             _DEBUG_CORE and print(f"[DEBUG REPLACE_PREC] Added edge: {precedent.key[:50]}... -> {dst_key[:50]}...")
         self._reverse_edges[dst] = new_precedents
@@ -102,7 +102,7 @@ class DependencyGraph:
         node = self._nodes.get(key)
         if node is None:
             return []
-        return [n.key for n in self._reverse_edges.get(node, set())]
+        return sorted(n.key for n in self._reverse_edges.get(node, set()))
 
     def has_precedents(self, key: str) -> bool:
         """Check if a node has any precedents (dependencies) recorded."""
@@ -116,7 +116,7 @@ class DependencyGraph:
         if node is None:
             return []
         deps = self._edges.get(node, set())
-        return [n.key for n in deps]
+        return sorted(n.key for n in deps)
 
     # -- dirty tracking -----------------------------------------------
     def mark_dirty(self, key: str) -> None:
@@ -131,11 +131,12 @@ class DependencyGraph:
     def pop_dirty(self) -> str | None:
         if not self._dirty:
             return None
-        node = self._dirty.pop()
+        node = min(self._dirty, key=lambda candidate: candidate.key)
+        self._dirty.remove(node)
         return node.key
 
     def dirty_keys(self) -> list[str]:
-        return [n.key for n in self._dirty]
+        return sorted(n.key for n in self._dirty)
 
     def is_dirty(self, key: str) -> bool:
         node = self._nodes.get(key)
@@ -162,13 +163,13 @@ class DependencyGraph:
             if n in temp:
                 raise ValueError("Cycle detected")
             temp.add(n)
-            for m in self._edges.get(n, set()):
+            for m in sorted(self._edges.get(n, set()), key=lambda node: node.key):
                 visit(m)
             temp.remove(n)
             perm.add(n)
             out.append(n)
 
-        for n in list(self._nodes.values()):
+        for n in sorted(self._nodes.values(), key=lambda node: node.key):
             visit(n)
 
         return out

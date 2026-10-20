@@ -1498,7 +1498,7 @@ class _EngineCore:
             indegree[key] = len(preds)
             dependents[key] = [k for k in self._dep_graph.dependents_of(key) if k in dirty_set]
 
-        ready = [key for key in dirty_keys if indegree.get(key, 0) == 0]
+        ready = sorted(key for key in dirty_keys if indegree.get(key, 0) == 0)
         processed = 0
         while ready:
             key = ready.pop(0)
@@ -1528,6 +1528,7 @@ class _EngineCore:
                 indegree[dep_key] = max(0, indegree.get(dep_key, 0) - 1)
                 if indegree[dep_key] == 0:
                     ready.append(dep_key)
+            ready.sort()
             if max_nodes is not None and processed >= max_nodes:
                 break
 
@@ -1555,7 +1556,7 @@ class _EngineCore:
             indegree[key] = len(preds)
             dependents[key] = [k for k in self._dep_graph.dependents_of(key) if k in dirty_set]
 
-        ready = [key for key in dirty_keys if indegree.get(key, 0) == 0]
+        ready = sorted(key for key in dirty_keys if indegree.get(key, 0) == 0)
         if not ready:
             return 0
 
@@ -1593,6 +1594,7 @@ class _EngineCore:
                     indegree[dep_key] = max(0, indegree.get(dep_key, 0) - 1)
                     if indegree[dep_key] == 0:
                         ready.append(dep_key)
+            ready.sort()
 
         from lib_openm.outline_graph_bridge import sync_workspace_graph_to_outline
         sync_workspace_graph_to_outline(self._ws)

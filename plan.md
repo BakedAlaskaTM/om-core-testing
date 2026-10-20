@@ -598,6 +598,91 @@ Validation performed:
 Exit: at least 10,000 supported-subset seeds replay deterministically across repeated
 runs on the same supported environment.
 
+#### Phase 1 outcome (completed 2026-10-15)
+
+- Added SHA-256 key derivation and independent generator/runtime streams in
+  `lib_dst/seeding.py`. Every sub-seed used by the harness is recorded in trace metadata.
+- Added deterministic clock, ID, and random providers. Model IDs use a context-scoped
+  compatibility bridge in `lib_utils.ids`; session metadata and the local command
+  request/executor/reply spine use providers carried by `ExecutionContext`. Callers that
+  do not inject providers retain the existing system UUID and clock behavior.
+- Added a typed logical symbol table in `lib_dst/symbols.py`. Serialized traces contain
+  handles and logical names; worker-local runtime IDs never enter operations or
+  observations.
+- Added a harness-owned typed AST, OM Core renderer, and independent exact-arithmetic
+  oracle in `lib_dst/ast.py` and `lib_dst/oracle.py`. The Phase 1 grammar covers finite
+  integer literals, numeric cell references, unary negation, `+`, `-`, `*`, guarded `/`,
+  comparisons, `IF`, scalar `SUM`, scalar `AVG`, and `ROUND`. A separate error feature
+  deliberately exercises division by zero and requires `#DIV/0!`.
+- Added deterministic seed-to-trace generation in `lib_dst/generator.py`. Rendered
+  expressions pass through the production tokenizer/parser as a syntax gate, while the
+  harness AST and oracle remain independent of the production evaluator.
+- Added exact trace replay in `lib_dst/executor.py`. It creates schema, values, and rules
+  through `CommandSession`, explicitly disables multithreaded recomputation, performs a
+  serial full recalculation, observes logical state, and checks the oracle contract.
+- Added batch worker isolation and a subprocess coordinator in `lib_dst/worker.py` and
+  `lib_dst/runner.py`. Each scenario receives a fresh workspace/runtime and the explicit
+  lifecycle reset; a worker process may execute a batch before being recycled.
+- Stabilized dependency graph enumeration, dirty selection, topological traversal, and
+  serial ready/frontier queues by node key.
+- Added canonical execution reports containing the trace hash, observation, expected and
+  actual oracle values, and pass status.
+
+Decisions:
+
+- The initial generated schema is intentionally fixed: one `Line` dimension with
+  `InputA`, `InputB`, and `Result`, plus one `Calc` cube. Phase 1 varies input values and
+  expression topology. Broader schemas and graph-specific scenario modes can be added
+  without changing the trace executor contract.
+- Seed domains use namespaced identifiers such as `workload.values`,
+  `workload.expression`, and `runtime.ids`. The trace records the derivation inputs and
+  identifies the generator as `phase1.numeric.v1`.
+- Worker isolation is one process per deterministic seed batch, with a complete runtime
+  teardown between seeds. The coordinator fixes `PYTHONHASHSEED` and `TZ` before process
+  start. It does not attempt to change either inside a running interpreter.
+- Replay deserializes the recorded trace and does not consult a workload PRNG. The
+  expected oracle value and harness AST are materialized in trace metadata.
+- Oracle arithmetic uses `fractions.Fraction`; finite engine results use
+  `rel_tol=1e-9` and `abs_tol=1e-12`, while error codes are exact.
+- Runtime IDs and envelope metadata are deterministic on the tested local command path
+  but remain excluded from semantic observations. The context-scoped ID bridge preserves
+  compatibility with model factories that currently call `lib_utils.ids.new_id()`.
+- Volatile formula functions, UDFs, ranges, strings, hierarchy navigation, remote
+  execution, solver execution, and multithreaded calculation are explicitly unsupported
+  in Phase 1. Their remaining direct system-provider call sites are not claimed to be
+  deterministic.
+
+Discoveries:
+
+- The actual rule command accepts logical `(dimension name, item name)` targets and
+  cube-qualified expressions such as `Calc::[Line.InputA]`; this lets traces avoid view
+  construction and runtime IDs while still using the public command surface.
+- `set_rule` evaluates the anchored target immediately. The trace nevertheless includes
+  an explicit full recalculation so the tested lifecycle and dependency ordering are
+  unambiguous.
+- OM Core workspaces bootstrap system dimensions and cubes. Canonical observation must
+  remain an opt-in projection or those implementation-owned objects would dominate every
+  trace.
+- Dependency graph sets reached both public graph accessors and engine scheduling queues;
+  sorting only `dirty_keys()` would not have made the serial frontier deterministic.
+- The production parser types are private. Phase 1 imports them only as a validation gate;
+  no production AST or evaluation helper is shared with the oracle.
+- The synchronous local bus still uses a real blocking request primitive. Phase 1 relies
+  on immediate in-process replies and does not claim virtual timeout/scheduling support;
+  that remains Phase 3.
+
+Validation performed:
+
+- `.venv/Scripts/python.exe -m pytest tests/test_dst_phase1.py -q`: 39 passed.
+- `.venv/Scripts/python.exe -m pytest tests -q`: 54 passed.
+- `.venv/Scripts/python.exe -m compileall -q lib_dst lib_runtime lib_command lib_utils lib_openm`:
+  passed.
+- `git diff --check`: passed (Git reported only existing line-ending conversion warnings).
+- Two clean worker runs of seeds `0..9999`, with `PYTHONHASHSEED=424242` and `TZ=UTC`,
+  produced the identical aggregate trace-plus-report SHA-256
+  `ca0144183335fd945ae3bcd4b2a800decae1d8d112c683e9097eff8d16ed56bd` and zero
+  oracle failures.
+
 ### Phase 2: persistence and convergence
 
 - Inject `InMemoryJsonAdapter` and in-memory snapshot storage.

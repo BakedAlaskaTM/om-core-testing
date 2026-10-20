@@ -23,6 +23,7 @@ from lib_storeadapters.ports import SnapshotStoreAdapter, SnapshotType
 from lib_storeadapters.sqlite_snapshot_adapter import SQLiteSnapshotStoreAdapter
 from lib_storeadapters.timeline_aware_workspace_adapter import TimelineAwareWorkspaceAdapter
 from lib_utils.config import engine as engine_conf
+from lib_utils.ids import bind_id_provider, reset_id_provider
 from lib_utils.paths import OM_SESSIONS_DIR
 
 
@@ -56,6 +57,7 @@ class RuntimeHostContext:
     services: RuntimeServices
     providers: RuntimeProviders = field(default_factory=RuntimeProviders.system)
     _restore_callback: Any = field(default=None, repr=False)
+    _id_provider_token: Any = field(default=None, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
 
     @property
@@ -75,6 +77,9 @@ class RuntimeHostContext:
             )
         self.session_mgr.close_session(self.command_session.session_id)
         self.engine.shutdown_engine()
+        if self._id_provider_token is not None:
+            reset_id_provider(self._id_provider_token)
+            self._id_provider_token = None
 
 
 def _build_solver_service(engine: Engine) -> Any:
@@ -146,6 +151,7 @@ def create_runtime_context(
         engine=engine,
         workspace=workspace,
         undo_manager=engine.undo_manager,
+        providers=providers,
     )
     ctx = command_session.context
     ctx.providers = providers
@@ -189,6 +195,7 @@ def create_runtime_context(
                 "Session Start", snapshot_type=SnapshotType.SESSION_START
             )
 
+    id_provider_token = bind_id_provider(providers.ids)
     return RuntimeHostContext(
         engine=engine,
         workspace=workspace,
@@ -200,6 +207,7 @@ def create_runtime_context(
         services=services,
         providers=providers,
         _restore_callback=restore_callback,
+        _id_provider_token=id_provider_token,
     )
 
 

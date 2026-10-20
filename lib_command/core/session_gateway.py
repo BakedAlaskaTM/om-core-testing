@@ -225,6 +225,7 @@ class SessionGateway:
         undo_manager: Any = None,
         gui_window: Any = None,
         workspace_id: Optional[str] = None,
+        providers: Any = None,
     ) -> "CommandSession":
         """
         Create a client session with an internally constructed ExecutionContext.
@@ -243,6 +244,7 @@ class SessionGateway:
             workspace=workspace,
             undo_manager=undo_manager,
             gui_window=gui_window,
+            providers=providers,
         )
         session_id = self.session_mgr.open_session(
             client_type=client_type,

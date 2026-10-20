@@ -67,6 +67,9 @@ class ExecutionContext:
     # Runtime-wired services (e.g. TimelineService) accessible via ctx.services
     services: Any = None
 
+    # Runtime nondeterminism providers. None preserves legacy system behavior.
+    providers: Any = None
+
     # Optional profiler for instrumenting command/query handlers from the GUI.
     profiler: Any = None
 
@@ -165,9 +168,6 @@ class CommandExecutor:
                 "Use session.query() or query_service.execute() instead."
             )
 
-        import time
-        start = time.perf_counter()
-
         # Use explicit context if provided, otherwise fall back to internal.
         # The fallback preserves backward compatibility for legacy callers.
         if context is None:
@@ -179,6 +179,16 @@ class CommandExecutor:
             )
             context = self._context
         ctx = context
+        providers = getattr(ctx, "providers", None)
+        clock = getattr(providers, "clock", None)
+        ids = getattr(providers, "ids", None)
+        perf_counter = clock.perf_counter if clock is not None else time.perf_counter
+        new_message_id = (
+            (lambda: ids.uuid4().hex)
+            if ids is not None
+            else (lambda: __import__('uuid').uuid4().hex)
+        )
+        start = perf_counter()
 
         # Resolve canonical command ID for lifecycle events
         canonical_id = self._alias_to_canonical.get(command_id, command_id)
@@ -188,16 +198,16 @@ class CommandExecutor:
 
         # Create command envelope
         event = MessageEnvelope(
-            message_id=__import__('uuid').uuid4().hex,
+            message_id=new_message_id(),
             message_type="command",
             topic=f"command.{canonical_id}",
-            correlation_id=correlation_id or __import__('uuid').uuid4().hex,
+            correlation_id=correlation_id or new_message_id(),
             causation_id=causation_id,
             session_id=session_id,
             client_type=None,
             workspace_id=None,
             actor_id=None,
-            timestamp=__import__('time').perf_counter(),
+            timestamp=perf_counter(),
             payload=dict(params, command_id=canonical_id),
             context=context,
             status="accepted",
@@ -218,7 +228,7 @@ class CommandExecutor:
             fail_params["__error"] = error_msg
             # Publish failure events for not found
             event_fail = MessageEnvelope(
-                message_id=__import__('uuid').uuid4().hex,
+                message_id=new_message_id(),
                 message_type="command",
                 topic=f"command.{canonical_id}.failed",
                 correlation_id=event.correlation_id,
@@ -227,7 +237,7 @@ class CommandExecutor:
                 client_type=None,
                 workspace_id=None,
                 actor_id=None,
-                timestamp=__import__('time').perf_counter(),
+                timestamp=perf_counter(),
                 payload=dict(fail_params, command_id=canonical_id, error=error_msg),
                 context=ctx,
                 status="failed",
@@ -283,7 +293,7 @@ class CommandExecutor:
                 # Call the handler
                 result = handler(**call_args)
 
-                duration = (time.perf_counter() - start) * 1000
+                duration = (perf_counter() - start) * 1000
 
                 exec_result = ExecutionResult(
                     status=ExecutionStatus.SUCCESS,
@@ -313,7 +323,7 @@ class CommandExecutor:
                     pass  # Recording failures must not affect command execution
 
             except (Exception, KeyboardInterrupt) as e:
-                duration = (time.perf_counter() - start) * 1000
+                duration = (perf_counter() - start) * 1000
 
                 # Cancel undo grouping on failure
                 if undo_mgr is not None:
@@ -330,7 +340,7 @@ class CommandExecutor:
                 fail_params = dict(params)
                 fail_params["__error"] = str(e)
                 event_fail = MessageEnvelope(
-                    message_id=__import__('uuid').uuid4().hex,
+                    message_id=new_message_id(),
                     message_type="command",
                     topic=f"command.{canonical_id}.failed",
                     correlation_id=event.correlation_id,
@@ -339,7 +349,7 @@ class CommandExecutor:
                     client_type=None,
                     workspace_id=None,
                     actor_id=None,
-                    timestamp=__import__('time').perf_counter(),
+                    timestamp=perf_counter(),
                     payload=dict(fail_params, command_id=canonical_id, error=str(e)),
                     context=ctx,
                     status="failed",

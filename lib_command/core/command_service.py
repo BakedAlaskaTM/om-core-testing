@@ -96,6 +96,7 @@ class CommandService:
                     command_id="unknown",
                     error="Missing command_id in payload",
                 ),
+                providers=getattr(ctx, "providers", None),
             )
             return
 
@@ -126,6 +127,7 @@ class CommandService:
             session_id=session_id,
             result=result,
             original_command_id=command_id,
+            providers=getattr(ctx, "providers", None),
         )
 
     def _send_reply(
@@ -135,13 +137,16 @@ class CommandService:
         session_id: Optional[str],
         result: ExecutionResult,
         original_command_id: Optional[str] = None,
+        providers: Any = None,
     ) -> None:
         """Publish a reply envelope. If reply_topic is None, reply is silently dropped."""
         if reply_topic is None:
             return
 
+        ids = getattr(providers, "ids", None)
+        clock = getattr(providers, "clock", None)
         reply = MessageEnvelope(
-            message_id=_uuid.uuid4().hex,
+            message_id=(ids.uuid4().hex if ids is not None else _uuid.uuid4().hex),
             message_type="reply",
             topic=reply_topic,
             correlation_id=correlation_id,
@@ -149,7 +154,7 @@ class CommandService:
             client_type=None,
             workspace_id=None,
             actor_id=None,
-            timestamp=_time.perf_counter(),
+            timestamp=(clock.perf_counter() if clock is not None else _time.perf_counter()),
             payload={
                 "success": result.success,
                 "status": result.status.name,
