@@ -7,9 +7,11 @@ import contextlib
 import hashlib
 import io
 import json
+import sys
 from dataclasses import dataclass
 
 from lib_dst.executor import execute_trace
+from lib_dst.failures import capture_failure
 from lib_dst.generator import generate_trace
 from lib_dst.schemas import TraceTranscript
 
@@ -54,7 +56,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--start-seed", type=int, default=0)
     parser.add_argument("--count", type=int, default=1)
+    parser.add_argument("--trace-stdin", action="store_true")
     args = parser.parse_args()
+    if args.trace_stdin:
+        trace = TraceTranscript.from_json(sys.stdin.read())
+        with contextlib.redirect_stdout(io.StringIO()):
+            outcome = capture_failure(trace)
+        print(outcome.to_json())
+        return
     result = run_batch(args.start_seed, args.count)
     print(json.dumps(result.to_dict(), sort_keys=True, separators=(",", ":")))
     if result.oracle_failures:

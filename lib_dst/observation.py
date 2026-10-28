@@ -81,4 +81,25 @@ def observe_workspace(workspace: Any, spec: ObservationSpec) -> CanonicalObserva
             }
         )
 
-    return CanonicalObservation(state={"dimensions": dimensions, "cubes": cubes})
+    selected_cubes = set(spec.cubes)
+    rule_ids = [rule_id for rule_id in workspace.rule_order if rule_id in workspace.rules]
+    rule_ids.extend(sorted(set(workspace.rules) - set(rule_ids)))
+    rules: list[dict[str, Any]] = []
+    for rule_id in rule_ids:
+        rule = workspace.rules[rule_id]
+        cube = workspace.cubes.get(rule.cube_id)
+        if cube is None or cube.name not in selected_cubes:
+            continue
+        rules.append(
+            {
+                "cube": cube.name,
+                "targets": [list(target) for target in (rule.targets or ())],
+                "expression": rule.expression,
+                "is_anchored": rule.is_anchored,
+                "precedence": len(rules),
+            }
+        )
+
+    return CanonicalObservation(
+        state={"dimensions": dimensions, "cubes": cubes, "rules": rules}
+    )

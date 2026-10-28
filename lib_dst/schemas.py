@@ -176,3 +176,45 @@ class ExecutionReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))
+
+
+@dataclass(frozen=True)
+class InvariantCheck:
+    name: str
+    passed: bool
+    expected_sha256: str
+    actual_sha256: str
+    detail: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        value: dict[str, Any] = {
+            "name": self.name,
+            "passed": self.passed,
+            "expected_sha256": self.expected_sha256,
+            "actual_sha256": self.actual_sha256,
+        }
+        if self.detail is not None:
+            value["detail"] = self.detail
+        return value
+
+
+@dataclass(frozen=True)
+class ConvergenceReport:
+    trace_sha256: str
+    execution: ExecutionReport
+    checks: tuple[InvariantCheck, ...]
+
+    @property
+    def passed(self) -> bool:
+        return self.execution.oracle_passed and all(check.passed for check in self.checks)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "trace_sha256": self.trace_sha256,
+            "passed": self.passed,
+            "execution": self.execution.to_dict(),
+            "checks": [check.to_dict() for check in self.checks],
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), sort_keys=True, separators=(",", ":"))

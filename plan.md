@@ -693,6 +693,96 @@ Validation performed:
 Exit: every induced failure produces a standalone minimized trace that reproduces from a
 clean process.
 
+#### Phase 2 outcome (completed 2026-10-28)
+
+- Refactored `lib_dst.executor` into reusable runtime construction, operation replay, and
+  report projection functions while preserving the Phase 1 `execute_trace(trace)` API.
+- Expanded canonical observations to include logical rule definitions and semantic rule
+  precedence without exposing generated rule or model IDs.
+- Added `lib_dst/invariants.py` with four explicit checks: first full-recalculation cache
+  stability, second full-recalculation idempotence, in-memory snapshot round-trip, and
+  JSON persistence convergence on a genuinely fresh engine.
+- Added trace-recorded persistence fault decisions and a workspace-adapter decorator in
+  `lib_dst/faults.py`. Supported outcomes are an exception on the recorded Nth save/load
+  and malformed JSON on the recorded Nth load.
+- Added stable failure signatures in `lib_dst/failures.py`. Identity consists only of
+  category, lifecycle stage, and normalized code; raw paths, UUIDs, exception messages,
+  and stack traces are excluded.
+- Added dependency-aware validation in `lib_dst/validation.py`. It validates symbol
+  creation order, observation targets, AST/rule agreement, referenced hard values,
+  parser acceptance, serial mode, oracle presence, and unique fault occurrences before
+  execution or shrinking.
+- Added structured shrinking in `lib_dst/shrinker.py`. It attempts operation-range delta
+  reduction, AST simplification, numeric reduction toward `0`, `1`, and `-1`, then fault
+  removal. A candidate is retained only when it is smaller, structurally valid, and
+  reproduces the same normalized signature after a complete runtime teardown/rebuild.
+- Added stdin-based standalone trace reproduction to the existing worker/coordinator.
+  Canonical trace JSON is the only input needed to reproduce a minimized failure in a
+  clean process.
+- Added a narrow payload replacement hook to `InMemoryJsonAdapter` so malformed content
+  is exercised through the canonical JSON deserializer rather than simulated after load.
+
+Decisions:
+
+- Runtime A executes the trace, establishes the incremental observation, runs two full
+  recalculations, takes/restores a snapshot, and saves through `CommandSession`. Runtime A
+  is then closed and all local runtime singletons are reset before the adapter is read.
+- Runtime B is constructed around the newly deserialized workspace. It has a new engine,
+  empty caches, and a new dependency graph; it explicitly disables multithreaded
+  recalculation, bootstraps dependencies, and performs a full recalculation. Calling
+  `replace_workspace` on Runtime A is not accepted as cold-engine evidence.
+- Snapshot round-trip and JSON cold convergence are separate invariants. Snapshot storage
+  verifies the injected `InMemorySnapshotAdapter`; `InMemoryJsonAdapter` verifies the same
+  persistence representation used by the file adapter.
+- A fault decision records its layer, operation, occurrence, outcome, delivery guarantee,
+  expected recovery, and whether state loss is allowed. Phase 2 implements only
+  persistence `raise` and `malformed_json` outcomes. Request timeouts and delivery
+  perturbations remain Phase 3 work.
+- Save faults travel through the synchronous command bus as failed `ExecutionResult`
+  values. A stable `DSTFAULT[code]` marker preserves the declared fault identity across
+  that transport boundary without using raw error text as a signature.
+- The current generated model has no independent schema object or reducible observation
+  subset. Those shrink passes therefore reject invalid removals through structural
+  validation; the shrink order remains ready for broader generated schemas.
+- “Standalone minimized trace” means canonical schema-version-1 trace JSON reproduces the
+  same normalized signature in a clean worker process. Corpus ownership, coverage, and
+  mutation scheduling remain Phase 4.
+
+Discoveries:
+
+- The command-layer load path replaces an existing engine workspace. Cold convergence
+  therefore has to load from the adapter outside that command and compose a second
+  runtime; otherwise the test would only exercise derived-state reset on one engine.
+- `InMemoryJsonAdapter` is memory-resident at its port boundary but deliberately delegates
+  to the canonical file serializer through temporary files. It consequently exercises
+  production migrations and bootstrap behavior without using a scenario-owned path.
+- Engine recalculation retains or rebuilds calculated cube values depending on cache and
+  dependency state. Comparing canonical observations after two recalculations catches
+  both stale-cache and non-idempotent-result defects.
+- Persistence exceptions raised inside command handlers are converted to command results
+  by the command service. Failure normalization must therefore handle both live typed
+  exceptions on direct adapter load and stable error codes transported as command text.
+- AST reference dependencies are not fully represented by operation ordering alone.
+  Shrinking required validation derived from the serialized harness AST to prevent
+  deleting a hard value still needed by the oracle or rendered rule.
+- Persisted rule IDs differ only incidentally; logical targets, expressions, anchored
+  status, and precedence remain stable across JSON load and fresh-engine calculation.
+
+Validation performed:
+
+- `.venv/Scripts/python.exe -m pytest tests/test_dst_phase2.py -q`: 15 passed.
+- `.venv/Scripts/python.exe -m pytest tests/test_dst_phase0.py tests/test_dst_phase1.py tests/test_dst_phase2.py -q`:
+  61 passed.
+- `.venv/Scripts/python.exe -m pytest tests -q`: 69 passed.
+- A 256-seed Phase 2 sweep passed all oracle, cache, snapshot, and fresh-engine checks and
+  produced aggregate report SHA-256
+  `08ca8c94a67ec64e4680c3b4404c171e13f6c236b44e0d8a2fa9cbd830c81d0b`.
+- Save exception, load exception, and malformed-JSON failures each shrank to a smaller
+  canonical trace and reproduced the same signature after JSON round-trip and in a clean
+  subprocess with `PYTHONHASHSEED=202602` and `TZ=UTC`.
+- `.venv/Scripts/python.exe -m compileall -q lib_dst lib_storeadapters`: passed.
+- `git diff --check`: passed with only line-ending conversion warnings.
+
 ### Phase 3: virtual scheduling
 
 - Remove direct global-bus access from the DST execution path.

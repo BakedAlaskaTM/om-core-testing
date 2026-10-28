@@ -101,6 +101,17 @@ class InMemoryJsonAdapter(WorkspacePersistenceAdapter):
         }
         return ws, profile
 
+    def replace_payload(self, path: str | Path, payload: str) -> None:
+        """Replace a stored payload for deterministic corruption tests."""
+        key = str(path)
+        if key not in self._storage:
+            raise KeyError(key)
+        self._storage[key] = payload
+
+    def payload(self, path: str | Path) -> str:
+        """Return the exact serialized payload stored for *path*."""
+        return self._storage[str(path)]
+
 
 class InMemorySnapshotAdapter(SnapshotStoreAdapter):
     """Process-local snapshot store for isolated runtimes and DST workers."""
