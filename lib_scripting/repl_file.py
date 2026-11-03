@@ -307,6 +307,11 @@ class REPLFileMixin:
         Commands executed via source are NOT saved to command history.
         This allows you to load and run scripts without polluting your REPL history.
         """
+        self._last_source_result = {
+            "path": None,
+            "executed": 0,
+            "errors": ("Source did not complete",),
+        }
         try:
             import readline
         except ImportError:
@@ -314,6 +319,11 @@ class REPLFileMixin:
         
         if not arg:
             print("Error: No filename specified. Usage: source <filename>")
+            self._last_source_result = {
+                "path": None,
+                "executed": 0,
+                "errors": ("No filename specified",),
+            }
             return
 
         # Track source call stack so nested source paths resolve relative to the
@@ -339,11 +349,21 @@ class REPLFileMixin:
         filepath = filepath.resolve()
         if not filepath.exists():
             print(f"Error: File not found: {filepath}")
+            self._last_source_result = {
+                "path": str(filepath),
+                "executed": 0,
+                "errors": (f"File not found: {filepath}",),
+            }
             return
 
         source_path = str(filepath)
         if source_path in self._source_stack:
             print(f"Error: Circular source detected: {filepath.name}")
+            self._last_source_result = {
+                "path": source_path,
+                "executed": 0,
+                "errors": (f"Circular source detected: {filepath.name}",),
+            }
             return
 
         # Disable history writes during source (same approach as macro playback)
@@ -650,8 +670,11 @@ class REPLFileMixin:
                         continue
                     _flush_hardvalue_batches()
                     _flush_dim_item_batch()
-                    self.onecmd(stripped)
+                    command_result = self.onecmd(stripped)
                     executed += 1
+                    if command_result is True:
+                        errors.append((line_num, "Command reported failure", stripped))
+                        break
                 except Exception as e:
                     errors.append((line_num, str(e), stripped))
 
@@ -679,9 +702,22 @@ class REPLFileMixin:
                     print(f"    {line}")
             else:
                 print(f"Executed {executed} commands from {filepath.name}")
+            self._last_source_result = {
+                "path": str(filepath),
+                "executed": executed,
+                "errors": tuple(
+                    f"Line {line_num}: {err} [{line}]"
+                    for line_num, err, line in errors
+                ),
+            }
 
         except Exception as e:
             print(f"Error reading file: {e}")
+            self._last_source_result = {
+                "path": str(filepath) if "filepath" in locals() else None,
+                "executed": locals().get("executed", 0),
+                "errors": (str(e),),
+            }
         finally:
             self._source_stack.pop()
             # Resume UI refresh — fires a single coalesced refresh if any

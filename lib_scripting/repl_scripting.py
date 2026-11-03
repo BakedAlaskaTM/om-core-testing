@@ -200,7 +200,7 @@ class REPLScriptingMixin:
             result = self._safe_assert_parse(resolved_condition)
 
             if result:
-                print(f"✓ assert {condition_str}")
+                print(f"assert passed: {condition_str}")
                 return False
             else:
                 error_msg = message or f"Assertion failed: {condition_str}"

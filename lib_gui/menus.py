@@ -27,6 +27,7 @@ def create_menus(main_window: MainWindow, actions: MainWindowActions) -> None:
     menu = mw.menuBar().addMenu("File")
     menu.addAction(act.act_new)
     menu.addAction(act.act_open)
+    menu.addAction(act.act_import_script)
     menu.addAction(act.act_save)
     menu.addSeparator()
     menu.addAction(act.act_quit)

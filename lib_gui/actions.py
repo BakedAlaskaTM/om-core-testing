@@ -27,6 +27,7 @@ class MainWindowActions:
     # File actions
     act_new: QtGui.QAction
     act_open: QtGui.QAction
+    act_import_script: QtGui.QAction
     act_save: QtGui.QAction
     act_quit: QtGui.QAction
 
@@ -89,6 +90,10 @@ def create_actions(main_window: MainWindow) -> MainWindowActions:
     act_open = QtGui.QAction("Open…", mw)
     act_open.setIcon(_load_icon("folder-open.svg"))
     act_open.triggered.connect(mw._on_open)
+
+    act_import_script = QtGui.QAction("Import OpenM Script", mw)
+    act_import_script.setIcon(_load_icon("file-import.svg"))
+    act_import_script.triggered.connect(mw._on_import_script)
 
     act_save = QtGui.QAction("Save…", mw)
     act_save.setIcon(_load_icon("device-floppy.svg"))
@@ -239,6 +244,7 @@ def create_actions(main_window: MainWindow) -> MainWindowActions:
     return MainWindowActions(
         act_new=act_new,
         act_open=act_open,
+        act_import_script=act_import_script,
         act_save=act_save,
         act_quit=act_quit,
         act_undo=act_undo,

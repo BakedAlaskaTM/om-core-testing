@@ -64,6 +64,22 @@ def _parse_role_syntax(spec: str) -> tuple[str, dict[str, list[str]]]:
 class REPLModelMixin:
     """Mixin for model creation and rule operations."""
 
+    def _resolve_script_dimension_ids(
+        self: OpenMREPLCore, dimension_refs: list[str]
+    ) -> list[str] | None:
+        """Resolve script-facing dimension names or IDs to canonical IDs."""
+        resolved: list[str] = []
+        for reference in dimension_refs:
+            dim_id, dim_name = self._resolve_dimension_id(reference)
+            if dim_id is None and dim_name is None:
+                print("Error: Could not list dimensions (timeout or disconnect)")
+                return None
+            if not dim_id:
+                print(f"Error: Dimension '{reference}' not found")
+                return None
+            resolved.append(dim_id)
+        return resolved
+
     def do_use(self: OpenMREPLCore, arg: str):
         """
         Set the default cube context for subsequent commands.
@@ -129,7 +145,9 @@ class REPLModelMixin:
         # Backward-compatible: bare cube name means create
         if sub not in ("create", "delete", "attach", "detach"):
             name = parts[0]
-            dim_ids = parts[1:]
+            dim_ids = self._resolve_script_dimension_ids(parts[1:])
+            if dim_ids is None:
+                return
             try:
                 result = self.session.execute("create_cube", name=name, dimension_ids=dim_ids)
                 if result.success:
@@ -146,7 +164,9 @@ class REPLModelMixin:
                 print("Usage: cube create <name> [dim1 dim2 ...]")
                 return
             name = rest[0]
-            dim_ids = rest[1:]
+            dim_ids = self._resolve_script_dimension_ids(rest[1:])
+            if dim_ids is None:
+                return
             try:
                 result = self.session.execute("create_cube", name=name, dimension_ids=dim_ids)
                 if result.success:
@@ -309,6 +329,7 @@ class REPLModelMixin:
 
         Usage:
           dimension create <name> [--set|--seq] [item1 item2 ...]
+          dimension item <dimension_name> <item_name>
           dimension rename <old_name> <new_name>
           dimension delete <name>
 
@@ -316,6 +337,7 @@ class REPLModelMixin:
         """
         if not arg:
             print("Usage: dimension create <name> [--set|--seq] [item1 ...]")
+            print("       dimension item <dimension_name> <item_name>")
             print("       dimension rename <old_name> <new_name>")
             print("       dimension delete <name>")
             return
@@ -356,6 +378,31 @@ class REPLModelMixin:
                     print(f"Error creating dimension: {result.error}")
             except Exception as e:
                 print(f"Error: {e}")
+
+        elif sub == "item":
+            if len(rest) != 2:
+                print("Usage: dimension item <dimension_name> <item_name>")
+                return
+            dim_name, item_name = rest
+            dim_id, resolved_dim_name = self._resolve_dimension_id(dim_name)
+            if dim_id is None and resolved_dim_name is None:
+                print("Error: Could not list dimensions (timeout or disconnect)")
+                return
+            if not dim_id:
+                print(f"Error: Dimension '{dim_name}' not found")
+                return
+            try:
+                result = self.session.execute(
+                    "create_dimension_item",
+                    dim_id=dim_id,
+                    name=item_name,
+                )
+                if result.success:
+                    print(f"Created dimension item: {dim_name}.{item_name}")
+                else:
+                    print(f"Error creating dimension item: {result.error}")
+            except Exception as e:
+                print(f"Error creating dimension item: {e}")
 
         elif sub == "rename":
             if len(rest) < 2:
@@ -405,6 +452,7 @@ class REPLModelMixin:
 
     def help_dimension(self: OpenMREPLCore):
         print("\ndimension create <name> [--set|--seq] [item1 ...]")
+        print("dimension item <dimension_name> <item_name>")
         print("dimension rename <old_name> <new_name>")
         print("dimension delete <name>")
         print("  Create, rename, or delete dimensions. Expands to canonical command IDs.")
@@ -734,6 +782,12 @@ class REPLModelMixin:
         target = target.strip()
         expr = expr.strip()
 
+        # Strip the logical anchor before resolving an explicit cube name.
+        # Previously "$Sales::..." attempted to resolve a cube named "$Sales".
+        is_anchored = target.startswith("$")
+        if is_anchored:
+            target = target[1:].strip()
+
         try:
             cube_id = None
             cube_name = None
@@ -846,18 +900,6 @@ class REPLModelMixin:
                             if dim_name:
                                 targets.append((dim_name, dim_spec))
                         dim_idx += 1
-
-            # Detect $ anchor prefix
-            is_anchored = False
-            if target.startswith("$"):
-                is_anchored = True
-                target = target[1:].strip()
-                # Re-parse target after stripping $
-                if '::' in target:
-                    parts = target.split('::')
-                    spec = parts[1].strip() if len(parts) > 1 else ""
-                else:
-                    spec = target
 
             if batch_mode:
                 return {

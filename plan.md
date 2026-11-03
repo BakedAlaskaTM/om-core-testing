@@ -922,6 +922,90 @@ canonical model result as trace replay, and that file can be loaded through a do
 GUI workflow for visual inspection. Harness-only fault and scheduling behavior remains
 replayable only from canonical trace JSON and is identified as such in the export.
 
+#### Phase 3.5 outcome (completed 2026-11-04)
+
+- Added `lib_dst/script_export.py` with deterministic text and file export APIs. Exports
+  include the canonical trace hash, master seed, one ordered command per trace operation,
+  the reconstructed AST expression, oracle guidance, and a trace-hash-named presentation
+  view.
+- Export validation first applies normal trace validation, reconstructs the expression
+  from the harness AST, checks exact agreement with the recorded rule, and passes the
+  result through the production expression parser. Unsupported identifiers, values,
+  operations, scopes, and ambiguous rule sets fail with `ScriptExportError`.
+- Added logical script spellings for individual dimension-item creation and fixed cube
+  creation to resolve dimension names to runtime IDs. Fixed `$Cube::...` rule targets by
+  removing the anchor marker before cube-name resolution, so exported rules retain the
+  trace's anchored semantics.
+- Added `lib_scripting/script_import.py`, which sources a script through the existing
+  `OpenMREPL` parser and returns a structured result without introducing a second script
+  interpreter. `source` now records its last outcome while preserving its existing falsey
+  return contract.
+- Added **File -> Import OpenM Script...** to the GUI. It imports into the current session,
+  uses existing refresh suspension/coalescing, refreshes the read models afterward, and
+  marks the workspace dirty.
+- Added `--export-script-stdin [PATH]` to `lib_dst.worker`. With no path it writes the
+  script to stdout; with a path it writes UTF-8 directly, avoiding shell encoding and BOM
+  differences. Added the corresponding GUI and worker workflow to `README.md`.
+
+Decisions:
+
+- Canonical trace JSON remains the only replay authority. Persistence fault and scheduler
+  policies are included as deterministic comments but are not converted into script
+  commands or claimed to run in the GUI.
+- Phase 3.5 exports the current single-rule, AST-backed semantic subset. Names must be
+  unquoted OpenM identifiers and hard values must be finite numeric literals. Broader
+  string/name grammar and multiple independent ASTs require explicit future schema
+  support rather than lossy escaping or rule selection.
+- Each trace operation maps to a distinct script command. Dimension items are not folded
+  into dimension creation, preserving the trace's visible operation order and making
+  manual comparison straightforward.
+- The presentation view is appended only after all trace operations and is named from the
+  trace hash. Views are outside the canonical DST observation, so it cannot change the
+  semantic comparison.
+- Numeric script checks use lower and upper bound assertions matching the oracle's
+  `rel_tol=1e-9` and `abs_tol=1e-12` contract. Error expectations are emitted as explicit
+  visual annotations because the current script assertion language cannot compare
+  `CellError` values.
+- GUI import is additive and never discards or replaces a workspace. The documented
+  workflow asks users to start from a fresh workspace so logical-name collisions cannot
+  alter the intended spot-check model.
+
+Discoveries:
+
+- The documented cube script syntax accepted dimension names, but `do_cube` forwarded
+  them to the canonical command as IDs. Export round-trip required resolving logical names
+  at the scripting boundary.
+- The rule parser tested for `$` anchoring only after attempting cube resolution, causing
+  it to search for a literal cube named `$Calc`. Moving anchor parsing ahead of resolution
+  makes the existing intended syntax usable.
+- There was no script command for one logical-name-addressed dimension-item operation.
+  The prior source optimization accepted ID-addressed `exec` records, which cannot form a
+  portable human-readable trace artifact.
+- Successful script assertions printed a Unicode checkmark that can raise a Windows
+  console encoding error and be misreported as a failed assertion. The success message is
+  now ASCII, and `source` records truthy command/assertion failures in its structured
+  result.
+- Exact script equality is not a valid substitute for the harness oracle: seed 18 exposed
+  a raw binary floating-point value that is canonically equal within tolerance. Exported
+  assertions therefore use the oracle's tolerance rather than exact equality.
+- The combined GUI and REPL already share a command session. A narrow GUI action can reuse
+  the production source parser and batch behavior without teaching the GUI a second file
+  format or treating scripts as persisted workspace JSON.
+
+Validation performed:
+
+- `.venv/Scripts/python.exe -m pytest tests/test_dst_phase35.py -q`: 15 passed.
+- `.venv/Scripts/python.exe -m pytest tests/test_dst_phase0.py tests/test_dst_phase1.py tests/test_dst_phase2.py tests/test_dst_phase3.py tests/test_dst_phase35.py -q`:
+  88 passed.
+- `.venv/Scripts/python.exe -m pytest tests -q`: 96 passed.
+- A 128-seed export -> fresh-runtime import sweep, including four `CellError` traces,
+  produced observations and oracle results identical to direct trace execution. Repeated
+  export produced the identical aggregate script SHA-256
+  `76d4b4eafe6184b8a4ae8b72949a8c5a0fe5426336e7420f4e261b692ad2f838`.
+- Worker stdout and direct UTF-8 file export are byte-identical to the library exporter.
+- `.venv/Scripts/python.exe -m compileall -q lib_dst lib_scripting lib_gui`: passed.
+- `git diff --check`: passed with only line-ending conversion warnings.
+
 ### Phase 4: coverage-guided evolution
 
 - Add normalized branch/arc coverage.

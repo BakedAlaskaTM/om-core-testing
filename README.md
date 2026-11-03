@@ -249,6 +249,20 @@ Save that as `hello.openm`, then source it from the REPL or TUI:
 om> source hello.openm
 ```
 
+The GUI uses the same script parser. Choose **File â†’ Import OpenM Scriptâ€¦** to
+apply a script to the current workspace. Deterministic simulation traces can be
+converted from canonical JSON on standard input:
+
+```powershell
+Get-Content -Raw trace.json |
+  .venv\Scripts\python.exe -m lib_dst.worker --export-script-stdin trace.openm
+```
+
+Open a fresh workspace before importing an exported trace so logical model names
+do not collide with existing objects. The exported script recreates model semantics
+for visual inspection; harness-only persistence faults and virtual scheduling remain
+replayable only from the original JSON trace.
+
 For the full walkthrough, see:
 
 https://cloudcell.github.io/om-docs/start/quickstart/

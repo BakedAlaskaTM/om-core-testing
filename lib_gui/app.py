@@ -7,6 +7,7 @@ import signal
 import threading
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 from PySide6 import QtCore, QtGui, QtWidgets
 from shiboken6 import isValid
@@ -6385,6 +6386,49 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         self.open_file(path)
+
+    def import_openm_script(self, path: str):
+        """Import a script into the current workspace through the shared parser."""
+        from lib_scripting.script_import import import_openm_script
+
+        result = import_openm_script(self.session, path, gui_window=self)
+        if not result.success:
+            return result
+
+        if self.gui_view_model is not None:
+            self._bootstrap_view_model()
+        self.grid_read_model.invalidate_cache()
+        self._dock_browser.rebuild()
+        self._workspace.reload_workspace()
+        for win in list(self._workspace_windows):
+            win.reload_workspace()
+        self._reload_active_view()
+        self._mark_dirty(True)
+        self._update_window_title()
+        return result
+
+    @QtCore.Slot()
+    def _on_import_script(self) -> None:
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Import OpenM Script",
+            filter="OpenM Script (*.openm);;All Files (*)",
+        )
+        if not path:
+            return
+
+        result = self.import_openm_script(path)
+        if not result.success:
+            detail = "\n".join(result.errors[:5])
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Import OpenM Script",
+                f"The script could not be imported.\n\n{detail}",
+            )
+            return
+        self._flash_status_message(
+            f"Imported {result.executed} commands from {Path(result.path).name}"
+        )
 
     @QtCore.Slot()
     def _on_create_dimension(self) -> None:
