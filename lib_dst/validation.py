@@ -103,6 +103,11 @@ def _validate_trace(trace: TraceTranscript) -> None:
 
     scenario_from_trace(trace)
 
+    # Imported lazily because mutation application itself validates candidates.
+    from lib_dst.mutation import mutation_decisions_from_trace
+
+    mutation_decisions_from_trace(trace)
+
 
 def _require_symbol(symbols: dict, handle: str, kind: SymbolKind) -> None:
     value = symbols.get(handle)

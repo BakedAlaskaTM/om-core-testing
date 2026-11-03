@@ -1,0 +1,32 @@
+# Generated deterministic simulation trace
+# Trace SHA-256: 5f4fa0ac068c409300c5058af5460c556cfd26792b23ed4e59a77701c4955ed8
+# Master seed: 2040
+# Canonical JSON trace remains the replay authority.
+
+# Trace step 0: configure_serial (runtime)
+set_multithread_recompute off
+# Trace step 1: create_dimension (dimension:line)
+dimension create Line --set
+# Trace step 2: create_dimension_item (item:line/input-a)
+dimension item Line InputA
+# Trace step 3: create_dimension_item (item:line/input-b)
+dimension item Line InputB
+# Trace step 4: create_dimension_item (item:line/result)
+dimension item Line Result
+# Trace step 5: create_cube (cube:calc)
+cube create Calc Line
+# Trace step 6: set_cell_hardvalue (cube:calc)
+hval $Calc::Line.InputA = 17
+# Trace step 7: set_cell_hardvalue (cube:calc)
+hval $Calc::Line.InputB = -18
+# Trace step 8: set_rule (cube:calc)
+rule $Calc::Line.Result = (Calc::[Line.InputA] - 8)
+# Trace step 9: run_recalculation (runtime)
+calc
+
+# Presentation-only GUI view; not part of canonical trace observation.
+view DST_Trace_5f4fa0ac068c = Calc::Line
+# Expected oracle: {"number":9.0}
+# Numeric checks use the harness oracle tolerance (9.000000000000001e-09).
+assert Calc::@.value:Line.Result >= 8.999999991 "DST trace oracle below tolerance"
+assert Calc::@.value:Line.Result <= 9.000000009 "DST trace oracle above tolerance"

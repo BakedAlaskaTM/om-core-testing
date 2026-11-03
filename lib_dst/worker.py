@@ -11,6 +11,7 @@ import sys
 from dataclasses import dataclass
 
 from lib_dst.executor import execute_trace
+from lib_dst.evolution import execute_candidate
 from lib_dst.failures import capture_failure
 from lib_dst.generator import generate_trace
 from lib_dst.schemas import TraceTranscript
@@ -60,6 +61,7 @@ def main() -> None:
     parser.add_argument("--count", type=int, default=1)
     parser.add_argument("--trace-stdin", action="store_true")
     parser.add_argument("--scheduled-trace-stdin", action="store_true")
+    parser.add_argument("--candidate-stdin", action="store_true")
     parser.add_argument(
         "--export-script-stdin",
         nargs="?",
@@ -80,6 +82,12 @@ def main() -> None:
         with contextlib.redirect_stdout(io.StringIO()):
             report = execute_scheduled_trace(trace)
         print(report.to_json())
+        return
+    if args.candidate_stdin:
+        trace = TraceTranscript.from_json(sys.stdin.read())
+        with contextlib.redirect_stdout(io.StringIO()):
+            evidence = execute_candidate(trace)
+        print(evidence.to_json())
         return
     if args.trace_stdin:
         trace = TraceTranscript.from_json(sys.stdin.read())

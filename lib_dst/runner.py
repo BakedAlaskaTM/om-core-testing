@@ -77,3 +77,21 @@ def run_scheduled_in_worker(
         env=environment,
     )
     return json.loads(completed.stdout.strip().splitlines()[-1])
+
+
+def run_candidate_in_worker(
+    trace: TraceTranscript, *, python_hash_seed: str = "1"
+) -> dict[str, Any]:
+    """Collect candidate coverage/outcome in an isolated worker process."""
+    environment = dict(os.environ)
+    environment["PYTHONHASHSEED"] = python_hash_seed
+    environment["TZ"] = "UTC"
+    completed = subprocess.run(
+        [sys.executable, "-m", "lib_dst.worker", "--candidate-stdin"],
+        check=True,
+        capture_output=True,
+        text=True,
+        input=trace.to_json(),
+        env=environment,
+    )
+    return json.loads(completed.stdout.strip().splitlines()[-1])

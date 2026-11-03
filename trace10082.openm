@@ -1,0 +1,30 @@
+# Generated deterministic simulation trace
+# Trace SHA-256: f442e64c577002d4b918fec7081362ce7f5375af13df4c5735d62f101f01bc98
+# Master seed: 10082
+# Canonical JSON trace remains the replay authority.
+
+# Trace step 0: configure_serial (runtime)
+set_multithread_recompute off
+# Trace step 1: create_dimension (dimension:line)
+dimension create Line --set
+# Trace step 2: create_dimension_item (item:line/input-a)
+dimension item Line InputA
+# Trace step 3: create_dimension_item (item:line/input-b)
+dimension item Line InputB
+# Trace step 4: create_dimension_item (item:line/result)
+dimension item Line Result
+# Trace step 5: create_cube (cube:calc)
+cube create Calc Line
+# Trace step 6: set_cell_hardvalue (cube:calc)
+hval $Calc::Line.InputA = -6
+# Trace step 7: set_cell_hardvalue (cube:calc)
+hval $Calc::Line.InputB = 0
+# Trace step 8: set_rule (cube:calc)
+rule $Calc::Line.Result = (Calc::[Line.InputA] / Calc::[Line.InputB])
+# Trace step 9: run_recalculation (runtime)
+calc
+
+# Presentation-only GUI view; not part of canonical trace observation.
+view DST_Trace_f442e64c5770 = Calc::Line
+# Expected oracle: {"error":"#DIV/0!"}
+# Visually confirm Calc::@.value:Line.Result displays #DIV/0!; script assertions cannot compare CellError values.
