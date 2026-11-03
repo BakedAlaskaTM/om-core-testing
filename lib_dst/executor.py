@@ -57,6 +57,8 @@ def create_trace_runtime(
     workspace: Workspace | None = None,
     workspace_adapter: WorkspacePersistenceAdapter | None = None,
     snapshot_adapter: SnapshotStoreAdapter | None = None,
+    bus: MessageBus | None = None,
+    install_global_bus: bool = True,
 ):
     """Construct a deterministic runtime for a trace without executing it."""
     master_seed = trace.metadata.get("master_seed", 0)
@@ -69,12 +71,13 @@ def create_trace_runtime(
             reset_id_provider(token)
     return create_runtime(
         workspace=workspace,
-        bus=MessageBus(),
+        bus=bus or MessageBus(),
         providers=providers,
         workspace_adapter=workspace_adapter or InMemoryJsonAdapter(),
         snapshot_adapter=snapshot_adapter or InMemorySnapshotAdapter(),
         enable_solver=False,
         persistence_mode="manual",
+        install_global_bus=install_global_bus,
     )
 
 

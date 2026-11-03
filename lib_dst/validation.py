@@ -5,6 +5,7 @@ from __future__ import annotations
 from lib_dst.ast import Binary, Call, Comparison, Negate, Reference, from_dict, render
 from lib_dst.faults import decisions_from_trace
 from lib_dst.schemas import TraceTranscript
+from lib_dst.scheduling import scenario_from_trace
 from lib_dst.symbols import SymbolKind
 from lib_openm.rule_eval import _Parser, _tokenise
 
@@ -99,6 +100,8 @@ def _validate_trace(trace: TraceTranscript) -> None:
     identities = [(decision.operation, decision.occurrence) for decision in decisions]
     if len(identities) != len(set(identities)):
         raise TraceValidationError("Duplicate fault decision occurrence")
+
+    scenario_from_trace(trace)
 
 
 def _require_symbol(symbols: dict, handle: str, kind: SymbolKind) -> None:

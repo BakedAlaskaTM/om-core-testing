@@ -145,8 +145,11 @@ class QueryService:
                 return
 
         result = self.execute(envelope.context, query_type, **payload)
+        providers = getattr(envelope.context, "providers", None)
+        ids = getattr(providers, "ids", None)
+        clock = getattr(providers, "clock", None)
         reply_envelope = MessageEnvelope(
-            message_id=uuid.uuid4().hex,
+            message_id=(ids.uuid4().hex if ids is not None else uuid.uuid4().hex),
             message_type="reply",
             topic=envelope.reply_to,
             correlation_id=envelope.correlation_id,
@@ -154,13 +157,14 @@ class QueryService:
             client_type=envelope.client_type,
             workspace_id=envelope.workspace_id,
             actor_id=envelope.actor_id,
-            timestamp=time.perf_counter(),
+            timestamp=(clock.perf_counter() if clock is not None else time.perf_counter()),
             payload={
                 "status": result.status.name,
                 "data": result.data,
                 "error": result.error,
             },
             context=None,
+            causation_id=envelope.message_id,
             status="succeeded" if result.success else "failed",
             reply_to=None,
         )

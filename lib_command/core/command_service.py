@@ -81,7 +81,7 @@ class CommandService:
         ctx = envelope.context
         if ctx is None:
             from ..core.executor import ExecutionContext
-            ctx = ExecutionContext()
+            ctx = ExecutionContext(bus=self.bus)
         if self.persistence_adapter is not None and not hasattr(ctx, "persistence_adapter"):
             ctx.persistence_adapter = self.persistence_adapter
         reply_topic = envelope.reply_to
@@ -97,6 +97,7 @@ class CommandService:
                     error="Missing command_id in payload",
                 ),
                 providers=getattr(ctx, "providers", None),
+                causation_id=envelope.message_id,
             )
             return
 
@@ -111,7 +112,7 @@ class CommandService:
                 context=ctx,
                 correlation_id=envelope.correlation_id,
                 session_id=envelope.session_id,
-                causation_id=envelope.causation_id,
+                causation_id=envelope.message_id,
                 **params
             )
         except Exception as exc:
@@ -128,6 +129,7 @@ class CommandService:
             result=result,
             original_command_id=command_id,
             providers=getattr(ctx, "providers", None),
+            causation_id=envelope.message_id,
         )
 
     def _send_reply(
@@ -138,6 +140,7 @@ class CommandService:
         result: ExecutionResult,
         original_command_id: Optional[str] = None,
         providers: Any = None,
+        causation_id: str | None = None,
     ) -> None:
         """Publish a reply envelope. If reply_topic is None, reply is silently dropped."""
         if reply_topic is None:
@@ -150,6 +153,7 @@ class CommandService:
             message_type="reply",
             topic=reply_topic,
             correlation_id=correlation_id,
+            causation_id=causation_id,
             session_id=session_id,
             client_type=None,
             workspace_id=None,

@@ -442,7 +442,7 @@ def handle_create_dimension_item_adapter(
     ctx: Any, dim_id: str, name: str, position: str = "append"
 ) -> Any:
     cmd = AddDimensionItemCommand(dim_id=dim_id, name=name, position=position)
-    bus = get_message_bus()
+    bus = getattr(ctx, "bus", None) or get_message_bus()
     result = handle_create_dimension_item(cmd, ctx.engine, bus, ctx=ctx)
     return _adapt_result(result)
 

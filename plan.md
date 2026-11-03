@@ -793,6 +793,135 @@ Validation performed:
 Exit: scheduler scenarios complete without wall-clock sleeps or `threading.Event` waits,
 and replay preserves the event order exactly.
 
+#### Phase 3 outcome (completed 2026-11-04)
+
+- Added `lib_runtime/virtual_scheduler.py`, a single-threaded integer-nanosecond scheduler
+  implementing `call_at`, `run_next`, and `run_until`. Queue ordering is exactly
+  `(logical_time_ns, insertion_sequence, event_id)`.
+- Added `ScheduledMessageBus` in `lib_command/core/scheduled_message_bus.py`. Publications
+  are queued on the virtual scheduler, and request/reply pumps scheduled callbacks until
+  its correlated reply or virtual deadline. The scheduled request path contains no
+  `threading.Event`, wall-clock sleep, or background thread.
+- Added optional explicit-bus composition through runtime context, executor, gateway,
+  command service, query service, and the command handlers used by DST. Production
+  defaults still install and resolve the singleton bus for compatibility; scheduled DST
+  construction opts out of global installation.
+- Added request causation to command/query lifecycle and reply envelopes. The scheduled
+  bus also records the currently delivered parent for engine-originated publications
+  whose production envelopes do not carry an explicit causation ID.
+- Added trace-recorded scheduler scenarios in `lib_dst/scheduling.py`. Decisions specify
+  topic pattern, occurrence, delay in integer nanoseconds, mode, and delivery contract.
+  Scenario generation uses the independent `scheduler` seed domain and materializes all
+  decisions plus that sub-seed in trace metadata.
+- Added canonical scheduled execution reports containing schedule order, delivery order,
+  scheduled/delivered virtual time, normalized topic, stable message ordinal, causal
+  parent, request deadline/outcome, pending delivery, and final semantic observation.
+- Added clean-worker scheduled trace replay through stdin in the existing worker and
+  coordinator. Dynamic command/query reply topics are normalized so session and
+  correlation IDs do not become replay identities.
+- Added explicit independent notification probes for serialized reorder scenarios and a
+  non-mutating `workspace_summary` query probe for virtual timeout scenarios.
+
+Decisions:
+
+- The normal `MessageBus` remains synchronous and unchanged. Virtual delivery is selected
+  only by composing `ScheduledMessageBus`; it is not a process-global mode switch.
+- Existing transport timeout arguments remain seconds for API compatibility. The
+  scheduled bus converts them once to integer nanoseconds and performs no wall-clock
+  reads while waiting.
+- Trace schema remains version 1. Scheduler policy is optional metadata, so Phase 0-2
+  traces retain their existing wire format and execution behavior.
+- Command requests and replies may be delayed within their deadline. Timeout injection is
+  restricted to a non-mutating query request whose delivery is recorded after the
+  deadline. Arbitrary mutation loss, retry, and exactly-once claims remain unsupported.
+- Reorder decisions are accepted only for explicitly declared independent `event.*`
+  notifications. Command requests, mutation commands, lifecycle messages, and replies
+  cannot use the reorder contract.
+- A timed-out request advances virtual time exactly to its deadline and remains pending.
+  The scenario does not drain it afterward, preventing work from being silently applied
+  after the caller has observed timeout.
+- Equal-time events retain insertion order. Deliberate reordering is expressed by
+  different recorded virtual delivery times, never by unstable heap/set ordering.
+- Generated message, session, and correlation IDs are excluded from scheduler comparison.
+  They are replaced by stable message ordinals; causal edges refer to those ordinals.
+- Coverage monitoring, corpus selection, mutation weighting, and content-addressed corpus
+  writes remain Phase 4 work.
+
+Discoveries:
+
+- Making the bus injectable at the composition root was insufficient by itself. The
+  executor, gateway singleton constructor, system lifecycle publishers, query replies,
+  and dimension-item adapter each contained a direct singleton lookup on the supported
+  trace path.
+- The command service previously forwarded an absent request causation ID into command
+  lifecycle events. Treating the request message as their direct cause also gives command
+  replies a stable structural parent.
+- Query replies used standard-library UUID and performance-counter calls even though the
+  command path had provider routing. Scheduled query replay required bringing query
+  envelope metadata onto the same injected providers.
+- Scheduling a publication while a request handler is running queues it rather than
+  recursively delivering it. This exposes lifecycle and engine notifications as explicit
+  equal-time events while preserving request-handler-before-reply causality.
+- Engine event envelopes do not always carry command causation. Capturing the currently
+  delivered scheduled message as an inferred parent records the actual nesting without
+  changing production engine event DTOs.
+- Command and query reply topics embed generated session/correlation IDs. Exact replay
+  requires canonical topic families (`reply.command` and `reply.query`) rather than raw
+  topic strings.
+
+Validation performed:
+
+- `.venv/Scripts/python.exe -m pytest tests/test_dst_phase3.py -q`: 12 passed.
+- `.venv/Scripts/python.exe -m pytest tests/test_dst_phase0.py tests/test_dst_phase1.py tests/test_dst_phase2.py tests/test_dst_phase3.py -q`:
+  73 passed.
+- `.venv/Scripts/python.exe -m pytest tests -q`: 81 passed.
+- A 384-scenario sweep (128 seeds across delay, independent reorder, and timeout modes)
+  passed all oracle, deadline, and causality checks twice and produced the identical
+  aggregate scheduled-report SHA-256
+  `45e578128e7fc07d4c4b6bfec800f5e2945846082df9b2e851c9207f6b312d24`.
+- Delay, reorder, and timeout traces each produced byte-identical scheduled reports in
+  repeated clean workers with fixed `PYTHONHASHSEED` and `TZ=UTC`.
+- A test replaces `threading.Event` with a failing sentinel while a full real-engine trace
+  executes successfully through the scheduled request path.
+- `.venv/Scripts/python.exe -m compileall -q lib_command lib_runtime lib_dst`: passed.
+- `git diff --check`: passed with only line-ending conversion warnings.
+
+### Phase 3.5: OpenM script export and visual replay
+
+- Add a deterministic exporter from a validated `TraceTranscript` to a standalone
+  `.openm` script for the supported real-engine subset. The export must include the
+  trace hash and master seed in comments and preserve trace operation order.
+- Reconstruct rule expressions from the serialized harness AST with `lib_dst.ast.render`
+  and require them to agree with the recorded `set_rule` expression before export. Pass
+  the result through the production expression parser as an export-time validation gate.
+- Translate supported operations to logical-name-based script commands: serial runtime
+  configuration, dimension and item creation, cube creation, hard values, rules, and full
+  recalculation. Unsupported operations must fail export explicitly rather than being
+  omitted.
+- Repair or provide a supported script spelling for anchored logical rules. The current
+  trace subset records `is_anchored=True`, while the existing `$` target handling resolves
+  the cube before stripping the anchor marker and therefore is not yet a reliable export
+  target.
+- Append a clearly marked presentation-only view and expected-result annotation so the
+  resulting model can be inspected in the GUI. Add a documented GUI import/source path;
+  if the GUI has no general script-import action, expose the existing script runner through
+  a narrow "Import OpenM Script" action rather than treating a script as a persisted model.
+- Keep the canonical JSON trace as the replay authority. The `.openm` export is a semantic
+  reproduction and human inspection artifact: generated runtime IDs and timestamps may
+  differ, and persistence-fault decisions, virtual scheduler delays/timeouts/reordering,
+  and other harness-only metadata are emitted as comments but are not simulated by the
+  GUI script.
+- Test byte-identical export, AST/expression agreement, explicit rejection of unsupported
+  operations, and fresh-runtime script execution. Compare the script-created workspace's
+  canonical observation and oracle value with execution of the source trace. Include
+  ordinary numeric, `CellError`, minimized-failure, and GUI-import smoke cases.
+
+Exit: every structurally valid trace in the supported semantic subset exports to a
+standalone `.openm` file that executes from a fresh workspace and produces the same
+canonical model result as trace replay, and that file can be loaded through a documented
+GUI workflow for visual inspection. Harness-only fault and scheduling behavior remains
+replayable only from canonical trace JSON and is identified as such in the export.
+
 ### Phase 4: coverage-guided evolution
 
 - Add normalized branch/arc coverage.

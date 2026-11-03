@@ -70,6 +70,9 @@ class ExecutionContext:
     # Runtime nondeterminism providers. None preserves legacy system behavior.
     providers: Any = None
 
+    # Explicit runtime bus. None preserves legacy singleton lookup behavior.
+    bus: Any = None
+
     # Optional profiler for instrumenting command/query handlers from the GUI.
     profiler: Any = None
 
@@ -194,7 +197,7 @@ class CommandExecutor:
         canonical_id = self._alias_to_canonical.get(command_id, command_id)
 
         # Get event bus
-        bus = get_message_bus()
+        bus = getattr(ctx, "bus", None) or get_message_bus()
 
         # Create command envelope
         event = MessageEnvelope(

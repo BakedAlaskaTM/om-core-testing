@@ -115,7 +115,7 @@ class BusTransport:
             return ExecutionResult(
                 status=ExecutionStatus.ERROR,
                 command_id=command_id,
-                error=f"Command timed out after {self.timeout}s waiting for reply on {reply_topic}",
+                error=f"Command timed out after {effective_timeout}s waiting for reply on {reply_topic}",
             )
 
         # Convert reply envelope back to ExecutionResult

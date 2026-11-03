@@ -29,8 +29,8 @@ class SessionGateway:
 
     _instance: Optional["SessionGateway"] = None
 
-    def __new__(cls) -> "SessionGateway":
-        current_bus = get_message_bus()
+    def __new__(cls, bus=None) -> "SessionGateway":
+        current_bus = bus or get_message_bus()
         if cls._instance is None or cls._instance.bus is not current_bus:
             cls._instance = super().__new__(cls)
             cls._instance.bus = current_bus
@@ -129,7 +129,12 @@ class SessionGateway:
         This keeps the read spine consistent with the command spine: every
         query becomes a ``query.*`` bus message handled by QueryService.
         """
-        correlation_id = str(uuid.uuid4())
+        providers = getattr(ctx, "providers", None)
+        ids = getattr(providers, "ids", None)
+        clock = getattr(providers, "clock", None)
+        new_message_id = ids.uuid4 if ids is not None else uuid.uuid4
+        perf_counter = clock.perf_counter if clock is not None else time.perf_counter
+        correlation_id = str(new_message_id())
         topic = topic_for_query_type(query_type)
         reply_topic = f"reply.query.{session_id}.{correlation_id}"
         workspace_id = None
@@ -142,7 +147,7 @@ class SessionGateway:
         ctx.session_id = session_id
         try:
             request = MessageEnvelope(
-                message_id=str(uuid.uuid4()),
+                message_id=str(new_message_id()),
                 message_type="query",
                 topic=topic,
                 correlation_id=correlation_id,
@@ -150,7 +155,7 @@ class SessionGateway:
                 client_type=record.client_type,
                 workspace_id=workspace_id,
                 actor_id=None,
-                timestamp=time.perf_counter(),
+                timestamp=perf_counter(),
                 payload={"query_type": query_type, **query_params},
                 context=ctx,
                 reply_to=reply_topic,
@@ -245,6 +250,7 @@ class SessionGateway:
             undo_manager=undo_manager,
             gui_window=gui_window,
             providers=providers,
+            bus=self.bus,
         )
         session_id = self.session_mgr.open_session(
             client_type=client_type,
@@ -254,8 +260,8 @@ class SessionGateway:
         return CommandSession(self, session_id)
 
 
-def get_session_gateway() -> SessionGateway:
-    return SessionGateway()
+def get_session_gateway(bus=None) -> SessionGateway:
+    return SessionGateway(bus=bus)
 
 
 def _reset_session_gateway() -> None:

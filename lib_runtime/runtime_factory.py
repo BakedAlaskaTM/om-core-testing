@@ -26,6 +26,7 @@ def create_runtime(
     services: RuntimeServices | None = None,
     enable_solver: bool = True,
     persistence_mode: str | None = None,
+    install_global_bus: bool = True,
 ) -> RuntimeHostContext:
     """Create the default local runtime while preserving the historical API."""
     return create_runtime_context(
@@ -40,4 +41,5 @@ def create_runtime(
         enable_solver=enable_solver,
         persistence_mode=persistence_mode,
         client_type="local",
+        install_global_bus=install_global_bus,
     )

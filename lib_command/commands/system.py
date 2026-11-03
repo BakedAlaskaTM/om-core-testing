@@ -25,18 +25,22 @@ def _wrap_engine_command(engine, command_id, allowed_states, target_state, body,
     )
 
 
-def _publish_workspace_event(topic: str, correlation_id: str | None, path: str, **extra: Any) -> None:
+def _ctx_bus(ctx):
+    return getattr(ctx, "bus", None) or get_message_bus()
+
+
+def _publish_workspace_event(ctx, topic: str, correlation_id: str | None, path: str, **extra: Any) -> None:
     """Publish a workspace lifecycle domain event."""
     payload: dict[str, Any] = {"correlation_id": correlation_id, "path": path}
     payload.update(extra)
-    publish_domain_event(get_message_bus(), topic, payload, correlation_id=correlation_id)
+    publish_domain_event(_ctx_bus(ctx), topic, payload, correlation_id=correlation_id)
 
 
-def _publish_calculation_event(topic: str, correlation_id: str | None, scope: str, **extra: Any) -> None:
+def _publish_calculation_event(ctx, topic: str, correlation_id: str | None, scope: str, **extra: Any) -> None:
     """Publish a calculation lifecycle domain event."""
     payload: dict[str, Any] = {"correlation_id": correlation_id, "scope": scope}
     payload.update(extra)
-    publish_domain_event(get_message_bus(), topic, payload, correlation_id=correlation_id)
+    publish_domain_event(_ctx_bus(ctx), topic, payload, correlation_id=correlation_id)
 
 
 def cmd_recalc(ctx, scope: str = "all") -> dict:
@@ -51,7 +55,7 @@ def cmd_recalc(ctx, scope: str = "all") -> dict:
         raise ValueError("No engine available")
 
     correlation_id = getattr(ctx, "correlation_id", None)
-    _publish_calculation_event("event.calculation.started", correlation_id, scope)
+    _publish_calculation_event(ctx, "event.calculation.started", correlation_id, scope)
 
     # NOTE: _invalidate_slice_dependent_rules() was removed from here.
     # It is now called internally by engine outline-mutation methods
@@ -116,12 +120,12 @@ def cmd_recalc(ctx, scope: str = "all") -> dict:
                 "generation": engine.bump_generation(),
                 "node_count": 0,
             }
-        _publish_calculation_event("event.calculation.finished", correlation_id, result_scope, ok=True)
+        _publish_calculation_event(ctx, "event.calculation.finished", correlation_id, result_scope, ok=True)
         return result
     except Exception as e:
         error_text = f"{e}\n{traceback.format_exc()}"
         _publish_calculation_event(
-            "event.calculation.finished", correlation_id, result_scope, ok=False, error=error_text
+            ctx, "event.calculation.finished", correlation_id, result_scope, ok=False, error=error_text
         )
         return {
             "scope": result_scope,
@@ -172,17 +176,17 @@ def cmd_save(ctx, path: Optional[str] = None) -> dict:
         raise ValueError("No persistence adapter available in command context")
 
     correlation_id = getattr(ctx, "correlation_id", None)
-    _publish_workspace_event("event.workspace.saving", correlation_id, save_path)
+    _publish_workspace_event(ctx, "event.workspace.saving", correlation_id, save_path)
     try:
         adapter.save_workspace(save_path, ws)
         variables = getattr(ctx, "variables", None)
         if variables is not None:
             variables["current_file_path"] = save_path
             variables["current_file_dirty"] = False
-        _publish_workspace_event("event.workspace.saved", correlation_id, save_path)
+        _publish_workspace_event(ctx, "event.workspace.saved", correlation_id, save_path)
         return {"path": save_path}
     except Exception as e:
-        _publish_workspace_event("event.workspace.save_failed", correlation_id, save_path, error=str(e))
+        _publish_workspace_event(ctx, "event.workspace.save_failed", correlation_id, save_path, error=str(e))
         raise
 
 
@@ -193,7 +197,7 @@ def cmd_load(ctx, path: str) -> dict:
         raise ValueError("No persistence adapter available in command context")
 
     correlation_id = getattr(ctx, "correlation_id", None)
-    _publish_workspace_event("event.workspace.loading", correlation_id, path)
+    _publish_workspace_event(ctx, "event.workspace.loading", correlation_id, path)
     try:
         ws, profile = adapter.load_workspace_profiled(path)
         if ws:
@@ -282,6 +286,7 @@ def cmd_load(ctx, path: str) -> dict:
             # Isolated: bus errors must never fail the load command.
             try:
                 _publish_workspace_event(
+                    ctx,
                     "event.workspace.loaded",
                     correlation_id,
                     path,
@@ -294,7 +299,7 @@ def cmd_load(ctx, path: str) -> dict:
         else:
             raise ValueError(f"Failed to load: {path}")
     except Exception as e:
-        _publish_workspace_event("event.workspace.load_failed", correlation_id, path, error=str(e))
+        _publish_workspace_event(ctx, "event.workspace.load_failed", correlation_id, path, error=str(e))
         raise
 
 
@@ -345,10 +350,8 @@ def cmd_set_multithread_recompute(ctx, enabled: bool = True) -> dict:
         ctx.status(f"Multithreaded recalculation {'enabled' if enabled else 'disabled'}")
 
         from lib_command.core.domain_event_publisher import publish_domain_event
-        from lib_command.core.message_bus import get_message_bus
-
         publish_domain_event(
-            get_message_bus(),
+            _ctx_bus(ctx),
             "event.system.config_changed",
             {
                 "property": "multithread_recompute",
@@ -521,9 +524,8 @@ def cmd_create_new_workspace(ctx, engine_type: str = "python") -> dict:
     # Isolated: bus errors must never fail the create command.
     try:
         from lib_command.core.domain_event_publisher import publish_domain_event
-        from lib_command.core.message_bus import get_message_bus
         publish_domain_event(
-            get_message_bus(),
+            _ctx_bus(ctx),
             "event.workspace.created",
             {"workspace_id": getattr(workspace, "id", None)},
         )

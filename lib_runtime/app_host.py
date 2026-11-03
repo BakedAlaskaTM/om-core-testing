@@ -110,6 +110,7 @@ def create_runtime_context(
     enable_solver: bool = True,
     persistence_mode: str | None = None,
     client_type: str = "gui",
+    install_global_bus: bool = True,
 ) -> RuntimeHostContext:
     """Create a fully wired runtime context.
 
@@ -128,7 +129,7 @@ def create_runtime_context(
     providers = providers or RuntimeProviders.system()
     if bus is None:
         bus = get_message_bus()
-    else:
+    elif install_global_bus:
         install_message_bus(bus)
 
     engine = create_engine(
@@ -143,7 +144,7 @@ def create_runtime_context(
 
     init_command_services(persistence_adapter=workspace_adapter, bus=bus)
     executor = get_executor()
-    session_gateway = get_session_gateway()
+    session_gateway = get_session_gateway(bus=bus)
     session_mgr = get_session_manager()
 
     command_session = session_gateway.create_session(
