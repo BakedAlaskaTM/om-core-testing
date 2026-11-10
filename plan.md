@@ -1104,6 +1104,171 @@ Validation performed:
 - `.venv/Scripts/python.exe -m compileall -q lib_dst`: passed.
 - `git diff --check`: passed with only line-ending conversion warnings.
 
+### Phase 4.5: deterministic scale and stress profiles
+
+- Replace the single fixed `Line(InputA, InputB, Result)` workload shape with a
+  parameterized, typed topology generator. Generated traces may contain multiple
+  dimensions, items, cubes, hard-value cells, calculated cells, and rules while retaining
+  logical handles and dependency-valid operation ordering.
+- Define serialized workload profiles rather than interpreting a profile name at replay
+  time. A trace records its resolved limits and all generated topology so replay never
+  depends on later profile-default changes:
+  - `small`: fast semantic regression cases suitable for eventual pull-request use;
+  - `medium`: multiple cubes, dimensions, and rule chains for scheduled campaigns;
+  - `large`: bounded high-cardinality models for nightly or dedicated workers;
+  - `dependency_deep`: long acyclic chains, broad fan-in/fan-out, incremental edits, and
+    large dirty frontiers;
+  - `persistence_heavy`: large snapshots and repeated save/load/fresh-engine convergence;
+  - `event_heavy`: high command and notification volume under the virtual scheduler.
+- Add a bounded `stress_default` campaign preset composed of independent stress-axis
+  runs rather than one model that maximizes every property simultaneously. Phase 4.5
+  exposes the serialized preset through its library API; Phase 5 may provide the
+  convenient public `--stress-default` alias. The preset exercises calibrated, heavy but
+  non-destructive values for expression depth and width, UDF depth, cube and rule count,
+  dimension count and cardinality, hierarchy depth and breadth, dependency depth and
+  fan-in/fan-out, populated-cell density, aggregation range, recalculation churn,
+  persistence volume, command/event volume, model churn, and stored view/format volume.
+- Add deterministic single-axis limit discovery, with a future Phase 5 interface such as
+  `--stress-axis <axis> --discover-limit`. Start from a recorded lower bound, grow the
+  requested value geometrically until the first failure or configured safety ceiling,
+  then refine the passing/failing interval when the result is monotonic. Non-monotonic
+  results retain every tested point and report an observed envelope rather than claiming
+  an exact maximum. Each point is a standalone, replayable trace executed in a fresh
+  worker so a crash cannot destroy the coordinator or the evidence from earlier points.
+- Treat superficially similar depth limits as separate axes: textual rule parsing depth,
+  serialized trace-AST depth, engine AST evaluation depth, built-in function nesting,
+  UDF call-chain depth, and calculated-cell/cross-cube dependency depth. Deep-expression
+  cases use a directly known or metamorphic result where necessary so the independent
+  oracle does not encounter the same recursion limit before OM Core; an oracle or trace
+  serialization failure is classified as a harness failure, not an engine limit.
+- Make cube and rule limit discovery similarly explicit. Cube axes distinguish empty
+  schema objects from populated and calculated cubes, shared from cube-specific
+  dimensions, and independent cubes from cross-cube dependency chains. Rule axes
+  distinguish total rules, rules per cube, anchored from masked rules, mask overlap and
+  precedence, reference/AST breadth, and cross-cube edges. This keeps a reported limit
+  attributable to the structure that produced it.
+- Give every scale choice an independent key-derived seed domain, including topology,
+  cardinality, rule graph, value density, operation mix, and observation sampling. Record
+  resolved counts, density, estimated cells, rule edges, and operation count in trace
+  metadata.
+- Keep generation bounded by explicit structural budgets: maximum dimensions, items per
+  dimension, addressable cells, populated cells, cubes, rules, AST nodes, dependency
+  edges, operations, persistence payload bytes, and virtual events. Reject a generated
+  candidate before execution if it exceeds its materialized budget.
+- Generate only dependency-valid acyclic numeric graphs initially. Continue using the
+  independent typed AST interpreter where its semantics are tractable; use cold-engine,
+  cache/idempotence, persistence, and metamorphic invariants for larger observations that
+  are intentionally sampled rather than fully enumerated.
+- Extend canonical observation with deterministic sampling for large cubes. Samples are
+  selected from a recorded seed domain and materialized as logical addresses in the trace;
+  important boundaries, rule targets, edited precedents, errors, and persistence probes
+  are always included.
+- Extend mutation and shrinking to understand the broader topology. Mutators may change
+  cardinality, density, graph shape, rules, and operation bursts only when symbol and type
+  dependencies remain valid. Shrinking may reduce scale, but it retains a candidate only
+  when the same normalized failure signature reproduces.
+- Make corpus selection profile-aware. Maintain semantic and coverage novelty across
+  profile/scale strata so numerous cheap `small` traces cannot starve rarer large,
+  dependency-heavy, persistence-heavy, or event-heavy candidates.
+- Separate deterministic correctness from performance measurement. Correctness outcomes,
+  traces, coverage, and failure signatures must replay exactly. Wall-clock duration,
+  throughput, peak memory, and persistence size are reported with the environment
+  descriptor and used to calibrate budgets, not treated as cross-machine deterministic
+  oracle values.
+- Record every stress point with the requested and realized scale, trace identity, seed
+  domains, resolved budgets, worker exit evidence, normalized exception or mismatch,
+  volatile resource measurements, environment descriptor, and OM Core revision. A limit
+  report contains all attempted points plus the last observed pass and first observed
+  failure; it does not retain only the final boundary.
+- Give stress outcomes a structured classification with separate verdict, origin, and
+  kind fields so materially different breaks cannot collapse into a generic test failure:
+  - `correctness_mismatch`: OM Core completed but disagreed with the independent oracle,
+    convergence invariant, persistence invariant, or deterministic replay;
+  - `controlled_engine_error`: OM Core rejected or failed a valid within-budget case with
+    a caught, normalized exception such as `RecursionError`;
+  - `worker_exception`: worker/runtime infrastructure raised outside the engine boundary;
+  - `worker_crash`: the child terminated abnormally with crash evidence and no result;
+  - `resource_exhaustion`: a memory, process, payload, or other resource limit was
+    positively identified by an enforced limit or platform exit evidence;
+  - `performance_boundary`: the point exceeded a configured measurement threshold while
+    remaining a correctness pass; this is environment-specific calibration data;
+  - `safety_ceiling`: the next point was deliberately not executed because it exceeded a
+    configured structural or resource guard, making the boundary inconclusive;
+  - `generation_rejected`: the requested model could not be materialized within its
+    recorded structural budget and was never presented to OM Core;
+  - `harness_error`: generation, oracle, trace serialization, coordinator, or validation
+    failed independently of OM Core;
+  - `unknown_abnormal_exit`: the available evidence cannot distinguish a crash, external
+    kill, or resource exhaustion; preserve the raw evidence and never infer a cause.
+- Normalize deterministic classification evidence into the failure signature used for
+  replay and shrinking, while excluding wall-clock and peak-memory values. Outcomes that
+  depend on host enforcement or an unexplained exit retain their environment descriptor
+  and are reproducible observations, not portable deterministic limits. The coordinator
+  must distinguish an expected invalid-input rejection from a valid-case engine failure.
+- Measure real-engine throughput, memory, persistence payload size, and shrink cost for
+  each profile before choosing default sizes. Profile limits remain configuration data
+  derived from empirical runs rather than unverified targets such as a fixed million-seed
+  campaign.
+
+Decisions:
+
+- Phase 4.5 targets the local Python engine in serial mode. Large-model testing does not
+  authorize remote engine, solver, GUI event-loop, or multithreaded execution; each still
+  requires its own deterministic boundary before stress coverage is claimed.
+- `large` means bounded by a recorded structural/resource budget, not unbounded allocation
+  or a wall-clock timeout. Out-of-budget generation is a rejected candidate, while an
+  engine failure within budget is a reproducible harness outcome.
+- `stress_default` is safe-by-policy and repeatable; it is not expected to crash or exhaust
+  its host. Limit discovery is opt-in and still stops at configured Phase 4.5 ceilings.
+  Phase 5 worker memory/time enforcement is required before campaigns intentionally probe
+  host resource exhaustion beyond those ceilings.
+- A discovered limit is always qualified by stress axis, resolved model shape, environment,
+  and OM Core revision. It is not advertised as a universal maximum, and the harness does
+  not use a wall-clock threshold as a deterministic correctness oracle.
+- Sparse models are represented as materialized populated addresses rather than by
+  enumerating their entire Cartesian cell space. Estimated addressable size and actual
+  populated-cell count are recorded separately.
+- Phase 4.5 supplies library APIs, trace metadata, generator profiles, corpus integration,
+  and empirical calibration. Phase 5 remains responsible for the public CLI, PR/nightly
+  scheduling, worker resource limits, and artifact publication.
+
+Validation:
+
+- Repeated generation of every profile with the same master seed produces byte-identical
+  traces; changing one profile seed domain does not perturb unrelated topology decisions.
+- Representative traces from every profile execute against the real engine, satisfy their
+  applicable oracle and convergence invariants, replay in clean workers, and remain within
+  their recorded structural budgets.
+- Mutation decisions for expanded schemas replay exactly, and seeded failures in deep,
+  persistence-heavy, and event-heavy models shrink to standalone traces with the same
+  normalized signature.
+- Two bounded mixed-profile evolution campaigns with the same inputs produce identical
+  selection decisions, corpus indexes, minimized failures, and canonical reports.
+- Calibration reports record per-profile seed throughput, peak memory, payload size, and
+  shrink cost without placing those volatile measurements in deterministic comparison
+  identities.
+- Repeated `stress_default` campaigns with the same inputs produce identical traces,
+  stress-axis order, structural results, classifications, and report identity after
+  volatile measurements are excluded.
+- Limit-discovery tests cover geometric growth, monotonic refinement, non-monotonic
+  envelopes, safety-ceiling termination, and resume from a partially completed report.
+  Every attempted point remains independently replayable.
+- Inject or seed each outcome class at its proper boundary and verify that correctness
+  mismatches, controlled engine exceptions, worker exceptions, abnormal child exits,
+  positively identified resource exhaustion, performance boundaries, generation
+  rejection, harness failures, and ambiguous exits receive distinct classifications.
+  Classification tests simulate destructive resource conditions where possible rather
+  than deliberately exhausting the validation host.
+
+Exit: deterministic campaigns exercise multiple bounded model sizes and targeted
+dependency, persistence, and event-volume stress profiles against the real serial engine.
+Every retained trace and minimized failure replays from a clean worker, mixed-profile
+corpus evolution is deterministic, and measured resource data is sufficient for Phase 5
+to assign small, scheduled, nightly, `stress_default`, and opt-in limit-discovery workloads
+without changing trace semantics. Stress reports preserve every attempted point, attribute
+known failures to the correct boundary, and explicitly leave ambiguous terminations
+unclassified rather than reporting a misleading maximum.
+
 ### Phase 5: CI and scale
 
 - Add `om-dst run`, `om-dst replay`, and `om-dst shrink` commands.

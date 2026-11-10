@@ -1,1 +1,191 @@
-{"environment":{"engine_mode":"python","implementation":"CPython","platform":"win32","python":"3.14.0","python_hash_seed":"random","recalculation":"serial","timezone":"system"},"metadata":{"ast":{"left":{"cube":"Calc","dimension":"Line","handle":"item:line/input-a","item":"InputA","type":"reference"},"operator":"-","right":{"type":"number","value":8},"type":"binary"},"features":["numeric"],"generator":"phase1.numeric.v1","master_seed":2040,"oracle":{"expected":{"number":9.0},"target":{"address":["@.value","Result"],"cube":"Calc"}},"subseeds":{"runtime.clock":"42ff47591729b15548acc03a0c663524","runtime.ids":"2856eb915ed1e9ea11f6a25630b27147","runtime.random":"605805ac5966a73e86a3682900df4958","workload.expression":"f6975c94b0a488a234f8add71dc59c1a","workload.features":"f4af245ee8dbc48d1664527ef460e98d","workload.values":"0621932c25c507ccb06cb17c293a3ec7"},"symbols":{"cube:calc":{"kind":"cube","name":"Calc","owner":null},"dimension:line":{"kind":"dimension","name":"Line","owner":null},"item:line/input-a":{"kind":"item","name":"InputA","owner":"dimension:line"},"item:line/input-b":{"kind":"item","name":"InputB","owner":"dimension:line"},"item:line/result":{"kind":"item","name":"Result","owner":"dimension:line"}}},"observe":{"cubes":["Calc"],"dimensions":["Line"]},"operations":[{"args":{"enabled":false},"kind":"configure_serial","step":0,"target":"runtime"},{"args":{"dim_type":"set","name":"Line"},"kind":"create_dimension","step":1,"target":"dimension:line"},{"args":{"dimension":"dimension:line","name":"InputA"},"kind":"create_dimension_item","step":2,"target":"item:line/input-a"},{"args":{"dimension":"dimension:line","name":"InputB"},"kind":"create_dimension_item","step":3,"target":"item:line/input-b"},{"args":{"dimension":"dimension:line","name":"Result"},"kind":"create_dimension_item","step":4,"target":"item:line/result"},{"args":{"dimensions":["dimension:line"],"name":"Calc"},"kind":"create_cube","step":5,"target":"cube:calc"},{"args":{"address":["item:line/input-a"],"value":17},"kind":"set_cell_hardvalue","step":6,"target":"cube:calc"},{"args":{"address":["item:line/input-b"],"value":-18},"kind":"set_cell_hardvalue","step":7,"target":"cube:calc"},{"args":{"expression":"(Calc::[Line.InputA] - 8)","is_anchored":true,"targets":[["Line","Result"]]},"kind":"set_rule","step":8,"target":"cube:calc"},{"args":{"scope":"all"},"kind":"run_recalculation","step":9,"target":"runtime"}],"schema_version":1}
+{
+    "environment": {
+        "engine_mode": "python",
+        "implementation": "CPython",
+        "platform": "win32",
+        "python": "3.14.0",
+        "python_hash_seed": "random",
+        "recalculation": "serial",
+        "timezone": "system"
+    },
+    "metadata": {
+        "ast": {
+            "left": {
+                "cube": "Calc",
+                "dimension": "Line",
+                "handle": "item:line/input-a",
+                "item": "InputA",
+                "type": "reference"
+            },
+            "operator": "-",
+            "right": {
+                "type": "number",
+                "value": 8
+            },
+            "type": "binary"
+        },
+        "features": [
+            "numeric"
+        ],
+        "generator": "phase1.numeric.v1",
+        "master_seed": 2040,
+        "oracle": {
+            "expected": {
+                "number": 9.0
+            },
+            "target": {
+                "address": [
+                    "@.value",
+                    "Result"
+                ],
+                "cube": "Calc"
+            }
+        },
+        "subseeds": {
+            "runtime.clock": "42ff47591729b15548acc03a0c663524",
+            "runtime.ids": "2856eb915ed1e9ea11f6a25630b27147",
+            "runtime.random": "605805ac5966a73e86a3682900df4958",
+            "workload.expression": "f6975c94b0a488a234f8add71dc59c1a",
+            "workload.features": "f4af245ee8dbc48d1664527ef460e98d",
+            "workload.values": "0621932c25c507ccb06cb17c293a3ec7"
+        },
+        "symbols": {
+            "cube:calc": {
+                "kind": "cube",
+                "name": "Calc",
+                "owner": null
+            },
+            "dimension:line": {
+                "kind": "dimension",
+                "name": "Line",
+                "owner": null
+            },
+            "item:line/input-a": {
+                "kind": "item",
+                "name": "InputA",
+                "owner": "dimension:line"
+            },
+            "item:line/input-b": {
+                "kind": "item",
+                "name": "InputB",
+                "owner": "dimension:line"
+            },
+            "item:line/result": {
+                "kind": "item",
+                "name": "Result",
+                "owner": "dimension:line"
+            }
+        }
+    },
+    "observe": {
+        "cubes": [
+            "Calc"
+        ],
+        "dimensions": [
+            "Line"
+        ]
+    },
+    "operations": [
+        {
+            "args": {
+                "enabled": false
+            },
+            "kind": "configure_serial",
+            "step": 0,
+            "target": "runtime"
+        },
+        {
+            "args": {
+                "dim_type": "set",
+                "name": "Line"
+            },
+            "kind": "create_dimension",
+            "step": 1,
+            "target": "dimension:line"
+        },
+        {
+            "args": {
+                "dimension": "dimension:line",
+                "name": "InputA"
+            },
+            "kind": "create_dimension_item",
+            "step": 2,
+            "target": "item:line/input-a"
+        },
+        {
+            "args": {
+                "dimension": "dimension:line",
+                "name": "InputB"
+            },
+            "kind": "create_dimension_item",
+            "step": 3,
+            "target": "item:line/input-b"
+        },
+        {
+            "args": {
+                "dimension": "dimension:line",
+                "name": "Result"
+            },
+            "kind": "create_dimension_item",
+            "step": 4,
+            "target": "item:line/result"
+        },
+        {
+            "args": {
+                "dimensions": [
+                    "dimension:line"
+                ],
+                "name": "Calc"
+            },
+            "kind": "create_cube",
+            "step": 5,
+            "target": "cube:calc"
+        },
+        {
+            "args": {
+                "address": [
+                    "item:line/input-a"
+                ],
+                "value": 17
+            },
+            "kind": "set_cell_hardvalue",
+            "step": 6,
+            "target": "cube:calc"
+        },
+        {
+            "args": {
+                "address": [
+                    "item:line/input-b"
+                ],
+                "value": -18
+            },
+            "kind": "set_cell_hardvalue",
+            "step": 7,
+            "target": "cube:calc"
+        },
+        {
+            "args": {
+                "expression": "(Calc::[Line.InputA] - 8)",
+                "is_anchored": true,
+                "targets": [
+                    [
+                        "Line",
+                        "Result"
+                    ]
+                ]
+            },
+            "kind": "set_rule",
+            "step": 8,
+            "target": "cube:calc"
+        },
+        {
+            "args": {
+                "scope": "all"
+            },
+            "kind": "run_recalculation",
+            "step": 9,
+            "target": "runtime"
+        }
+    ],
+    "schema_version": 1
+}
