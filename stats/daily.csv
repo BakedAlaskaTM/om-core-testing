@@ -130,7 +130,7 @@ date,views,unique_visitors_daily,views_status,clones,unique_cloners_daily,clones
 2026-11-04,,,unrecoverable,,,unrecoverable,3,,,,,0
 2026-11-05,,,unrecoverable,,,unrecoverable,,,,,,0
 2026-11-06,,,unrecoverable,,,unrecoverable,,,,,,0
-2026-11-07,,,pending,,,pending,,,,,,0
+2026-11-07,,,unrecoverable,,,unrecoverable,,,,,,0
 2026-11-08,,,pending,,,pending,,,,,,0
 2026-11-09,,,pending,,,pending,,,,,,0
 2026-11-10,,,pending,,,pending,1,,,,,0
@@ -144,3 +144,4 @@ date,views,unique_visitors_daily,views_status,clones,unique_cloners_daily,clones
 2026-11-18,,,pending,,,pending,,,,,,0
 2026-11-19,,,pending,,,pending,,,,,,0
 2026-11-20,,,pending,,,pending,,,,,,0
+2026-11-21,,,pending,,,pending,,,,,,0
